@@ -3,7 +3,7 @@ import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
 import { InsightCard } from "./cards/InsightCard";
 import { AlertCard } from "./cards/AlertCard";
-import { motion, useDragControls } from "framer-motion";
+import { motion } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import { ZoomIn, ZoomOut, Move } from "lucide-react";
 
@@ -13,8 +13,10 @@ interface FlowCanvasProps {
 
 // Configuration for layout
 const CARD_WIDTH = 320;
-const GAP_X = 150;
-const AMPLITUDE_Y = 120; // How much up/down variance
+const CARD_HEIGHT = 400; // Approximate visual height for layout spacing
+const GAP_X = 100;
+const GAP_Y = 150;
+const CARDS_PER_ROW = 3; // Snake layout constraint
 
 // Zoom Controls Component
 const Controls = () => {
@@ -55,31 +57,41 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
   // Track positions in state to allow dragging
   const [positions, setPositions] = useState<{id: string, x: number, y: number}[]>([]);
 
-  // Initialize positions when events change
+  // Initialize positions with "Snake" layout
   useEffect(() => {
-    // Only add new events, preserve positions of existing ones if possible
     setPositions(prev => {
-      // Map current events to positions
       return canvasEvents.map((event, index) => {
-        // Check if we already have a position for this event
+        // Check if we already have a position for this event (preserve drag)
         const existing = prev.find(p => p.id === event.id);
         if (existing) return existing;
 
-        // Calculate new position
-        const x = 100 + (index * (CARD_WIDTH + GAP_X));
-        
-        // Create a gentle wave pattern: 0 -> down -> 0 -> up -> 0
-        const waveState = index % 4;
-        let yOffset = 0;
-        if (waveState === 1) yOffset = AMPLITUDE_Y;
-        else if (waveState === 3) yOffset = -AMPLITUDE_Y;
+        // Snake Layout Calculation
+        const row = Math.floor(index / CARDS_PER_ROW);
+        const col = index % CARDS_PER_ROW;
+        const isEvenRow = row % 2 === 0;
 
-        return { id: event.id, x, y: yOffset };
+        // Calculate X
+        // If even row: Left -> Right
+        // If odd row: Right -> Left
+        let x = 0;
+        if (isEvenRow) {
+            x = 100 + (col * (CARD_WIDTH + GAP_X));
+        } else {
+            // End of previous row aligns with start of this row roughly?
+            // Let's align the grid.
+            // Max width of a row = 100 + (CARDS_PER_ROW - 1) * (CARD_WIDTH + GAP_X)
+            const rowWidth = (CARDS_PER_ROW - 1) * (CARD_WIDTH + GAP_X);
+            x = 100 + (rowWidth - (col * (CARD_WIDTH + GAP_X)));
+        }
+
+        // Calculate Y
+        const y = 100 + (row * (CARD_HEIGHT + GAP_Y));
+
+        return { id: event.id, x, y };
       });
     });
-  }, [canvasEvents.length]); // Only re-calc when length changes (new events added)
+  }, [canvasEvents.length]);
 
-  // Update position when dragged
   const handleDragEnd = (id: string, info: any) => {
     setPositions(prev => prev.map(p => {
       if (p.id === id) {
@@ -93,12 +105,11 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     }));
   };
 
-  // Calculate total bounds for the canvas size
-  const contentWidth = positions.length > 0 
-    ? Math.max(...positions.map(p => p.x)) + CARD_WIDTH + 400 
+  // Calculate canvas content size
+  const contentWidth = 100 + (CARDS_PER_ROW * (CARD_WIDTH + GAP_X)) + 200;
+  const contentHeight = positions.length > 0 
+    ? Math.max(...positions.map(p => p.y)) + CARD_HEIGHT + 200 
     : 1000;
-    
-  const contentHeight = 1200; // Fixed ample height for now
 
   return (
     <div className="h-full w-full bg-slate-50 relative overflow-hidden">
@@ -106,10 +117,10 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
       
       <TransformWrapper
-        initialScale={1}
+        initialScale={0.7}
         minScale={0.2}
         maxScale={2}
-        centerOnInit={false}
+        centerOnInit={true}
         wheel={{ step: 0.1 }}
         panning={{ velocityDisabled: false }}
         doubleClick={{ disabled: true }}
@@ -123,9 +134,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                   width: `${contentWidth}px`, 
                   height: `${contentHeight}px`,
                   position: 'relative',
-                  // Center the content vertically initially
-                  display: 'flex',
-                  alignItems: 'center'
                 }}
               >
                 {/* SVG Connections Layer */}
@@ -145,23 +153,60 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     
                     if (!currentPos || !nextPos) return null;
 
-                    // Center Y of the container
-                    const CENTER_Y = contentHeight / 2;
+                    // Determine flow direction (Horizontal or Vertical wrap)
+                    const currentRow = Math.floor(i / CARDS_PER_ROW);
+                    const nextRow = Math.floor((i + 1) / CARDS_PER_ROW);
+                    const isEvenRow = currentRow % 2 === 0;
+
+                    // Card Dimensions
+                    const halfW = CARD_WIDTH / 2;
+                    const halfH = 200; // Approx half height
                     
-                    const startX = currentPos.x + CARD_WIDTH;
-                    const startY = CENTER_Y + currentPos.y;
-                    const endX = nextPos.x;
-                    const endY = CENTER_Y + nextPos.y;
-                    
-                    const cp1X = startX + (endX - startX) * 0.5;
-                    const cp1Y = startY;
-                    const cp2X = startX + (endX - startX) * 0.5;
-                    const cp2Y = endY;
+                    // Start Point
+                    let startX, startY, endX, endY, cp1X, cp1Y, cp2X, cp2Y;
+
+                    if (currentRow === nextRow) {
+                        // Same row connection
+                        startY = currentPos.y + halfH;
+                        endY = nextPos.y + halfH;
+                        
+                        if (isEvenRow) {
+                            // Left -> Right
+                            startX = currentPos.x + CARD_WIDTH;
+                            endX = nextPos.x;
+                        } else {
+                            // Right -> Left
+                            startX = currentPos.x;
+                            endX = nextPos.x + CARD_WIDTH;
+                        }
+
+                        // Horizontal Curves
+                        const midX = (startX + endX) / 2;
+                        cp1X = midX;
+                        cp1Y = startY;
+                        cp2X = midX;
+                        cp2Y = endY;
+
+                    } else {
+                        // Vertical Wrap connection (Down)
+                        // Connect Bottom of Current to Top of Next
+                        startX = currentPos.x + halfW;
+                        startY = currentPos.y + (halfH * 2) - 20; // Bottom edge roughly
+                        
+                        endX = nextPos.x + halfW;
+                        endY = nextPos.y; // Top edge
+
+                        // Vertical Curves (S-shape)
+                        cp1X = startX;
+                        cp1Y = startY + 100; // Go down first
+                        cp2X = endX;
+                        cp2Y = endY - 100; // Come from up
+                    }
 
                     return (
                        <path
                          key={`path-${event.id}-${nextEvent.id}`}
-                         d={`M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX - 12} ${endY}`}
+                         d={`M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`}
                          stroke="#94A3B8"
                          strokeWidth="2"
                          fill="none"
@@ -178,9 +223,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                   const pos = positions.find(p => p.id === event.id);
                   if (!pos) return null;
 
-                  const isLast = index === canvasEvents.length - 1;
-                  const CENTER_Y = contentHeight / 2;
-
                   return (
                     <motion.div
                       key={event.id}
@@ -192,21 +234,9 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                       onDragEnd={(e, info) => handleDragEnd(event.id, info)}
                       style={{
                         left: pos.x,
-                        top: CENTER_Y + pos.y,
-                        marginTop: -200, // Center based on approx height
+                        top: pos.y,
+                        width: CARD_WIDTH
                       }}
-                      // We don't use x/y in animate/style here for position because
-                      // we want drag to work naturally. We set initial left/top.
-                      // Actually, for controlled drag in framer motion with state updates:
-                      // It's better to let framer handle the visual drag, and update state on end.
-                      // But if we want lines to update LIVE, we need onDrag.
-                      // For performance, let's just update lines on drag end for now, 
-                      // or use onDrag if it's smooth enough.
-                      // Let's stick to onDragEnd for the lines to snap to new place, 
-                      // otherwise we need to drive x/y via motion values which complicates the SVG render.
-                      // Wait, if I use `drag`, framer modifies the transform. 
-                      // My SVG lines won't follow until `onDragEnd` updates the state.
-                      // This is acceptable for a prototype.
                     >
                       {event.type === 'action' && (
                           <ActionCard 
