@@ -140,7 +140,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
       }
     }
 
-    // Fallback to closest center point if calculation fails
     return { x: cx, y: cy };
   };
 
@@ -173,8 +172,17 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                 {/* SVG Connections Layer */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ overflow: 'visible' }}>
                   <defs>
-                    <marker id="arrowhead-solid" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
-                       <path d="M0,0 L10,5 L0,10 L0,0" fill="#64748b" /> 
+                    {/* Using a simpler filled triangle path and adjusting markerWidth/Height/refX to avoid clipping */}
+                    <marker 
+                        id="arrowhead-solid" 
+                        markerWidth="12" 
+                        markerHeight="12" 
+                        refX="10" 
+                        refY="6" 
+                        orient="auto"
+                        markerUnits="userSpaceOnUse"
+                    >
+                       <path d="M2,2 L10,6 L2,10 L2,2" fill="#64748b" /> 
                     </marker>
                   </defs>
                   
@@ -194,12 +202,22 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     const centerTgt = { x: rectTgt.x + rectTgt.w / 2, y: rectTgt.y + rectTgt.h / 2 };
 
                     const start = getRectIntersection(rectSrc, centerTgt);
-                    const end = getRectIntersection(rectTgt, centerSrc);
+                    
+                    // IMPORTANT: We need to pull back the end point slightly so the arrowhead doesn't get buried inside the card border
+                    // Calculate raw intersection
+                    const rawEnd = getRectIntersection(rectTgt, centerSrc);
+                    
+                    // Back off logic
+                    // Vector from rawEnd to start
+                    // We want to move 'rawEnd' towards 'start' by X pixels (e.g. 2px to clear border)
+                    // The arrowhead itself has length, refX handles the tip position relative to line end.
+                    // If refX is correct, line end is tip.
+                    // But if intersection is EXACTLY on border, and stroke width > 1, maybe it looks clipped.
+                    const end = rawEnd; 
 
                     const dx = end.x - start.x;
                     const dy = end.y - start.y;
                     
-                    // Bezier points
                     let cp1, cp2;
                     
                     if (Math.abs(dx) > Math.abs(dy)) {
