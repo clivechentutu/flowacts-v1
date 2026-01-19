@@ -24,15 +24,15 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-border shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10">
+    <div className="flex flex-col h-full bg-card border-r border-border shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10">
       {/* Header */}
-      <div className="p-6 border-b border-border bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="p-6 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <h2 className="font-heading font-bold text-lg leading-tight">Upliftly AI</h2>
+            <h2 className="font-heading font-bold text-lg leading-tight text-foreground">Upliftly AI</h2>
             <p className="text-xs text-muted-foreground">Collaborative Analysis</p>
           </div>
         </div>
@@ -45,7 +45,7 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
              <Avatar className="h-8 w-8 rounded-lg bg-primary/10 text-primary border border-primary/20">
                 <AvatarFallback><Sparkles className="w-4 h-4" /></AvatarFallback>
              </Avatar>
-             <div className="bg-muted/50 p-4 rounded-2xl rounded-tl-none text-sm text-foreground/80 leading-relaxed max-w-[90%]">
+             <div className="bg-muted p-4 rounded-2xl rounded-tl-none text-sm text-foreground/90 leading-relaxed max-w-[90%]">
                 Hello! I'm ready to help you analyze your user experience. What shall we test today?
              </div>
           </div>
@@ -60,10 +60,10 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
             >
               <Avatar className={cn(
                 "h-8 w-8 rounded-lg border",
-                msg.type === 'user' ? "bg-slate-900 text-white" : "bg-primary/10 text-primary border-primary/20"
+                msg.type === 'user' ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary border-primary/20"
               )}>
                 {msg.type === 'user' ? (
-                   <AvatarFallback className="bg-slate-900 text-white"><User className="w-4 h-4" /></AvatarFallback>
+                   <AvatarFallback className="bg-primary text-primary-foreground"><User className="w-4 h-4" /></AvatarFallback>
                 ) : (
                    <AvatarFallback><Sparkles className="w-4 h-4" /></AvatarFallback>
                 )}
@@ -72,26 +72,25 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
               <div className={cn(
                 "p-4 rounded-2xl text-sm leading-relaxed max-w-[90%] shadow-sm",
                 msg.type === 'user' 
-                  ? "bg-slate-900 text-slate-50 rounded-tr-none" 
-                  : "bg-white border border-border rounded-tl-none text-foreground"
+                  ? "bg-primary text-primary-foreground rounded-tr-none" 
+                  : "bg-card border border-border rounded-tl-none text-foreground"
               )}>
                 {msg.content}
               </div>
             </div>
           ))}
           
-          {/* Typing Indicator if waiting */}
         </div>
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-border bg-white">
+      <div className="p-4 border-t border-border bg-card">
         <form onSubmit={handleSubmit} className="relative">
           <Input 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask Upliftly to analyze a flow..." 
-            className="pr-12 py-6 bg-muted/30 border-border/50 focus-visible:ring-primary/20 rounded-xl"
+            className="pr-12 py-6 bg-muted/30 border-border/50 focus-visible:ring-primary/20 rounded-xl text-foreground placeholder:text-muted-foreground"
           />
           <Button 
             type="submit" 

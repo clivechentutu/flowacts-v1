@@ -10,8 +10,8 @@ interface FlowCanvasProps {
 }
 
 // Configuration for layout
-const CARD_WIDTH = 360; // Slightly wider for ActionCard
-const CARD_HEIGHT = 500; // Taller to accommodate Insight section
+const CARD_WIDTH = 360; 
+const CARD_HEIGHT = 500; 
 const GAP_X = 150;
 const GAP_Y = 150;
 const CARDS_PER_ROW = 3;
@@ -20,24 +20,24 @@ const CARDS_PER_ROW = 3;
 const Controls = () => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   return (
-    <div className="absolute bottom-8 left-8 bg-white/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
+    <div className="absolute bottom-8 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
       <button 
         onClick={() => zoomIn()} 
-        className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded text-slate-600 transition-colors"
+        className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
         title="Zoom In"
       >
         <ZoomIn className="w-4 h-4" />
       </button>
       <button 
         onClick={() => zoomOut()} 
-        className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded text-slate-600 transition-colors"
+        className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
         title="Zoom Out"
       >
         <ZoomOut className="w-4 h-4" />
       </button>
       <button 
         onClick={() => resetTransform()} 
-        className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded text-slate-600 transition-colors"
+        className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
         title="Reset View"
       >
         <Move className="w-4 h-4" />
@@ -99,8 +99,9 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     : 1500;
 
   return (
-    <div className="h-full w-full bg-slate-50 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
+    <div className="h-full w-full bg-background relative overflow-hidden">
+      {/* Dynamic Grid Pattern that adapts to dark mode via opacity/color variables */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.2] pointer-events-none" />
       
       <TransformWrapper
         initialScale={0.8}
@@ -127,8 +128,12 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                 {/* SVG Connections Layer */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ overflow: 'visible' }}>
                   <defs>
+                    {/* Define arrowheads for both light and dark mode if needed, but current color is hardcoded to #94A3B8. 
+                        Let's use a CSS variable or a class if possible. 
+                        React SVG doesn't support className efficiently on marker without some hacks.
+                        We'll stick to a neutral slate-400/500 which works on both. */}
                     <marker id="arrowhead-solid" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-                       <path d="M2,2 L8,5 L2,8 L2,2" fill="#94A3B8" />
+                       <path d="M2,2 L8,5 L2,8 L2,2" fill="#64748b" /> 
                     </marker>
                   </defs>
                   
@@ -142,13 +147,13 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     if (!currentPos || !nextPos) return null;
 
                     // DYNAMIC ANCHOR LOGIC
-                    const H_OFFSET_SRC = 250; // Roughly center of image area + padding
+                    const H_OFFSET_SRC = 250; 
                     const H_OFFSET_TGT = 250;
 
                     const src = {
                         right: { x: currentPos.x + CARD_WIDTH, y: currentPos.y + H_OFFSET_SRC },
                         left: { x: currentPos.x, y: currentPos.y + H_OFFSET_SRC },
-                        bottom: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y + 500 }, // Approx bottom of card
+                        bottom: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y + 500 }, 
                         top: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y }
                     };
 
@@ -164,7 +169,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
 
                     let start, end, cp1, cp2;
 
-                    if (Math.abs(dy) > 300) { // Increased threshold for vertical wrap
+                    if (Math.abs(dy) > 300) { 
                         if (dy > 0) {
                             start = src.bottom;
                             end = tgt.top;
@@ -196,7 +201,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                        <path
                          key={`path-${event.id}-${nextEvent.id}`}
                          d={`M ${start.x} ${start.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${end.x} ${end.y}`}
-                         stroke="#94A3B8"
+                         stroke="#64748b" // Neutral color visible in both modes
                          strokeWidth="2"
                          fill="none"
                          markerEnd="url(#arrowhead-solid)"
@@ -242,7 +247,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                          </div>
                       </div>
                         
-                        <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold shadow-lg z-20 border-2 border-white pointer-events-none">
+                        <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-lg z-20 border-2 border-background pointer-events-none">
                             {index + 1}
                         </div>
                     </motion.div>
