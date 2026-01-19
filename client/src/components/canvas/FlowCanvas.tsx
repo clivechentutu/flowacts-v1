@@ -2,9 +2,11 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
 import { TaskSidebar } from "./TaskSidebar";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
-import { ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Send, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface FlowCanvasProps {
   events: StoryEvent[];
@@ -48,6 +50,9 @@ const Controls = () => {
 };
 
 export function FlowCanvas({ events }: FlowCanvasProps) {
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [cardInputs, setCardInputs] = useState<Record<string, string>>({});
+
   const canvasEvents = useMemo(() => 
     events.filter(e => ['action'].includes(e.type)), 
   [events]);
@@ -254,11 +259,13 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                       key={event.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="absolute z-10 cursor-grab active:cursor-grabbing draggable-card"
+                      className="absolute z-10 cursor-grab active:cursor-grabbing draggable-card group"
                       drag
                       dragMomentum={false} 
                       dragElastic={0}
                       onDrag={(e, info) => handleDrag(event.id, info)}
+                      onMouseEnter={() => setHoveredCardId(event.id)}
+                      onMouseLeave={() => setHoveredCardId(null)}
                       style={{
                         x: pos.x,
                         y: pos.y,
@@ -284,6 +291,42 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                         <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-lg z-20 border-2 border-background pointer-events-none">
                             {index + 1}
                         </div>
+
+                        {/* AI Chat Input - Appears on Hover */}
+                        <AnimatePresence>
+                          {hoveredCardId === event.id && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              transition={{ duration: 0.2 }}
+                              className="absolute -bottom-16 left-0 right-0 z-30 pointer-events-auto"
+                              onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
+                            >
+                              <div className="bg-background/95 backdrop-blur shadow-xl border border-border rounded-xl p-2 flex gap-2 items-center">
+                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                  <Sparkles className="w-3 h-3 text-primary" />
+                                </div>
+                                <Input 
+                                  className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 px-0 shadow-none placeholder:text-muted-foreground/70"
+                                  placeholder="Ask AI about this step..."
+                                  value={cardInputs[event.id] || ''}
+                                  onChange={(e) => setCardInputs(prev => ({ ...prev, [event.id]: e.target.value }))}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      // Handle submit mock
+                                      console.log('Ask AI:', cardInputs[event.id]);
+                                      setCardInputs(prev => ({ ...prev, [event.id]: '' }));
+                                    }
+                                  }}
+                                />
+                                <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 rounded-full hover:bg-primary/10 hover:text-primary">
+                                  <Send className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                     </motion.div>
                   );
                 })}
