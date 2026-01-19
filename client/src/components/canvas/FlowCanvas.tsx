@@ -308,7 +308,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                                   <Sparkles className="w-3 h-3 text-primary" />
                                 </div>
                                 <Input 
-                                  className="h-8 text-xs border-0 bg-transparent focus-visible:ring-0 px-0 shadow-none placeholder:text-muted-foreground/70"
+                                  className="flex-1 h-8 text-xs border-0 bg-transparent focus-visible:ring-0 px-0 shadow-none placeholder:text-muted-foreground/70 min-w-0"
                                   placeholder="Ask AI about this step..."
                                   value={cardInputs[event.id] || ''}
                                   onChange={(e) => setCardInputs(prev => ({ ...prev, [event.id]: e.target.value }))}

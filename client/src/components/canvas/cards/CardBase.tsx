@@ -10,7 +10,7 @@ interface CardBaseProps {
 
 export function CardBase({ children, className, isLast }: CardBaseProps) {
   return (
-    <div className="relative flex flex-col items-center gap-6 pr-12 group h-full justify-center min-w-[320px] max-w-[320px]">
+    <div className="relative flex flex-col items-center gap-6 group h-full justify-center w-full">
       {/* Content */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
