@@ -3,7 +3,7 @@ import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
 import { motion } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
-import { ZoomIn, ZoomOut, Move } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize } from "lucide-react";
 
 interface FlowCanvasProps {
   events: StoryEvent[];
@@ -40,7 +40,7 @@ const Controls = () => {
         className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
         title="Reset View"
       >
-        <Move className="w-4 h-4" />
+        <Maximize className="w-4 h-4" />
       </button>
     </div>
   );
