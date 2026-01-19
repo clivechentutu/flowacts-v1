@@ -303,7 +303,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                               className="absolute top-full left-0 right-0 z-30 pointer-events-auto pt-4"
                               onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
                             >
-                              <div className="bg-background/95 backdrop-blur shadow-xl border border-border rounded-xl p-2 flex gap-2 items-center w-full">
+                              <div className="bg-background/95 backdrop-blur shadow-xl border border-border rounded-xl p-2 flex gap-2 items-center w-full box-border">
                                 <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                   <Sparkles className="w-3 h-3 text-primary" />
                                 </div>
