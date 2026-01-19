@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Sparkles, User } from "lucide-react";
+import { Send, Sparkles, User, Paperclip, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -85,6 +85,24 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
 
       {/* Input */}
       <div className="p-4 border-t border-border bg-card">
+        <div className="flex gap-2 mb-3 px-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+          >
+            <Paperclip className="w-3.5 h-3.5" />
+            Attach
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+          >
+            <Globe className="w-3.5 h-3.5" />
+            Search
+          </Button>
+        </div>
         <form onSubmit={handleSubmit} className="relative">
           <Input 
             value={input}
