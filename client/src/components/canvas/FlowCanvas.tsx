@@ -47,15 +47,12 @@ const Controls = () => {
 };
 
 export function FlowCanvas({ events }: FlowCanvasProps) {
-  // Filter only ACTION events now, as Insight/Alert are merged or hidden
   const canvasEvents = useMemo(() => 
     events.filter(e => ['action'].includes(e.type)), 
   [events]);
 
-  // Track positions in state
   const [positions, setPositions] = useState<{id: string, x: number, y: number}[]>([]);
 
-  // Initialize positions with "Snake" layout
   useEffect(() => {
     setPositions(prev => {
       return canvasEvents.map((event, index) => {
@@ -98,9 +95,65 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     ? Math.max(...positions.map(p => p.y)) + CARD_HEIGHT + 400 
     : 1500;
 
+  // HELPER: Intersection Logic for Rectangle
+  // Returns point on the edge of the rect that intersects with line to target center
+  const getRectIntersection = (
+    rect: { x: number, y: number, w: number, h: number }, 
+    target: { x: number, y: number }
+  ) => {
+    const cx = rect.x + rect.w / 2;
+    const cy = rect.y + rect.h / 2;
+    
+    const dx = target.x - cx;
+    const dy = target.y - cy;
+    
+    // If centers are same, return center (shouldn't happen)
+    if (dx === 0 && dy === 0) return { x: cx, y: cy };
+
+    // Calculate intersection with the four sides
+    // Based on angle or slope
+    
+    // Slope
+    const slope = dy / dx;
+
+    // We check vertical sides first (x = left or x = right)
+    // Vertical distance from center to side
+    const hDist = rect.w / 2;
+    // Horizontal intersection Candidate Y
+    // y - cy = m(x - cx) => y = cy + m(x - cx)
+    
+    // Check right side
+    if (dx > 0) {
+        const yRight = cy + slope * hDist;
+        if (yRight >= rect.y && yRight <= rect.y + rect.h) {
+            return { x: rect.x + rect.w, y: yRight };
+        }
+    } else {
+        // Check left side
+        const yLeft = cy + slope * (-hDist);
+        if (yLeft >= rect.y && yLeft <= rect.y + rect.h) {
+            return { x: rect.x, y: yLeft };
+        }
+    }
+
+    // If not hit vertical sides, must be horizontal sides
+    // Vertical distance to top/bottom
+    const vDist = rect.h / 2;
+    
+    if (dy > 0) {
+        // Bottom side
+        // x - cx = (y - cy) / m => x = cx + (y - cy) / m
+        const xBottom = cx + vDist / slope;
+        return { x: xBottom, y: rect.y + rect.h };
+    } else {
+        // Top side
+        const xTop = cx + (-vDist) / slope;
+        return { x: xTop, y: rect.y };
+    }
+  };
+
   return (
     <div className="h-full w-full bg-background relative overflow-hidden">
-      {/* Dynamic Grid Pattern that adapts to dark mode via opacity/color variables */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.2] pointer-events-none" />
       
       <TransformWrapper
@@ -128,10 +181,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                 {/* SVG Connections Layer */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ overflow: 'visible' }}>
                   <defs>
-                    {/* Define arrowheads for both light and dark mode if needed, but current color is hardcoded to #94A3B8. 
-                        Let's use a CSS variable or a class if possible. 
-                        React SVG doesn't support className efficiently on marker without some hacks.
-                        We'll stick to a neutral slate-400/500 which works on both. */}
                     <marker id="arrowhead-solid" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
                        <path d="M2,2 L8,5 L2,8 L2,2" fill="#64748b" /> 
                     </marker>
@@ -146,62 +195,41 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     
                     if (!currentPos || !nextPos) return null;
 
-                    // DYNAMIC ANCHOR LOGIC
-                    const H_OFFSET_SRC = 250; 
-                    const H_OFFSET_TGT = 250;
+                    const rectSrc = { x: currentPos.x, y: currentPos.y, w: CARD_WIDTH, h: 500 }; // Fixed height assumption
+                    const rectTgt = { x: nextPos.x, y: nextPos.y, w: CARD_WIDTH, h: 500 };
 
-                    const src = {
-                        right: { x: currentPos.x + CARD_WIDTH, y: currentPos.y + H_OFFSET_SRC },
-                        left: { x: currentPos.x, y: currentPos.y + H_OFFSET_SRC },
-                        bottom: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y + 500 }, 
-                        top: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y }
-                    };
+                    const centerSrc = { x: rectSrc.x + rectSrc.w / 2, y: rectSrc.y + rectSrc.h / 2 };
+                    const centerTgt = { x: rectTgt.x + rectTgt.w / 2, y: rectTgt.y + rectTgt.h / 2 };
 
-                    const tgt = {
-                        left: { x: nextPos.x, y: nextPos.y + H_OFFSET_TGT },
-                        right: { x: nextPos.x + CARD_WIDTH, y: nextPos.y + H_OFFSET_TGT },
-                        top: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y },
-                        bottom: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y + 500 }
-                    };
+                    // Calculate strict intersection points
+                    // We start the line from the edge of Source closest to Target
+                    const start = getRectIntersection(rectSrc, centerTgt);
+                    // We end the line at the edge of Target closest to Source
+                    const end = getRectIntersection(rectTgt, centerSrc);
 
-                    const dx = nextPos.x - currentPos.x;
-                    const dy = nextPos.y - currentPos.y;
-
-                    let start, end, cp1, cp2;
-
-                    if (Math.abs(dy) > 300) { 
-                        if (dy > 0) {
-                            start = src.bottom;
-                            end = tgt.top;
-                            cp1 = { x: start.x, y: start.y + 100 };
-                            cp2 = { x: end.x, y: end.y - 100 };
-                        } else {
-                            start = src.top;
-                            end = tgt.bottom;
-                            cp1 = { x: start.x, y: start.y - 100 };
-                            cp2 = { x: end.x, y: end.y + 100 };
-                        }
-                    } else {
-                        if (dx > 0) {
-                            start = src.right;
-                            end = tgt.left;
-                            const dist = Math.abs(end.x - start.x);
-                            cp1 = { x: start.x + dist/2, y: start.y };
-                            cp2 = { x: end.x - dist/2, y: end.y };
-                        } else {
-                            start = src.left;
-                            end = tgt.right;
-                            const dist = Math.abs(end.x - start.x);
-                            cp1 = { x: start.x - dist/2, y: start.y };
-                            cp2 = { x: end.x + dist/2, y: end.y };
-                        }
+                    // Just draw a straight line or slight curve?
+                    // User complained about weird jumps, so stable curve is better.
+                    // But straight line center-to-center logic (visually trimmed) is the most robust "no jump" logic.
+                    // Let's try simple straight line logic first to ensure perfect attachment.
+                    // Or a simple Bezier that respects the entry angle.
+                    
+                    // Simple Bezier:
+                    const dx = end.x - start.x;
+                    const dy = end.y - start.y;
+                    const cp1 = { x: start.x + dx * 0.5, y: start.y };
+                    const cp2 = { x: end.x - dx * 0.5, y: end.y };
+                    
+                    // If vertical dominant
+                    if (Math.abs(dy) > Math.abs(dx)) {
+                         cp1.x = start.x; cp1.y = start.y + dy * 0.5;
+                         cp2.x = end.x; cp2.y = end.y - dy * 0.5;
                     }
 
                     return (
                        <path
                          key={`path-${event.id}-${nextEvent.id}`}
                          d={`M ${start.x} ${start.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${end.x} ${end.y}`}
-                         stroke="#64748b" // Neutral color visible in both modes
+                         stroke="#64748b" 
                          strokeWidth="2"
                          fill="none"
                          markerEnd="url(#arrowhead-solid)"
