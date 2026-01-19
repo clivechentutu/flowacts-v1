@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { ChatPanel } from "@/components/chat/ChatPanel";
-import { Canvas } from "@/components/canvas/Canvas";
+import { FlowCanvas } from "@/components/canvas/FlowCanvas";
 import { SCENARIOS, StoryEvent } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
 
@@ -74,7 +74,7 @@ export default function Home() {
         ))}
       </div>
       
-      <Canvas events={events} />
+      <FlowCanvas events={events} />
     </Shell>
   );
 }
