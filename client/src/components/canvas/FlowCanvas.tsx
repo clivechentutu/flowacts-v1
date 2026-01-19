@@ -96,7 +96,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     : 1500;
 
   // HELPER: Intersection Logic for Rectangle
-  // Returns point on the edge of the rect that intersects with line to target center
   const getRectIntersection = (
     rect: { x: number, y: number, w: number, h: number }, 
     target: { x: number, y: number }
@@ -107,49 +106,42 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     const dx = target.x - cx;
     const dy = target.y - cy;
     
-    // If centers are same, return center (shouldn't happen)
     if (dx === 0 && dy === 0) return { x: cx, y: cy };
 
-    // Calculate intersection with the four sides
-    // Based on angle or slope
-    
-    // Slope
     const slope = dy / dx;
-
-    // We check vertical sides first (x = left or x = right)
-    // Vertical distance from center to side
     const hDist = rect.w / 2;
-    // Horizontal intersection Candidate Y
-    // y - cy = m(x - cx) => y = cy + m(x - cx)
-    
-    // Check right side
-    if (dx > 0) {
-        const yRight = cy + slope * hDist;
-        if (yRight >= rect.y && yRight <= rect.y + rect.h) {
-            return { x: rect.x + rect.w, y: yRight };
-        }
-    } else {
-        // Check left side
-        const yLeft = cy + slope * (-hDist);
-        if (yLeft >= rect.y && yLeft <= rect.y + rect.h) {
-            return { x: rect.x, y: yLeft };
-        }
+
+    if (Math.abs(dx) > 0.01) {
+      if (dx > 0) {
+          const yRight = cy + slope * hDist;
+          if (yRight >= rect.y && yRight <= rect.y + rect.h) {
+              return { x: rect.x + rect.w, y: yRight };
+          }
+      } else {
+          const yLeft = cy + slope * (-hDist);
+          if (yLeft >= rect.y && yLeft <= rect.y + rect.h) {
+              return { x: rect.x, y: yLeft };
+          }
+      }
     }
 
-    // If not hit vertical sides, must be horizontal sides
-    // Vertical distance to top/bottom
     const vDist = rect.h / 2;
-    
-    if (dy > 0) {
-        // Bottom side
-        // x - cx = (y - cy) / m => x = cx + (y - cy) / m
-        const xBottom = cx + vDist / slope;
-        return { x: xBottom, y: rect.y + rect.h };
-    } else {
-        // Top side
-        const xTop = cx + (-vDist) / slope;
-        return { x: xTop, y: rect.y };
+    if (Math.abs(dy) > 0.01) {
+      if (dy > 0) {
+          const xBottom = cx + vDist / slope;
+          if (xBottom >= rect.x && xBottom <= rect.x + rect.w) {
+              return { x: xBottom, y: rect.y + rect.h };
+          }
+      } else {
+          const xTop = cx + (-vDist) / slope;
+          if (xTop >= rect.x && xTop <= rect.x + rect.w) {
+              return { x: xTop, y: rect.y };
+          }
+      }
     }
+
+    // Fallback to closest center point if calculation fails
+    return { x: cx, y: cy };
   };
 
   return (
@@ -181,8 +173,8 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                 {/* SVG Connections Layer */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ overflow: 'visible' }}>
                   <defs>
-                    <marker id="arrowhead-solid" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-                       <path d="M2,2 L8,5 L2,8 L2,2" fill="#64748b" /> 
+                    <marker id="arrowhead-solid" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
+                       <path d="M0,0 L10,5 L0,10 L0,0" fill="#64748b" /> 
                     </marker>
                   </defs>
                   
@@ -195,34 +187,27 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     
                     if (!currentPos || !nextPos) return null;
 
-                    const rectSrc = { x: currentPos.x, y: currentPos.y, w: CARD_WIDTH, h: 500 }; // Fixed height assumption
+                    const rectSrc = { x: currentPos.x, y: currentPos.y, w: CARD_WIDTH, h: 500 }; 
                     const rectTgt = { x: nextPos.x, y: nextPos.y, w: CARD_WIDTH, h: 500 };
 
                     const centerSrc = { x: rectSrc.x + rectSrc.w / 2, y: rectSrc.y + rectSrc.h / 2 };
                     const centerTgt = { x: rectTgt.x + rectTgt.w / 2, y: rectTgt.y + rectTgt.h / 2 };
 
-                    // Calculate strict intersection points
-                    // We start the line from the edge of Source closest to Target
                     const start = getRectIntersection(rectSrc, centerTgt);
-                    // We end the line at the edge of Target closest to Source
                     const end = getRectIntersection(rectTgt, centerSrc);
 
-                    // Just draw a straight line or slight curve?
-                    // User complained about weird jumps, so stable curve is better.
-                    // But straight line center-to-center logic (visually trimmed) is the most robust "no jump" logic.
-                    // Let's try simple straight line logic first to ensure perfect attachment.
-                    // Or a simple Bezier that respects the entry angle.
-                    
-                    // Simple Bezier:
                     const dx = end.x - start.x;
                     const dy = end.y - start.y;
-                    const cp1 = { x: start.x + dx * 0.5, y: start.y };
-                    const cp2 = { x: end.x - dx * 0.5, y: end.y };
                     
-                    // If vertical dominant
-                    if (Math.abs(dy) > Math.abs(dx)) {
-                         cp1.x = start.x; cp1.y = start.y + dy * 0.5;
-                         cp2.x = end.x; cp2.y = end.y - dy * 0.5;
+                    // Bezier points
+                    let cp1, cp2;
+                    
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                         cp1 = { x: start.x + dx * 0.4, y: start.y };
+                         cp2 = { x: end.x - dx * 0.4, y: end.y };
+                    } else {
+                         cp1 = { x: start.x, y: start.y + dy * 0.4 };
+                         cp2 = { x: end.x, y: end.y - dy * 0.4 };
                     }
 
                     return (
