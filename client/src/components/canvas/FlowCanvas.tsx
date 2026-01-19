@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
+import { TaskSidebar } from "./TaskSidebar";
 import { motion } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import { ZoomIn, ZoomOut, Maximize } from "lucide-react";
@@ -147,6 +148,8 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     <div className="h-full w-full bg-[#fdfbf7] dark:bg-[#1e1e1e] relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.2] pointer-events-none" />
       
+      <TaskSidebar events={events} />
+
       <TransformWrapper
         initialScale={0.8}
         minScale={0.1}
