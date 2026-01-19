@@ -300,7 +300,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.2 }}
-                              className="absolute -bottom-16 left-0 right-0 z-30 pointer-events-auto"
+                              className="absolute top-full left-0 right-0 z-30 pointer-events-auto pt-4"
                               onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
                             >
                               <div className="bg-background/95 backdrop-blur shadow-xl border border-border rounded-xl p-2 flex gap-2 items-center">
