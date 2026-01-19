@@ -3,7 +3,7 @@ import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
 import { InsightCard } from "./cards/InsightCard";
 import { AlertCard } from "./cards/AlertCard";
-import { motion, useMotionValue } from "framer-motion";
+import { motion } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import { ZoomIn, ZoomOut, Move } from "lucide-react";
 
@@ -13,7 +13,7 @@ interface FlowCanvasProps {
 
 // Configuration for layout
 const CARD_WIDTH = 320;
-const CARD_HEIGHT = 400; 
+const CARD_HEIGHT = 400; // Used for grid, actual height varies
 const GAP_X = 150;
 const GAP_Y = 150;
 const CARDS_PER_ROW = 3;
@@ -54,19 +54,16 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     events.filter(e => ['action', 'insight', 'alert'].includes(e.type)), 
   [events]);
 
-  // Track positions in state to allow dragging
+  // Track positions in state
   const [positions, setPositions] = useState<{id: string, x: number, y: number}[]>([]);
 
   // Initialize positions with "Snake" layout
   useEffect(() => {
     setPositions(prev => {
-      // Map current events to positions
       return canvasEvents.map((event, index) => {
-        // Check if we already have a position for this event
         const existing = prev.find(p => p.id === event.id);
         if (existing) return existing;
 
-        // Snake Layout Calculation
         const row = Math.floor(index / CARDS_PER_ROW);
         const col = index % CARDS_PER_ROW;
         const isEvenRow = row % 2 === 0;
@@ -80,19 +77,17 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
         }
 
         const y = 100 + (row * (CARD_HEIGHT + GAP_Y));
-
         return { id: event.id, x, y };
       });
     });
   }, [canvasEvents.length]);
 
-  // LIVE update on Drag
   const handleDrag = useCallback((id: string, info: any) => {
     setPositions(prev => prev.map(p => {
       if (p.id === id) {
         return { 
           ...p, 
-          x: p.x + info.delta.x, // Use delta to update position incrementally
+          x: p.x + info.delta.x, 
           y: p.y + info.delta.y 
         };
       }
@@ -100,7 +95,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     }));
   }, []);
 
-  // Calculate canvas content size
   const contentWidth = 100 + (CARDS_PER_ROW * (CARD_WIDTH + GAP_X)) + 400;
   const contentHeight = positions.length > 0 
     ? Math.max(...positions.map(p => p.y)) + CARD_HEIGHT + 400 
@@ -108,7 +102,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
 
   return (
     <div className="h-full w-full bg-slate-50 relative overflow-hidden">
-      {/* Background Grid */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
       
       <TransformWrapper
@@ -116,10 +109,10 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
         minScale={0.1}
         maxScale={4}
         centerOnInit={true}
-        wheel={{ step: 0.05 }} // Smoother zoom
-        panning={{ velocityDisabled: false }}
+        wheel={{ step: 0.05 }}
+        panning={{ velocityDisabled: false, excluded: ["draggable-card"] }} // CRITICAL: Exclude cards from panning
         doubleClick={{ disabled: true }}
-        limitToBounds={false} // Allow infinite panning feel
+        limitToBounds={false}
       >
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
@@ -130,15 +123,14 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                   width: `${contentWidth}px`, 
                   height: `${contentHeight}px`,
                   position: 'relative',
-                  // Ensure we have some padding so dragging doesn't hit edge immediately
                   transformOrigin: '0 0'
                 }}
               >
-                {/* SVG Connections Layer - BEHIND everything */}
+                {/* SVG Connections Layer */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ overflow: 'visible' }}>
                   <defs>
-                    <marker id="arrowhead-solid" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-                       <path d="M2,2 L10,6 L2,10 L2,2" fill="#94A3B8" />
+                    <marker id="arrowhead-solid" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                       <path d="M2,2 L8,5 L2,8 L2,2" fill="#94A3B8" />
                     </marker>
                   </defs>
                   
@@ -151,54 +143,66 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     
                     if (!currentPos || !nextPos) return null;
 
-                    // Simple logic: Connect closest edges or centers
-                    // Let's use bounding boxes
-                    const boxA = { 
-                      left: currentPos.x, right: currentPos.x + CARD_WIDTH,
-                      top: currentPos.y, bottom: currentPos.y + 200, // approx height center
-                      centerX: currentPos.x + CARD_WIDTH/2, centerY: currentPos.y + 200
-                    };
-                    const boxB = {
-                      left: nextPos.x, right: nextPos.x + CARD_WIDTH,
-                      top: nextPos.y, bottom: nextPos.y + 200,
-                      centerX: nextPos.x + CARD_WIDTH/2, centerY: nextPos.y + 200
+                    // SMART ANCHOR LOGIC
+                    // We calculate 4 midpoints for each card
+                    // Assuming card height is approx 200px (or dynamic, but let's use a safe center offset)
+                    // Visual center offset = 200px roughly? Let's use 150px as safe "middle" of content
+                    const H_OFFSET = 180;
+                    
+                    const src = {
+                        right: { x: currentPos.x + CARD_WIDTH, y: currentPos.y + H_OFFSET },
+                        left: { x: currentPos.x, y: currentPos.y + H_OFFSET },
+                        bottom: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y + (H_OFFSET * 2) }, // Approx bottom
+                        top: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y }
                     };
 
-                    // Simple Bezier from Center to Center? Or Edge to Edge?
-                    // User complained about "detach". Let's use strict center-to-center logic first,
-                    // but obscured by the cards (z-index).
-                    // Actually, let's just draw from center to center.
-                    
-                    const startX = boxA.centerX;
-                    const startY = boxA.centerY;
-                    const endX = boxB.centerX;
-                    const endY = boxB.centerY;
+                    const tgt = {
+                        left: { x: nextPos.x, y: nextPos.y + H_OFFSET },
+                        right: { x: nextPos.x + CARD_WIDTH, y: nextPos.y + H_OFFSET },
+                        top: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y },
+                        bottom: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y + (H_OFFSET * 2) }
+                    };
 
-                    // Control points based on relative position
-                    const dx = Math.abs(endX - startX);
-                    const dy = Math.abs(endY - startY);
+                    // Determine relationship
+                    const dx = nextPos.x - currentPos.x;
+                    const dy = nextPos.y - currentPos.y;
+
+                    let start, end, cp1, cp2;
+
+                    // Logic:
+                    // 1. If Target is clearly to the RIGHT -> Connect Src.Right to Tgt.Left
+                    // 2. If Target is clearly to the LEFT -> Connect Src.Left to Tgt.Right
+                    // 3. If Target is clearly BELOW -> Connect Src.Bottom to Tgt.Top
                     
-                    // Dynamic Curvature
-                    let cp1X, cp1Y, cp2X, cp2Y;
-                    
-                    if (dx > dy) {
+                    if (Math.abs(dx) > Math.abs(dy)) {
                         // Horizontal dominant
-                        cp1X = startX + (endX - startX) / 2;
-                        cp1Y = startY;
-                        cp2X = endX - (endX - startX) / 2;
-                        cp2Y = endY;
+                        if (dx > 0) {
+                            // Target is to the Right
+                            start = src.right;
+                            end = tgt.left;
+                            // Control points: extend horizontally
+                            cp1 = { x: start.x + 80, y: start.y };
+                            cp2 = { x: end.x - 80, y: end.y };
+                        } else {
+                            // Target is to the Left
+                            start = src.left;
+                            end = tgt.right;
+                            cp1 = { x: start.x - 80, y: start.y };
+                            cp2 = { x: end.x + 80, y: end.y };
+                        }
                     } else {
-                        // Vertical dominant
-                        cp1X = startX;
-                        cp1Y = startY + (endY - startY) / 2;
-                        cp2X = endX;
-                        cp2Y = endY - (endY - startY) / 2;
+                        // Vertical dominant (probably next row)
+                        // Connect Bottom to Top
+                        start = src.bottom; // Approximate bottom edge
+                        end = tgt.top;
+                        cp1 = { x: start.x, y: start.y + 80 }; // Down
+                        cp2 = { x: end.x, y: end.y - 80 }; // Up from target
                     }
 
                     return (
                        <path
                          key={`path-${event.id}-${nextEvent.id}`}
-                         d={`M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`}
+                         d={`M ${start.x} ${start.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${end.x} ${end.y}`}
                          stroke="#94A3B8"
                          strokeWidth="2"
                          fill="none"
@@ -218,18 +222,16 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                       key={event.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="absolute z-10 cursor-grab active:cursor-grabbing"
-                      // Use drag listener to update state in real-time
+                      className="absolute z-10 cursor-grab active:cursor-grabbing draggable-card" // Added class for exclusion
                       drag
                       dragMomentum={false} 
                       dragElastic={0}
                       onDrag={(e, info) => handleDrag(event.id, info)}
-                      // We must use 'style' for position to be controlled by state if we want SVG to sync
-                      // BUT motion drag uses transforms.
-                      // To make them sync perfectly, we can't let Framer handle the visual transform alone.
-                      // We must update the actual layout position.
-                      // Actually, if we update state onDrag, re-render happens.
-                      // We should set the 'x' and 'y' directly in style.
+                      // Use e.stopPropagation to be extra safe, though 'excluded' in panning handles it mostly
+                      onPointerDownCapture={(e) => {
+                        // This prevents the click from propagating to the canvas pan handler
+                        e.stopPropagation();
+                      }}
                       style={{
                         x: pos.x,
                         y: pos.y,
@@ -238,14 +240,8 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                         top: 0,
                         left: 0
                       }}
-                      // Disable framer's internal transform application for drag?
-                      // No, simply setting x/y in style overrides it?
-                      // Let's try _drag_ controls.
                     >
-                      {/* Card Content... */}
                       <div className="pointer-events-none"> 
-                         {/* Wrap content in pointer-events-none so drag works on the whole div container easily, 
-                             but buttons inside need pointer-events-auto */}
                          <div className="pointer-events-auto">
                             {event.type === 'action' && (
                               <ActionCard 
@@ -276,7 +272,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                          </div>
                       </div>
                         
-                        {/* Step Number Badge */}
                         <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold shadow-lg z-20 border-2 border-white pointer-events-none">
                             {index + 1}
                         </div>
