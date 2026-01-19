@@ -144,7 +144,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
   };
 
   return (
-    <div className="h-full w-full bg-[#fdfbf7] dark:bg-[#121212] relative overflow-hidden">
+    <div className="h-full w-full bg-[#fdfbf7] dark:bg-[#1e1e1e] relative overflow-hidden">
       <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.2] pointer-events-none" />
       
       <TransformWrapper
