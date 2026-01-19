@@ -13,7 +13,7 @@ interface FlowCanvasProps {
 
 // Configuration for layout
 const CARD_WIDTH = 320;
-const CARD_HEIGHT = 400; // Used for grid, actual height varies
+const CARD_HEIGHT = 400; 
 const GAP_X = 150;
 const GAP_Y = 150;
 const CARDS_PER_ROW = 3;
@@ -110,7 +110,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
         maxScale={4}
         centerOnInit={true}
         wheel={{ step: 0.05 }}
-        panning={{ velocityDisabled: false, excluded: ["draggable-card"] }} // CRITICAL: Exclude cards from panning
+        panning={{ velocityDisabled: false, excluded: ["draggable-card"] }} 
         doubleClick={{ disabled: true }}
         limitToBounds={false}
       >
@@ -143,60 +143,61 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     
                     if (!currentPos || !nextPos) return null;
 
-                    // SMART ANCHOR LOGIC
-                    // We calculate 4 midpoints for each card
-                    // Assuming card height is approx 200px (or dynamic, but let's use a safe center offset)
-                    // Visual center offset = 200px roughly? Let's use 150px as safe "middle" of content
-                    const H_OFFSET = 180;
-                    
+                    // DYNAMIC ANCHOR LOGIC
+                    const H_OFFSET_SRC = event.type === 'action' ? 200 : 100;
+                    const H_OFFSET_TGT = nextEvent.type === 'action' ? 200 : 100;
+
                     const src = {
-                        right: { x: currentPos.x + CARD_WIDTH, y: currentPos.y + H_OFFSET },
-                        left: { x: currentPos.x, y: currentPos.y + H_OFFSET },
-                        bottom: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y + (H_OFFSET * 2) }, // Approx bottom
+                        right: { x: currentPos.x + CARD_WIDTH, y: currentPos.y + H_OFFSET_SRC },
+                        left: { x: currentPos.x, y: currentPos.y + H_OFFSET_SRC },
+                        bottom: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y + (H_OFFSET_SRC * 2) },
                         top: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y }
                     };
 
                     const tgt = {
-                        left: { x: nextPos.x, y: nextPos.y + H_OFFSET },
-                        right: { x: nextPos.x + CARD_WIDTH, y: nextPos.y + H_OFFSET },
+                        left: { x: nextPos.x, y: nextPos.y + H_OFFSET_TGT },
+                        right: { x: nextPos.x + CARD_WIDTH, y: nextPos.y + H_OFFSET_TGT },
                         top: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y },
-                        bottom: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y + (H_OFFSET * 2) }
+                        bottom: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y + (H_OFFSET_TGT * 2) }
                     };
 
-                    // Determine relationship
                     const dx = nextPos.x - currentPos.x;
                     const dy = nextPos.y - currentPos.y;
 
                     let start, end, cp1, cp2;
 
-                    // Logic:
-                    // 1. If Target is clearly to the RIGHT -> Connect Src.Right to Tgt.Left
-                    // 2. If Target is clearly to the LEFT -> Connect Src.Left to Tgt.Right
-                    // 3. If Target is clearly BELOW -> Connect Src.Bottom to Tgt.Top
-                    
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        // Horizontal dominant
-                        if (dx > 0) {
-                            // Target is to the Right
-                            start = src.right;
-                            end = tgt.left;
-                            // Control points: extend horizontally
-                            cp1 = { x: start.x + 80, y: start.y };
-                            cp2 = { x: end.x - 80, y: end.y };
+                    // If nodes are far apart vertically (> 200px), prefer Top/Bottom connections
+                    if (Math.abs(dy) > 200) {
+                        if (dy > 0) {
+                            // Target is below
+                            start = src.bottom;
+                            end = tgt.top;
+                            cp1 = { x: start.x, y: start.y + 100 };
+                            cp2 = { x: end.x, y: end.y - 100 };
                         } else {
-                            // Target is to the Left
-                            start = src.left;
-                            end = tgt.right;
-                            cp1 = { x: start.x - 80, y: start.y };
-                            cp2 = { x: end.x + 80, y: end.y };
+                            // Target is above (unlikely in this flow but possible)
+                            start = src.top;
+                            end = tgt.bottom;
+                            cp1 = { x: start.x, y: start.y - 100 };
+                            cp2 = { x: end.x, y: end.y + 100 };
                         }
                     } else {
-                        // Vertical dominant (probably next row)
-                        // Connect Bottom to Top
-                        start = src.bottom; // Approximate bottom edge
-                        end = tgt.top;
-                        cp1 = { x: start.x, y: start.y + 80 }; // Down
-                        cp2 = { x: end.x, y: end.y - 80 }; // Up from target
+                        // Horizontal dominant
+                        if (dx > 0) {
+                            // Target is Right
+                            start = src.right;
+                            end = tgt.left;
+                            const dist = Math.abs(end.x - start.x);
+                            cp1 = { x: start.x + dist/2, y: start.y };
+                            cp2 = { x: end.x - dist/2, y: end.y };
+                        } else {
+                            // Target is Left
+                            start = src.left;
+                            end = tgt.right;
+                            const dist = Math.abs(end.x - start.x);
+                            cp1 = { x: start.x - dist/2, y: start.y };
+                            cp2 = { x: end.x + dist/2, y: end.y };
+                        }
                     }
 
                     return (
@@ -222,16 +223,13 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                       key={event.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="absolute z-10 cursor-grab active:cursor-grabbing draggable-card" // Added class for exclusion
+                      className="absolute z-10 cursor-grab active:cursor-grabbing draggable-card"
                       drag
                       dragMomentum={false} 
                       dragElastic={0}
                       onDrag={(e, info) => handleDrag(event.id, info)}
-                      // Use e.stopPropagation to be extra safe, though 'excluded' in panning handles it mostly
-                      onPointerDownCapture={(e) => {
-                        // This prevents the click from propagating to the canvas pan handler
-                        e.stopPropagation();
-                      }}
+                      // Remove pointer capture stopPropagation as it conflicts with drag sometimes
+                      // Rely on 'draggable-card' exclusion in PanWrapper
                       style={{
                         x: pos.x,
                         y: pos.y,
