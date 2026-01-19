@@ -88,19 +88,19 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
         <div className="flex gap-2 mb-3 px-1">
           <Button 
             variant="ghost" 
-            size="sm" 
-            className="h-8 gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+            size="icon" 
+            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+            title="Attach"
           >
-            <Paperclip className="w-3.5 h-3.5" />
-            Attach
+            <Paperclip className="w-4 h-4" />
           </Button>
           <Button 
             variant="ghost" 
-            size="sm" 
-            className="h-8 gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+            size="icon" 
+            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+            title="Search"
           >
-            <Globe className="w-3.5 h-3.5" />
-            Search
+            <Globe className="w-4 h-4" />
           </Button>
         </div>
         <form onSubmit={handleSubmit} className="relative">
