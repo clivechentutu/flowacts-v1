@@ -10,17 +10,18 @@ interface AlertCardProps {
 
 export function AlertCard({ title, content, timestamp, isLast }: AlertCardProps) {
   return (
-    <CardBase isLast={isLast} className="border-amber-200 bg-amber-50/30">
-      <div className="p-5 flex gap-4">
-        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0 animate-pulse">
-          <AlertTriangle className="w-5 h-5" />
-        </div>
-        <div className="flex-1 space-y-2">
-          <div className="flex justify-between items-start">
-            <h4 className="font-heading font-bold text-amber-900 text-sm uppercase tracking-wide">{title}</h4>
-            <span className="text-xs text-amber-400 font-mono">{timestamp}</span>
+    <CardBase isLast={isLast} className="border-amber-200 bg-amber-50/30 min-w-[280px]">
+      <div className="p-5 flex flex-col gap-3 h-full justify-center">
+        <div className="flex items-center justify-between mb-1">
+          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 animate-pulse">
+            <AlertTriangle className="w-4 h-4" />
           </div>
-          <p className="text-amber-800 leading-relaxed text-sm">
+          <span className="text-[10px] text-amber-400 font-mono">{timestamp}</span>
+        </div>
+        
+        <div className="space-y-2">
+          <h4 className="font-heading font-bold text-amber-900 text-xs uppercase tracking-wide">{title}</h4>
+          <p className="text-amber-800 leading-relaxed text-sm font-medium">
             {content}
           </p>
         </div>

@@ -3,7 +3,6 @@ import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
 import { InsightCard } from "./cards/InsightCard";
 import { AlertCard } from "./cards/AlertCard";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion } from "framer-motion";
 
 interface CanvasProps {
@@ -12,29 +11,39 @@ interface CanvasProps {
 
 export function Canvas({ events }: CanvasProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when events change
+  // Auto-scroll to right when events change
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        left: scrollRef.current.scrollWidth,
+        behavior: "smooth"
+      });
+    }
   }, [events]);
 
   return (
     <div className="h-full bg-slate-50 relative overflow-hidden flex flex-col">
+      {/* Background Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
       
-      <div className="flex-1 overflow-y-auto px-8 py-12 custom-scrollbar">
-        <div className="max-w-3xl mx-auto pl-4">
-          <div className="space-y-0">
+      {/* Horizontal Scroll Container */}
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar flex items-center px-20 relative z-10"
+      >
+        <div className="flex items-center space-x-0 min-w-max h-full py-20">
              {events.filter(e => ['action', 'insight', 'alert'].includes(e.type)).map((event, index, filteredArr) => {
                const isLast = index === filteredArr.length - 1;
                
                return (
                  <motion.div 
                    key={event.id}
-                   initial={{ opacity: 0, x: -20 }}
+                   initial={{ opacity: 0, x: 50 }}
                    animate={{ opacity: 1, x: 0 }}
-                   transition={{ delay: index * 0.1 }}
+                   transition={{ delay: index * 0.1, type: "spring", stiffness: 100 }}
+                   className="h-auto flex items-center"
                  >
                    {event.type === 'action' && (
                      <ActionCard 
@@ -65,8 +74,7 @@ export function Canvas({ events }: CanvasProps) {
                  </motion.div>
                );
              })}
-             <div ref={bottomRef} className="h-20" />
-          </div>
+             <div ref={endRef} className="w-20" />
         </div>
       </div>
     </div>

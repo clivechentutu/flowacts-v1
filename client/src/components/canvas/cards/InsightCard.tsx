@@ -1,5 +1,5 @@
 import { CardBase } from "./CardBase";
-import { Sparkles, Lightbulb } from "lucide-react";
+import { Lightbulb } from "lucide-react";
 
 interface InsightCardProps {
   title: string;
@@ -10,17 +10,18 @@ interface InsightCardProps {
 
 export function InsightCard({ title, content, timestamp, isLast }: InsightCardProps) {
   return (
-    <CardBase isLast={isLast} className="border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30">
-      <div className="p-5 flex gap-4">
-        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0">
-          <Lightbulb className="w-5 h-5" />
-        </div>
-        <div className="flex-1 space-y-2">
-          <div className="flex justify-between items-start">
-            <h4 className="font-heading font-bold text-indigo-950 text-sm uppercase tracking-wide">{title}</h4>
-            <span className="text-xs text-indigo-300 font-mono">{timestamp}</span>
+    <CardBase isLast={isLast} className="border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30 min-w-[280px]">
+      <div className="p-5 flex flex-col gap-3 h-full justify-center">
+        <div className="flex items-center justify-between mb-1">
+          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+            <Lightbulb className="w-4 h-4" />
           </div>
-          <p className="text-indigo-900/80 leading-relaxed text-sm">
+          <span className="text-[10px] text-indigo-300 font-mono">{timestamp}</span>
+        </div>
+        
+        <div className="space-y-2">
+          <h4 className="font-heading font-bold text-indigo-950 text-xs uppercase tracking-wide">{title}</h4>
+          <p className="text-indigo-900/80 leading-relaxed text-sm font-medium">
             {content}
           </p>
         </div>
