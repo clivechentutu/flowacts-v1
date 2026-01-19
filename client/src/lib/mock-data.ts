@@ -74,13 +74,7 @@ export const SCENARIOS: Scenario[] = [
         timestamp: '10:02 AM',
         metadata: { 'Elements': '3 Cards', 'CTA': 'Start Free Trial' }
       },
-      {
-        id: 'evt-7',
-        type: 'insight',
-        title: 'INSIGHT',
-        content: 'The pricing page uses social proof effectively by showing logos of well-known customers directly below the CTA.',
-        timestamp: '10:02 AM'
-      },
+      // REMOVED standalone Insight Card - now merged into previous Action
       {
         id: 'evt-8',
         type: 'action',
@@ -101,13 +95,14 @@ export const SCENARIOS: Scenario[] = [
         content: 'Good question. Testing with a weak password... The system provided an inline validation error.',
         timestamp: '10:04 AM'
       },
-      {
-        id: 'evt-11',
-        type: 'alert',
-        title: 'UX FRICTION',
-        content: 'Password strength requirement is not explicitly stated, only shown after a failed attempt. This could cause minor friction.',
-        timestamp: '10:04 AM'
-      },
+      // REMOVED Alert Card for now as per instructions to hide intermediate states
+      // {
+      //   id: 'evt-11',
+      //   type: 'alert',
+      //   title: 'UX FRICTION',
+      //   content: 'Password strength requirement is not explicitly stated, only shown after a failed attempt. This could cause minor friction.',
+      //   timestamp: '10:04 AM'
+      // },
       {
         id: 'evt-12',
         type: 'user',
@@ -165,20 +160,22 @@ export const SCENARIOS: Scenario[] = [
         image: ecommerceProductPage,
         timestamp: '2:01 PM'
       },
-      {
-        id: 'ad-6',
-        type: 'alert',
-        title: 'CRITICAL MISMATCH',
-        content: 'Ad promises "50% OFF" but landing page headline says "up to 40%". This is a major trust-breaker and potential legal risk.',
-        timestamp: '2:01 PM'
-      },
-      {
-        id: 'ad-7',
-        type: 'insight',
-        title: 'Recommendation',
-        content: 'Update the landing page header immediately to match the ad creative, or pause the ad campaign.',
-        timestamp: '2:02 PM'
-      }
+      // REMOVED standalone Alert
+      // {
+      //   id: 'ad-6',
+      //   type: 'alert',
+      //   title: 'CRITICAL MISMATCH',
+      //   content: 'Ad promises "50% OFF" but landing page headline says "up to 40%". This is a major trust-breaker and potential legal risk.',
+      //   timestamp: '2:01 PM'
+      // },
+      // REMOVED standalone Insight
+      // {
+      //   id: 'ad-7',
+      //   type: 'insight',
+      //   title: 'Recommendation',
+      //   content: 'Update the landing page header immediately to match the ad creative, or pause the ad campaign.',
+      //   timestamp: '2:02 PM'
+      // }
     ]
   }
 ];

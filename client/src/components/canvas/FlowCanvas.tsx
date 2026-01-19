@@ -1,8 +1,6 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
-import { InsightCard } from "./cards/InsightCard";
-import { AlertCard } from "./cards/AlertCard";
 import { motion } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import { ZoomIn, ZoomOut, Move } from "lucide-react";
@@ -12,8 +10,8 @@ interface FlowCanvasProps {
 }
 
 // Configuration for layout
-const CARD_WIDTH = 320;
-const CARD_HEIGHT = 400; 
+const CARD_WIDTH = 360; // Slightly wider for ActionCard
+const CARD_HEIGHT = 500; // Taller to accommodate Insight section
 const GAP_X = 150;
 const GAP_Y = 150;
 const CARDS_PER_ROW = 3;
@@ -49,9 +47,9 @@ const Controls = () => {
 };
 
 export function FlowCanvas({ events }: FlowCanvasProps) {
-  // Filter only relevant events
+  // Filter only ACTION events now, as Insight/Alert are merged or hidden
   const canvasEvents = useMemo(() => 
-    events.filter(e => ['action', 'insight', 'alert'].includes(e.type)), 
+    events.filter(e => ['action'].includes(e.type)), 
   [events]);
 
   // Track positions in state
@@ -144,13 +142,13 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     if (!currentPos || !nextPos) return null;
 
                     // DYNAMIC ANCHOR LOGIC
-                    const H_OFFSET_SRC = event.type === 'action' ? 200 : 100;
-                    const H_OFFSET_TGT = nextEvent.type === 'action' ? 200 : 100;
+                    const H_OFFSET_SRC = 250; // Roughly center of image area + padding
+                    const H_OFFSET_TGT = 250;
 
                     const src = {
                         right: { x: currentPos.x + CARD_WIDTH, y: currentPos.y + H_OFFSET_SRC },
                         left: { x: currentPos.x, y: currentPos.y + H_OFFSET_SRC },
-                        bottom: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y + (H_OFFSET_SRC * 2) },
+                        bottom: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y + 500 }, // Approx bottom of card
                         top: { x: currentPos.x + CARD_WIDTH/2, y: currentPos.y }
                     };
 
@@ -158,7 +156,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                         left: { x: nextPos.x, y: nextPos.y + H_OFFSET_TGT },
                         right: { x: nextPos.x + CARD_WIDTH, y: nextPos.y + H_OFFSET_TGT },
                         top: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y },
-                        bottom: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y + (H_OFFSET_TGT * 2) }
+                        bottom: { x: nextPos.x + CARD_WIDTH/2, y: nextPos.y + 500 }
                     };
 
                     const dx = nextPos.x - currentPos.x;
@@ -166,32 +164,26 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
 
                     let start, end, cp1, cp2;
 
-                    // If nodes are far apart vertically (> 200px), prefer Top/Bottom connections
-                    if (Math.abs(dy) > 200) {
+                    if (Math.abs(dy) > 300) { // Increased threshold for vertical wrap
                         if (dy > 0) {
-                            // Target is below
                             start = src.bottom;
                             end = tgt.top;
                             cp1 = { x: start.x, y: start.y + 100 };
                             cp2 = { x: end.x, y: end.y - 100 };
                         } else {
-                            // Target is above (unlikely in this flow but possible)
                             start = src.top;
                             end = tgt.bottom;
                             cp1 = { x: start.x, y: start.y - 100 };
                             cp2 = { x: end.x, y: end.y + 100 };
                         }
                     } else {
-                        // Horizontal dominant
                         if (dx > 0) {
-                            // Target is Right
                             start = src.right;
                             end = tgt.left;
                             const dist = Math.abs(end.x - start.x);
                             cp1 = { x: start.x + dist/2, y: start.y };
                             cp2 = { x: end.x - dist/2, y: end.y };
                         } else {
-                            // Target is Left
                             start = src.left;
                             end = tgt.right;
                             const dist = Math.abs(end.x - start.x);
@@ -228,8 +220,6 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                       dragMomentum={false} 
                       dragElastic={0}
                       onDrag={(e, info) => handleDrag(event.id, info)}
-                      // Remove pointer capture stopPropagation as it conflicts with drag sometimes
-                      // Rely on 'draggable-card' exclusion in PanWrapper
                       style={{
                         x: pos.x,
                         y: pos.y,
@@ -241,32 +231,14 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     >
                       <div className="pointer-events-none"> 
                          <div className="pointer-events-auto">
-                            {event.type === 'action' && (
-                              <ActionCard 
-                                title={event.title || 'Action'} 
-                                content={event.content}
-                                image={event.image!}
-                                timestamp={event.timestamp}
-                                metadata={event.metadata}
-                                isLast={true} 
-                              />
-                            )}
-                            {event.type === 'insight' && (
-                              <InsightCard 
-                                title={event.title || 'Insight'}
-                                content={event.content}
-                                timestamp={event.timestamp}
-                                isLast={true}
-                              />
-                            )}
-                            {event.type === 'alert' && (
-                              <AlertCard 
-                                title={event.title || 'Alert'}
-                                content={event.content}
-                                timestamp={event.timestamp}
-                                isLast={true}
-                              />
-                            )}
+                            <ActionCard 
+                              title={event.title || 'Action'} 
+                              content={event.content}
+                              image={event.image!}
+                              timestamp={event.timestamp}
+                              metadata={event.metadata}
+                              isLast={true} 
+                            />
                          </div>
                       </div>
                         

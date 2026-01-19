@@ -1,6 +1,6 @@
 import { CardBase } from "./CardBase";
 import { Badge } from "@/components/ui/badge";
-import { ZoomIn } from "lucide-react";
+import { ZoomIn, Sparkles } from "lucide-react";
 
 interface ActionCardProps {
   title: string;
@@ -13,8 +13,8 @@ interface ActionCardProps {
 
 export function ActionCard({ title, content, image, timestamp, metadata, isLast }: ActionCardProps) {
   return (
-    <CardBase isLast={isLast} className="min-w-[360px] max-w-[360px]">
-      <div className="p-3 border-b border-border/50 flex justify-between items-center bg-muted/20">
+    <CardBase isLast={isLast} className="min-w-[360px] max-w-[360px] flex flex-col h-full">
+      <div className="p-3 border-b border-border/50 flex justify-between items-center bg-muted/20 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-white text-[10px] h-5 px-1.5 font-mono text-muted-foreground uppercase tracking-wider">
             Action
@@ -24,7 +24,7 @@ export function ActionCard({ title, content, image, timestamp, metadata, isLast 
         <span className="text-[10px] text-muted-foreground font-mono">{timestamp}</span>
       </div>
       
-      <div className="p-0">
+      <div className="p-0 flex-shrink-0">
         <div className="relative aspect-[16/10] overflow-hidden bg-muted group cursor-zoom-in">
           <img src={image} alt={title} className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
           
@@ -36,7 +36,7 @@ export function ActionCard({ title, content, image, timestamp, metadata, isLast 
         </div>
       </div>
 
-      <div className="p-4 flex flex-col gap-2">
+      <div className="p-4 flex flex-col gap-2 flex-1">
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{content}</p>
         
         {metadata && (
@@ -49,6 +49,19 @@ export function ActionCard({ title, content, image, timestamp, metadata, isLast 
             ))}
           </div>
         )}
+      </div>
+
+      {/* Insight Section - Now part of every card */}
+      <div className="bg-indigo-50/50 border-t border-indigo-100 p-3 flex gap-3 mt-auto">
+        <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 mt-0.5">
+          <Sparkles className="w-3.5 h-3.5" />
+        </div>
+        <div className="flex flex-col gap-1">
+           <span className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">AI Insight</span>
+           <p className="text-xs text-indigo-900/80 leading-relaxed">
+             Analyzing this step reveals typical user behavior patterns aligning with successful conversion paths.
+           </p>
+        </div>
       </div>
     </CardBase>
   );
