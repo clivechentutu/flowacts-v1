@@ -120,30 +120,36 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
                   <Paperclip className="w-4 h-4" />
                 </Button>
                 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className={cn(
-                    "h-8 px-2 text-xs font-medium rounded-lg gap-1.5 transition-colors border border-transparent",
-                    isThinkingMode 
-                      ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                  )}
-                  onClick={() => setIsThinkingMode(!isThinkingMode)}
-                  title={isThinkingMode ? "Switch to Fast Mode" : "Switch to Thinking Mode"}
+                <div 
+                   role="button"
+                   onClick={() => setIsThinkingMode(!isThinkingMode)}
+                   className="h-8 bg-muted/30 hover:bg-muted/50 border border-border/30 rounded-lg p-0.5 flex items-center relative cursor-pointer select-none ml-1"
+                   title={isThinkingMode ? "Switch to Fast Mode" : "Switch to Thinking Mode"}
                 >
-                  {isThinkingMode ? (
-                    <>
+                   {/* Active Indicator Background */}
+                   <div 
+                      className={cn(
+                        "absolute top-0.5 bottom-0.5 w-[28px] bg-background shadow-sm border border-border/40 rounded-[6px] transition-all duration-300 ease-out",
+                        isThinkingMode ? "translate-x-[28px]" : "translate-x-0"
+                      )} 
+                   />
+                   
+                   {/* Fast Icon */}
+                   <div className={cn(
+                      "w-7 h-full flex items-center justify-center relative z-10 transition-colors duration-300",
+                      !isThinkingMode ? "text-amber-500" : "text-muted-foreground/60"
+                   )}>
+                      <Zap className={cn("w-3.5 h-3.5", !isThinkingMode && "fill-current")} />
+                   </div>
+                   
+                   {/* Thinking Icon */}
+                   <div className={cn(
+                      "w-7 h-full flex items-center justify-center relative z-10 transition-colors duration-300",
+                      isThinkingMode ? "text-indigo-500" : "text-muted-foreground/60"
+                   )}>
                       <Brain className="w-3.5 h-3.5" />
-                      <span>Thinking</span>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-3.5 h-3.5" />
-                      <span>Fast</span>
-                    </>
-                  )}
-                </Button>
+                   </div>
+                </div>
              </div>
              
              <div className="flex gap-1">
