@@ -18,15 +18,29 @@ import {
   BarChart,
   Search,
   MessageSquare,
-  Play
+  Play,
+  Target,
+  BookOpen,
+  Eye,
+  CheckCircle,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
+const CATEGORIES = [
+  { id: 'competitor', label: '竞品调研', icon: Layout },
+  { id: 'product', label: '产品优化', icon: Target },
+  { id: 'learning', label: '结构化学习', icon: BookOpen },
+  { id: 'ad', label: '广告巡检', icon: Eye },
+  { id: 'fact', label: '事实多元核查', icon: CheckCircle },
+];
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'home' | 'experience' | 'library'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
+  const [activeCategory, setActiveCategory] = useState('competitor');
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const { toast } = useToast();
   const [homeInput, setHomeInput] = useState("");
@@ -68,6 +82,25 @@ export default function Home() {
     setActiveTab('experience');
   };
 
+  const getFilteredScenarios = () => {
+    // Demo logic: mapping categories to available scenarios or creating placeholders
+    if (activeCategory === 'competitor') return [SCENARIOS[0]];
+    if (activeCategory === 'ad') return [SCENARIOS[1]];
+    
+    // For other categories, show placeholders or reuse for demo purposes
+    if (activeCategory === 'product') return [
+      { ...SCENARIOS[0], id: 'prod-1', name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' }
+    ];
+    if (activeCategory === 'learning') return [
+      { ...SCENARIOS[0], id: 'learn-1', name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' }
+    ];
+    if (activeCategory === 'fact') return [
+      { ...SCENARIOS[1], id: 'fact-1', name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' }
+    ];
+    
+    return [];
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
@@ -76,7 +109,7 @@ export default function Home() {
             {/* Background Decor */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.2] pointer-events-none" />
             
-            <div className="w-full max-w-3xl px-6 py-12 flex flex-col items-center gap-10 relative z-10">
+            <div className="w-full max-w-4xl px-6 py-12 flex flex-col items-center gap-10 relative z-10">
               {/* Header */}
               <div className="text-center space-y-4">
                 <div className="inline-flex items-center justify-center p-2 bg-primary/5 rounded-full mb-4">
@@ -92,7 +125,7 @@ export default function Home() {
               </div>
 
               {/* Large Chat Input */}
-              <div className="w-full relative group">
+              <div className="w-full relative group max-w-3xl">
                 <div className="relative flex flex-col bg-card border border-border shadow-xl rounded-2xl focus-within:ring-2 focus-within:ring-primary/20 transition-all overflow-hidden">
                   <textarea 
                     value={homeInput}
@@ -149,40 +182,75 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Common Scenarios */}
-              <div className="w-full space-y-4">
-                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pl-1">Suggested Scenarios</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {SCENARIOS.map((scenario, idx) => (
+              {/* Categorized Scenarios */}
+              <div className="w-full max-w-3xl space-y-6 mt-4">
+                 {/* Tabs */}
+                 <div className="flex items-center justify-center md:justify-start gap-1 p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar mx-auto md:mx-0">
+                    {CATEGORIES.map(category => (
+                        <button
+                            key={category.id}
+                            onClick={() => setActiveCategory(category.id)}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                                activeCategory === category.id 
+                                    ? "bg-background text-primary shadow-sm ring-1 ring-border" 
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            )}
+                        >
+                            <category.icon className="w-4 h-4" />
+                            {category.label}
+                        </button>
+                    ))}
+                 </div>
+
+                 {/* Cards Grid */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    {getFilteredScenarios().map((scenario, idx) => (
                         <div 
                             key={scenario.id}
                             onClick={() => handleScenarioClick(scenario.id)}
-                            className="group relative p-4 bg-card hover:bg-muted/50 border border-border rounded-xl cursor-pointer transition-all hover:border-primary/50 hover:shadow-md flex items-start gap-4"
+                            className="group relative p-5 bg-card hover:bg-muted/50 border border-border rounded-2xl cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5 flex flex-col gap-4"
                         >
-                            <div className={cn(
-                                "h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-colors",
-                                idx % 2 === 0 ? "bg-blue-500/10 text-blue-600" : "bg-purple-500/10 text-purple-600"
-                            )}>
-                                {idx % 2 === 0 ? <Layout className="w-5 h-5" /> : <BarChart className="w-5 h-5" />}
+                            <div className="flex items-start justify-between">
+                                <div className={cn(
+                                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                                    idx % 2 === 0 ? "bg-primary/10 text-primary" : "bg-purple-500/10 text-purple-600"
+                                )}>
+                                    {activeCategory === 'competitor' ? <Layout className="w-5 h-5" /> : 
+                                     activeCategory === 'ad' ? <Eye className="w-5 h-5" /> : 
+                                     activeCategory === 'learning' ? <BookOpen className="w-5 h-5" /> :
+                                     <Sparkles className="w-5 h-5" />}
+                                </div>
+                                <div className="px-2 py-1 bg-muted rounded-md text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                                    Playback Case
+                                </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-1">
-                                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                            
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors truncate">
                                         {scenario.name}
                                     </h4>
-                                    <Play className="w-3 h-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+                                    <Play className="w-4 h-4 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
                                 </div>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
+                                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                                     {scenario.goal} - Simulating {scenario.persona}
                                 </p>
+                            </div>
+
+                            <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-muted-foreground/70">
+                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                <span>Completed 2m ago</span>
                             </div>
                         </div>
                     ))}
                     
                     {/* Placeholder for 'New' */}
-                    <div className="group relative p-4 bg-card/50 hover:bg-muted/50 border border-dashed border-border rounded-xl cursor-pointer transition-all hover:border-primary/50 flex items-center justify-center gap-2 text-muted-foreground hover:text-primary h-full min-h-[88px]">
-                        <Plus className="w-5 h-5" />
-                        <span className="font-medium">Create Custom Scenario</span>
+                    <div className="group relative p-5 bg-card/50 hover:bg-muted/50 border border-dashed border-border rounded-2xl cursor-pointer transition-all hover:border-primary/50 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary min-h-[160px]">
+                        <div className="h-10 w-10 rounded-full bg-muted group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+                            <Plus className="w-5 h-5" />
+                        </div>
+                        <span className="font-medium text-sm">Create Custom Scenario</span>
                     </div>
                  </div>
               </div>
@@ -246,5 +314,3 @@ export default function Home() {
   );
 }
 
-// Add missing icon import
-import { Plus } from "lucide-react";
