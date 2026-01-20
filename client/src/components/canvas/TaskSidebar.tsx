@@ -30,20 +30,44 @@ export function TaskSidebar({ events }: TaskSidebarProps) {
       <div 
         className={cn(
           "absolute top-6 left-6 z-40 flex flex-col transition-all duration-300 ease-in-out bg-background/95 backdrop-blur border border-border rounded-xl shadow-lg overflow-hidden",
-          isOpen ? "w-64 max-h-[60vh]" : "w-10 h-10 rounded-lg overflow-hidden"
+          isOpen ? "w-64 max-h-[60vh]" : "w-auto h-auto rounded-lg overflow-visible bg-transparent border-0 shadow-none"
         )}
       >
-        <div className={cn("flex items-center p-2", isOpen ? "justify-between" : "justify-center h-full")}>
+        <div className={cn("flex items-center", isOpen ? "justify-between p-2 bg-background/95 backdrop-blur" : "justify-start")}>
             {!isOpen && (
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                    onClick={() => setIsOpen(true)}
-                    title="Show Tasks"
-                >
-                    <ListTodo className="h-5 w-5" />
-                </Button>
+                <div className="flex flex-col items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground relative"
+                        onClick={() => setIsOpen(true)}
+                        title="Show Tasks"
+                    >
+                        <ListTodo className="h-5 w-5" />
+                    </Button>
+                    
+                    {/* Collapsed Status Indicator */}
+                    {events.length > 0 && (
+                        <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-full border border-border/50 backdrop-blur-sm animate-in fade-in zoom-in duration-300">
+                             {/* Check if last event is recent/active */}
+                             {tasks.length > 0 && tasks.length < 15 ? (
+                                <>
+                                    <Loader2 className="h-3 w-3 text-emerald-500 animate-spin" />
+                                    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap max-w-[100px] truncate">
+                                        Processing Step {tasks.length}...
+                                    </span>
+                                </>
+                             ) : (
+                                <>
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
+                                        All Completed
+                                    </span>
+                                </>
+                             )}
+                        </div>
+                    )}
+                </div>
             )}
 
             {isOpen && (
