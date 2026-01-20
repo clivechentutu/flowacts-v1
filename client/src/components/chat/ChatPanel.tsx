@@ -85,24 +85,6 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
 
       {/* Input */}
       <div className="p-4 border-t border-border bg-card">
-        <div className="flex gap-2 mb-3 px-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-            title="Attach"
-          >
-            <Paperclip className="w-4 h-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-            title="Search"
-          >
-            <Globe className="w-4 h-4" />
-          </Button>
-        </div>
         <form onSubmit={handleSubmit} className="relative">
           <Input 
             value={input}
@@ -119,8 +101,23 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
             <Send className="w-4 h-4" />
           </Button>
         </form>
-        <div className="mt-2 flex justify-between items-center px-1">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground/50">Active Persona: {persona}</span>
+        <div className="mt-3 flex gap-2 px-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+            title="Attach"
+          >
+            <Paperclip className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+            title="Search"
+          >
+            <Globe className="w-4 h-4" />
+          </Button>
         </div>
       </div>
     </div>
