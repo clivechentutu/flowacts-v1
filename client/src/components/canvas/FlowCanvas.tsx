@@ -77,23 +77,22 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
         }
       });
 
-      const newPositions: {id: string, x: number, y: number}[] = [];
+      const calculatedPositions: {id: string, x: number, y: number}[] = [];
       // Track row usage: Map<row_index, max_x_in_that_row>
       const rowMaxX: Record<number, number> = {};
 
       const getNextAvailableX = (row: number) => {
-         const padding = 100;
          const lastX = rowMaxX[row] || (100 - (CARD_WIDTH + GAP_X)); 
          return lastX + CARD_WIDTH + GAP_X;
       };
 
       const processNode = (id: string, row: number) => {
-         if (newPositions.find(p => p.id === id)) return;
+         if (calculatedPositions.find(p => p.id === id)) return;
 
          const x = getNextAvailableX(row);
          const y = 100 + (row * (CARD_HEIGHT + GAP_Y));
 
-         newPositions.push({ id, x, y });
+         calculatedPositions.push({ id, x, y });
          rowMaxX[row] = x;
 
          const children = childrenMap[id] || [];
@@ -103,21 +102,11 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
              processNode(children[0], row);
              
              // Subsequent children start new rows (branches)
-             // They should start indented to align somewhat with where they branched off?
-             // Or just flow naturally?
-             // To visually show branching, let's start them at the SAME X as their sibling? 
-             // Or just start them in a new row.
-             // Let's try: new row, but push X to align with parent? 
-             // Simple version first: just new rows.
              for (let i = 1; i < children.length; i++) {
                  // Find a fresh row below
-                 const newRow = row + i; // This might conflict if main path has branches down the line. 
-                 // We need a global "max row used" tracker if we want to avoid overlap fully.
-                 // For this demo with known structure, just offset by index works nicely.
+                 const newRow = row + i; 
                  
                  // ALIGNMENT TWEAK: Start the branch slightly after the parent's X position
-                 // So it looks like it flows 'forward and down'
-                 // Manually set the "start X" for this new row to match parent's X
                  if (!rowMaxX[newRow] || rowMaxX[newRow] < x) {
                     rowMaxX[newRow] = x - (CARD_WIDTH + GAP_X); // Set "previous" card to be parent's slot
                  }
@@ -130,7 +119,11 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
       // Process all roots
       roots.forEach((rootId, i) => processNode(rootId, i * 2)); // Separate trees by rows
 
-      return newPositions;
+      // MERGE: Preserve existing positions if the user dragged them
+      return calculatedPositions.map(pos => {
+        const existing = prev.find(p => p.id === pos.id);
+        return existing || pos;
+      });
     });
   }, [canvasEvents.length]); // Re-calculate when number of events changes
 
