@@ -23,11 +23,44 @@ import {
   BookOpen,
   Eye,
   CheckCircle,
-  Plus
+  Plus,
+  FileText,
+  Image as ImageIcon,
+  Video,
+  Star,
+  Calendar,
+  Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+
+const HISTORY_TASKS = [
+    {
+        id: 'h1',
+        title: 'Q4 Competitor Analysis Report',
+        description: 'Comprehensive analysis of top 3 competitors in the SaaS market, focusing on pricing strategies and feature sets.',
+        date: '2025-01-15',
+        isFavorite: true,
+        assets: { documents: 2, images: 5, videos: 0 }
+    },
+    {
+        id: 'h2',
+        title: 'Mobile App Onboarding Flow',
+        description: 'User journey mapping for the new mobile onboarding experience, identifying drop-off points.',
+        date: '2025-01-18',
+        isFavorite: false,
+        assets: { documents: 1, images: 8, videos: 1 }
+    },
+    {
+        id: 'h3',
+        title: 'Holiday Marketing Campaign',
+        description: 'Visual assets and copy generation for the upcoming holiday season social media push.',
+        date: '2025-01-19',
+        isFavorite: true,
+        assets: { documents: 3, images: 12, videos: 2 }
+    }
+];
 
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: Sparkles },
@@ -42,6 +75,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'home' | 'experience' | 'library'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const { toast } = useToast();
   const [homeInput, setHomeInput] = useState("");
@@ -184,6 +218,80 @@ export default function Home() {
                 <p className="text-lg text-muted-foreground max-w-xl mx-auto">
                   Describe your task, analyze a competitor, or simulate a user journey to get started.
                 </p>
+              </div>
+
+              {/* History Tasks Section */}
+              <div className="w-full max-w-3xl space-y-4">
+                 <div className="flex items-center justify-between px-1">
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Recent Projects
+                    </h3>
+                    <div className="flex bg-muted/50 p-1 rounded-lg">
+                        <button 
+                            onClick={() => setActiveHistoryFilter('all')}
+                            className={cn(
+                                "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                activeHistoryFilter === 'all' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            All
+                        </button>
+                        <button 
+                            onClick={() => setActiveHistoryFilter('favorites')}
+                            className={cn(
+                                "px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1",
+                                activeHistoryFilter === 'favorites' ? "bg-background shadow-sm text-amber-500" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            <Star className="w-3 h-3 fill-current" />
+                            Favorites
+                        </button>
+                    </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {HISTORY_TASKS
+                        .filter(task => activeHistoryFilter === 'all' || task.isFavorite)
+                        .map(task => (
+                        <div key={task.id} className="group bg-card border border-border/60 hover:border-primary/30 p-4 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-[140px]">
+                            <div className="space-y-2">
+                                <div className="flex items-start justify-between">
+                                    <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1" title={task.title}>
+                                        {task.title}
+                                    </h4>
+                                    {task.isFavorite && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
+                                </div>
+                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                    {task.description}
+                                </p>
+                            </div>
+                            
+                            <div className="flex items-center justify-between pt-2 mt-auto border-t border-dashed border-border/50">
+                                <div className="flex items-center gap-3">
+                                    {task.assets.documents > 0 && (
+                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                            <FileText className="w-3 h-3" /> {task.assets.documents}
+                                        </div>
+                                    )}
+                                    {task.assets.images > 0 && (
+                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                            <ImageIcon className="w-3 h-3" /> {task.assets.images}
+                                        </div>
+                                    )}
+                                    {task.assets.videos > 0 && (
+                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                            <Video className="w-3 h-3" /> {task.assets.videos}
+                                        </div>
+                                    )}
+                                </div>
+                                <span className="text-[10px] text-muted-foreground/60 font-mono">
+                                    {task.date.slice(5)}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                 </div>
               </div>
 
               {/* Large Chat Input */}
