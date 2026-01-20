@@ -33,50 +33,17 @@ export function TaskSidebar({ events }: TaskSidebarProps) {
           isOpen ? "w-64 max-h-[60vh]" : "w-10 h-10 rounded-lg overflow-hidden"
         )}
       >
-        <div className={cn("flex items-center p-2 gap-2", isOpen ? "justify-between" : "justify-center h-full")}>
+        <div className={cn("flex items-center p-2", isOpen ? "justify-between" : "justify-center h-full")}>
             {!isOpen && (
-                <div className="relative group">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground relative z-10"
-                        onClick={() => setIsOpen(true)}
-                        title="Show Tasks"
-                    >
-                        <ListTodo className="h-5 w-5" />
-                    </Button>
-                    
-                    {/* Status Indicator Sticky to Icon */}
-                    <div className="absolute -right-1 -top-1 z-20 bg-background rounded-full shadow-sm">
-                        {tasks.length > 0 ? (
-                           // Check if the last task is still running (for demo logic)
-                           // If tasks exist, we assume the latest one is 'active' for the demo
-                           <div className="flex items-center justify-center h-4 w-4 bg-emerald-50 rounded-full border border-emerald-100">
-                             <Loader2 className="h-3 w-3 text-emerald-500 animate-spin" />
-                           </div>
-                        ) : (
-                           // If no tasks, or all done (not implemented fully in demo logic yet, but for structure)
-                           <div className="flex items-center justify-center h-4 w-4 bg-emerald-50 rounded-full border border-emerald-100">
-                             <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                           </div>
-                        )}
-                    </div>
-
-                    {/* Hover Tooltip for Running Status */}
-                    <div className="absolute left-full top-0 ml-3 bg-popover text-popover-foreground text-[10px] px-2 py-1 rounded-md shadow-md border border-border opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 flex items-center gap-1.5">
-                        {tasks.length > 0 ? (
-                            <>
-                                <Loader2 className="h-3 w-3 animate-spin text-emerald-500" />
-                                <span>Processing: {tasks[tasks.length - 1].title || `Step ${tasks.length}`}</span>
-                            </>
-                        ) : (
-                             <>
-                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                <span>All tasks completed</span>
-                            </>
-                        )}
-                    </div>
-                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => setIsOpen(true)}
+                    title="Show Tasks"
+                >
+                    <ListTodo className="h-5 w-5" />
+                </Button>
             )}
 
             {isOpen && (
