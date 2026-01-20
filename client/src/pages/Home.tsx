@@ -346,10 +346,6 @@ export default function Home() {
                             </button>
                         </div>
                     </div>
-
-                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground h-8 gap-1">
-                        View All <ChevronRight className="w-3 h-3" />
-                    </Button>
                  </div>
                  
                  <div className="relative group/history">
