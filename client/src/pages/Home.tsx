@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { TaskNavigation } from "@/components/layout/TaskNavigation";
@@ -30,7 +30,8 @@ import {
   Star,
   Calendar,
   Clock,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,7 +103,18 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 300;
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
   const [homeInput, setHomeInput] = useState("");
   const [isThinkingMode, setIsThinkingMode] = useState(false);
 
@@ -340,53 +352,72 @@ export default function Home() {
                     </Button>
                  </div>
                  
-                 <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 no-scrollbar snap-x">
-                    {HISTORY_TASKS
-                        .filter(task => activeHistoryFilter === 'all' || task.isFavorite)
-                        .map(task => (
-                        <div 
-                            key={task.id} 
-                            className="snap-start shrink-0 w-[280px] group bg-card border border-border/60 hover:border-primary/30 p-4 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-[140px]"
-                        >
-                            <div className="space-y-2">
-                                <div className="flex items-start justify-between">
-                                    <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1" title={task.title}>
-                                        {task.title}
-                                    </h4>
-                                    {task.isFavorite && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
+                 <div className="relative group/history">
+                    <div 
+                        ref={scrollContainerRef}
+                        className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 no-scrollbar snap-x scroll-smooth"
+                    >
+                        {HISTORY_TASKS
+                            .filter(task => activeHistoryFilter === 'all' || task.isFavorite)
+                            .map(task => (
+                            <div 
+                                key={task.id} 
+                                className="snap-start shrink-0 w-[280px] group bg-card border border-border/60 hover:border-primary/30 p-4 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-[140px]"
+                            >
+                                <div className="space-y-2">
+                                    <div className="flex items-start justify-between">
+                                        <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1" title={task.title}>
+                                            {task.title}
+                                        </h4>
+                                        {task.isFavorite && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                        {task.description}
+                                    </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                                    {task.description}
-                                </p>
-                            </div>
-                            
-                            <div className="flex items-center justify-between pt-2 mt-auto border-t border-dashed border-border/50">
-                                <div className="flex items-center gap-3">
-                                    {task.assets.documents > 0 && (
-                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                            <FileText className="w-3 h-3" /> {task.assets.documents}
-                                        </div>
-                                    )}
-                                    {task.assets.images > 0 && (
-                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                            <ImageIcon className="w-3 h-3" /> {task.assets.images}
-                                        </div>
-                                    )}
-                                    {task.assets.videos > 0 && (
-                                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                            <Video className="w-3 h-3" /> {task.assets.videos}
-                                        </div>
-                                    )}
+                                
+                                <div className="flex items-center justify-between pt-2 mt-auto border-t border-dashed border-border/50">
+                                    <div className="flex items-center gap-3">
+                                        {task.assets.documents > 0 && (
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <FileText className="w-3 h-3" /> {task.assets.documents}
+                                            </div>
+                                        )}
+                                        {task.assets.images > 0 && (
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <ImageIcon className="w-3 h-3" /> {task.assets.images}
+                                            </div>
+                                        )}
+                                        {task.assets.videos > 0 && (
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <Video className="w-3 h-3" /> {task.assets.videos}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground/60 font-mono">
+                                        {task.date.slice(5)}
+                                    </span>
                                 </div>
-                                <span className="text-[10px] text-muted-foreground/60 font-mono">
-                                    {task.date.slice(5)}
-                                </span>
                             </div>
-                        </div>
-                    ))}
-                    
-                    {/* Spacer for right padding in scroll view */}
-                    <div className="w-2 shrink-0" />
+                        ))}
+                        
+                        {/* Spacer for right padding in scroll view */}
+                        <div className="w-2 shrink-0" />
+                    </div>
+
+                    {/* Navigation Arrows */}
+                    <button 
+                        onClick={() => scroll('left')}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 h-8 w-8 rounded-full bg-background border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all opacity-0 group-hover/history:opacity-100 z-20"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button 
+                        onClick={() => scroll('right')}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 h-8 w-8 rounded-full bg-background border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all opacity-0 group-hover/history:opacity-100 z-20"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
                  </div>
               </div>
 
