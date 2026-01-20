@@ -238,11 +238,11 @@ export default function Home() {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="flex flex-col items-center justify-center h-full w-full bg-background relative overflow-y-auto">
+          <div className="flex flex-col items-center h-full w-full bg-background relative overflow-y-auto">
             {/* Background Decor */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.2] pointer-events-none" />
             
-            <div className="w-full max-w-[1400px] px-6 py-12 flex flex-col items-center gap-10 relative z-10">
+            <div className="w-full max-w-[1400px] px-6 py-20 flex flex-col items-center gap-10 relative z-10">
               {/* Header */}
               <div className="text-center space-y-4">
                 <div className="inline-flex items-center justify-center p-2 bg-primary/5 rounded-full mb-4">
