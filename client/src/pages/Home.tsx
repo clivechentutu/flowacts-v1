@@ -206,32 +206,37 @@ export default function Home() {
       }));
     };
 
-    let baseScenarios: typeof SCENARIOS = [];
+    let allScenarios: typeof SCENARIOS = [];
+    
+    // Define scenarios for each category
+    const competitorScenarios = [SCENARIOS[0], ...generateDummies(SCENARIOS[0], 2, 'comp')];
+    const adScenarios = [SCENARIOS[1], ...generateDummies(SCENARIOS[1], 2, 'ad')];
+    const productScenarios = generateDummies({ ...SCENARIOS[0], name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' }, 2, 'prod');
+    const learningScenarios = generateDummies({ ...SCENARIOS[0], name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' }, 2, 'learn');
+    const factScenarios = generateDummies({ ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' }, 2, 'fact');
 
     if (activeCategory === 'all') {
-        // Combine a mix for 'All'
-        baseScenarios = [
-            SCENARIOS[0], 
-            SCENARIOS[1], 
-            ...generateDummies(SCENARIOS[0], 2, 'comp-dummy'),
-            ...generateDummies(SCENARIOS[1], 2, 'ad-dummy')
-        ];
+        return [
+            ...competitorScenarios.slice(0, 1),
+            ...adScenarios.slice(0, 1),
+            ...productScenarios.slice(0, 1),
+            ...learningScenarios.slice(0, 1),
+            ...factScenarios.slice(0, 1),
+            ...competitorScenarios.slice(1, 2)
+        ].slice(0, 6);
     } else if (activeCategory === 'competitor') {
-        baseScenarios = [SCENARIOS[0], ...generateDummies(SCENARIOS[0], 5, 'comp')];
+        return competitorScenarios;
     } else if (activeCategory === 'ad') {
-        baseScenarios = [SCENARIOS[1], ...generateDummies(SCENARIOS[1], 5, 'ad')];
+        return adScenarios;
     } else if (activeCategory === 'product') {
-        const template = { ...SCENARIOS[0], name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' };
-        baseScenarios = generateDummies(template, 6, 'prod');
+        return productScenarios;
     } else if (activeCategory === 'learning') {
-        const template = { ...SCENARIOS[0], name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' };
-        baseScenarios = generateDummies(template, 6, 'learn');
+        return learningScenarios;
     } else if (activeCategory === 'fact') {
-         const template = { ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' };
-         baseScenarios = generateDummies(template, 6, 'fact');
+        return factScenarios;
     }
     
-    return baseScenarios.slice(0, 6);
+    return [];
   };
 
   const renderContent = () => {
