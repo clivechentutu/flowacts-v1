@@ -35,40 +35,15 @@ export function TaskSidebar({ events }: TaskSidebarProps) {
       >
         <div className={cn("flex items-center p-2", isOpen ? "justify-between" : "justify-center h-full")}>
             {!isOpen && (
-                <div className="relative">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => setIsOpen(true)}
-                        title="Show Tasks"
-                    >
-                        <ListTodo className="h-5 w-5" />
-                    </Button>
-                    
-                    {/* Collapsed State Status Indicator */}
-                    <div className="absolute -right-2 -top-1 flex items-center bg-background/80 backdrop-blur rounded-full px-1.5 py-0.5 border border-border shadow-sm">
-                         {/* Show last running task or completed check */}
-                         {tasks.length > 0 && (
-                            tasks[tasks.length - 1] === events.filter(e => e.type === 'action').pop() ? ( // Logic check: is the last visible task the active one?
-                                // Assuming active:
-                                <div className="flex items-center gap-1">
-                                    <Loader2 className="w-3 h-3 text-emerald-500 animate-spin" />
-                                </div>
-                            ) : (
-                                <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                            )
-                         )}
-                         {/* Simplified for demo: Just always show running if tasks exist, or check if done */}
-                         {/* Actually, let's use the same logic as the expanded list: last item is active */}
-                         <div className="flex items-center gap-1.5">
-                            <Loader2 className="w-3 h-3 text-emerald-500 animate-spin" />
-                            <span className="text-[9px] font-medium text-muted-foreground whitespace-nowrap max-w-[60px] truncate">
-                                Processing...
-                            </span>
-                         </div>
-                    </div>
-                </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => setIsOpen(true)}
+                    title="Show Tasks"
+                >
+                    <ListTodo className="h-5 w-5" />
+                </Button>
             )}
 
             {isOpen && (
