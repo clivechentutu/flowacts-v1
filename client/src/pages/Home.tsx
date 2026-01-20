@@ -130,7 +130,7 @@ export default function Home() {
             {/* Background Decor */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.2] pointer-events-none" />
             
-            <div className="w-full max-w-4xl px-6 py-12 flex flex-col items-center gap-10 relative z-10">
+            <div className="w-full max-w-[1400px] px-6 py-12 flex flex-col items-center gap-10 relative z-10">
               {/* Header */}
               <div className="text-center space-y-4">
                 <div className="inline-flex items-center justify-center p-2 bg-primary/5 rounded-full mb-4">
@@ -204,9 +204,9 @@ export default function Home() {
               </div>
 
               {/* Categorized Scenarios */}
-              <div className="w-full max-w-3xl space-y-6 mt-4">
+              <div className="w-full space-y-6 mt-4">
                  {/* Tabs */}
-                 <div className="flex items-center justify-center md:justify-start gap-1 p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar mx-auto md:mx-0">
+                 <div className="flex items-center justify-center gap-1 p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar mx-auto w-full max-w-fit">
                     {CATEGORIES.map(category => (
                         <button
                             key={category.id}
@@ -225,7 +225,7 @@ export default function Home() {
                  </div>
 
                  {/* Cards Grid */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
                     {getFilteredScenarios().map((scenario, idx) => (
                         <div 
                             key={scenario.id}
