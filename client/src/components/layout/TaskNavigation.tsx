@@ -39,27 +39,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function TaskNavigation() {
+export function TaskNavigation({ activeTab }: { activeTab: string }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [filterFavorites, setFilterFavorites] = useState(false);
   
-  const [tasks, setTasks] = useState([
-    { id: 1, icon: FileText, label: 'Reverse Photo Search Keywords Optimization', starred: false, status: 'completed' },
-    { id: 2, icon: Brain, label: '挖掘AI领域新机会及适合项目方向', starred: false, status: 'running' },
-    { id: 3, icon: LayoutGrid, label: 'Twitter Viewer Subscription Pricing Research', starred: true, status: 'completed' },
-    { id: 4, icon: SearchIcon, label: 'AI用户角色模拟分析工具市场调研', starred: true, status: 'pending' },
-    { id: 5, icon: FileText, label: '网站数据存储和删除操作查询及整合', starred: false, status: 'pending' },
-    { id: 6, icon: Brain, label: 'Shopify插件市场AI产品调研与分析', starred: true, status: 'completed' },
-    { id: 7, icon: BarChart, label: '监测并分析7天内多平台更新变化', starred: false, status: 'pending' },
-    { id: 8, icon: MessageSquare, label: 'Creating SEO-Friendly Blog Content Strategy', starred: false, status: 'pending' },
-  ]);
-
-  const toggleStar = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation();
-    setTasks(tasks.map(t => t.id === id ? { ...t, starred: !t.starred } : t));
-  };
-
-  const filteredTasks = filterFavorites ? tasks.filter(t => t.starred) : tasks;
+  if (activeTab !== 'experience') return null;
 
   return (
     <div 

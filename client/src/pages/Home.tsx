@@ -209,11 +209,11 @@ export default function Home() {
     let allScenarios: typeof SCENARIOS = [];
     
     // Define scenarios for each category
-    const competitorScenarios = [SCENARIOS[0], ...generateDummies(SCENARIOS[0], 2, 'comp')];
-    const adScenarios = [SCENARIOS[1], ...generateDummies(SCENARIOS[1], 2, 'ad')];
-    const productScenarios = generateDummies({ ...SCENARIOS[0], name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' }, 2, 'prod');
-    const learningScenarios = generateDummies({ ...SCENARIOS[0], name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' }, 2, 'learn');
-    const factScenarios = generateDummies({ ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' }, 2, 'fact');
+    const competitorScenarios = [SCENARIOS[0], ...generateDummies(SCENARIOS[0], 5, 'comp')];
+    const adScenarios = [SCENARIOS[1], ...generateDummies(SCENARIOS[1], 5, 'ad')];
+    const productScenarios = generateDummies({ ...SCENARIOS[0], name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' }, 6, 'prod');
+    const learningScenarios = generateDummies({ ...SCENARIOS[0], name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' }, 6, 'learn');
+    const factScenarios = generateDummies({ ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' }, 6, 'fact');
 
     if (activeCategory === 'all') {
         // Collect ALL scenarios from all categories
@@ -528,7 +528,7 @@ export default function Home() {
       nav={
         <div className="flex h-full">
             <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-            <TaskNavigation />
+            <TaskNavigation activeTab={activeTab} />
         </div>
       }
       rightPanel={
