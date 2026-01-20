@@ -30,17 +30,18 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 const CATEGORIES = [
-  { id: 'competitor', label: '竞品调研', icon: Layout },
-  { id: 'product', label: '产品优化', icon: Target },
-  { id: 'learning', label: '结构化学习', icon: BookOpen },
-  { id: 'ad', label: '广告巡检', icon: Eye },
-  { id: 'fact', label: '事实多元核查', icon: CheckCircle },
+  { id: 'all', label: 'All', icon: Sparkles },
+  { id: 'competitor', label: 'Competitor Analysis', icon: Layout },
+  { id: 'product', label: 'Product Optimization', icon: Target },
+  { id: 'learning', label: 'Structured Learning', icon: BookOpen },
+  { id: 'ad', label: 'Ad Inspection', icon: Eye },
+  { id: 'fact', label: 'Fact Verification', icon: CheckCircle },
 ];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'home' | 'experience' | 'library'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
-  const [activeCategory, setActiveCategory] = useState('competitor');
+  const [activeCategory, setActiveCategory] = useState('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const { toast } = useToast();
   const [homeInput, setHomeInput] = useState("");
@@ -83,22 +84,42 @@ export default function Home() {
   };
 
   const getFilteredScenarios = () => {
-    // Demo logic: mapping categories to available scenarios or creating placeholders
-    if (activeCategory === 'competitor') return [SCENARIOS[0]];
-    if (activeCategory === 'ad') return [SCENARIOS[1]];
+    // Helper to generate multiple dummy items based on a template
+    const generateDummies = (template: typeof SCENARIOS[0], count: number, prefix: string) => {
+      return Array.from({ length: count }).map((_, i) => ({
+        ...template,
+        id: `${prefix}-${i}`,
+        name: `${template.name} ${i + 1}`,
+        goal: `${template.goal} - Variant ${i + 1}`
+      }));
+    };
+
+    let baseScenarios: typeof SCENARIOS = [];
+
+    if (activeCategory === 'all') {
+        // Combine a mix for 'All'
+        baseScenarios = [
+            SCENARIOS[0], 
+            SCENARIOS[1], 
+            ...generateDummies(SCENARIOS[0], 2, 'comp-dummy'),
+            ...generateDummies(SCENARIOS[1], 2, 'ad-dummy')
+        ];
+    } else if (activeCategory === 'competitor') {
+        baseScenarios = [SCENARIOS[0], ...generateDummies(SCENARIOS[0], 5, 'comp')];
+    } else if (activeCategory === 'ad') {
+        baseScenarios = [SCENARIOS[1], ...generateDummies(SCENARIOS[1], 5, 'ad')];
+    } else if (activeCategory === 'product') {
+        const template = { ...SCENARIOS[0], name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' };
+        baseScenarios = generateDummies(template, 6, 'prod');
+    } else if (activeCategory === 'learning') {
+        const template = { ...SCENARIOS[0], name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' };
+        baseScenarios = generateDummies(template, 6, 'learn');
+    } else if (activeCategory === 'fact') {
+         const template = { ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' };
+         baseScenarios = generateDummies(template, 6, 'fact');
+    }
     
-    // For other categories, show placeholders or reuse for demo purposes
-    if (activeCategory === 'product') return [
-      { ...SCENARIOS[0], id: 'prod-1', name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' }
-    ];
-    if (activeCategory === 'learning') return [
-      { ...SCENARIOS[0], id: 'learn-1', name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' }
-    ];
-    if (activeCategory === 'fact') return [
-      { ...SCENARIOS[1], id: 'fact-1', name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' }
-    ];
-    
-    return [];
+    return baseScenarios.slice(0, 6);
   };
 
   const renderContent = () => {
@@ -204,7 +225,7 @@ export default function Home() {
                  </div>
 
                  {/* Cards Grid */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
                     {getFilteredScenarios().map((scenario, idx) => (
                         <div 
                             key={scenario.id}
@@ -244,14 +265,6 @@ export default function Home() {
                             </div>
                         </div>
                     ))}
-                    
-                    {/* Placeholder for 'New' */}
-                    <div className="group relative p-5 bg-card/50 hover:bg-muted/50 border border-dashed border-border rounded-2xl cursor-pointer transition-all hover:border-primary/50 flex flex-col items-center justify-center gap-3 text-muted-foreground hover:text-primary min-h-[160px]">
-                        <div className="h-10 w-10 rounded-full bg-muted group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                            <Plus className="w-5 h-5" />
-                        </div>
-                        <span className="font-medium text-sm">Create Custom Scenario</span>
-                    </div>
                  </div>
               </div>
             </div>
