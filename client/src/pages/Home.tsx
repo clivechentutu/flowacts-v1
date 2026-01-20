@@ -92,7 +92,7 @@ export default function Home() {
       nav={
         <div className="flex h-full">
             <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-            <TaskNavigation />
+            <TaskNavigation events={events} />
         </div>
       }
       rightPanel={
