@@ -18,7 +18,9 @@ import {
   PanelLeftOpen,
   Edit,
   BarChart,
-  MessageSquare
+  MessageSquare,
+  Loader2,
+  CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,14 +44,14 @@ export function TaskNavigation() {
   const [filterFavorites, setFilterFavorites] = useState(false);
   
   const [tasks, setTasks] = useState([
-    { id: 1, icon: FileText, label: 'Reverse Photo Search Keywords Optimization', starred: false },
-    { id: 2, icon: Brain, label: '挖掘AI领域新机会及适合项目方向', starred: false },
-    { id: 3, icon: LayoutGrid, label: 'Twitter Viewer Subscription Pricing Research', starred: true },
-    { id: 4, icon: SearchIcon, label: 'AI用户角色模拟分析工具市场调研', starred: true },
-    { id: 5, icon: FileText, label: '网站数据存储和删除操作查询及整合', starred: false },
-    { id: 6, icon: Brain, label: 'Shopify插件市场AI产品调研与分析', starred: true },
-    { id: 7, icon: BarChart, label: '监测并分析7天内多平台更新变化', starred: false },
-    { id: 8, icon: MessageSquare, label: 'Creating SEO-Friendly Blog Content Strategy', starred: false },
+    { id: 1, icon: FileText, label: 'Reverse Photo Search Keywords Optimization', starred: false, status: 'completed' },
+    { id: 2, icon: Brain, label: '挖掘AI领域新机会及适合项目方向', starred: false, status: 'running' },
+    { id: 3, icon: LayoutGrid, label: 'Twitter Viewer Subscription Pricing Research', starred: true, status: 'completed' },
+    { id: 4, icon: SearchIcon, label: 'AI用户角色模拟分析工具市场调研', starred: true, status: 'pending' },
+    { id: 5, icon: FileText, label: '网站数据存储和删除操作查询及整合', starred: false, status: 'pending' },
+    { id: 6, icon: Brain, label: 'Shopify插件市场AI产品调研与分析', starred: true, status: 'completed' },
+    { id: 7, icon: BarChart, label: '监测并分析7天内多平台更新变化', starred: false, status: 'pending' },
+    { id: 8, icon: MessageSquare, label: 'Creating SEO-Friendly Blog Content Strategy', starred: false, status: 'pending' },
   ]);
 
   const toggleStar = (e: React.MouseEvent, id: number) => {
@@ -155,7 +157,22 @@ export function TaskNavigation() {
                                                     task.id === 4 ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <task.icon className="w-4 h-4 shrink-0" />
+                                                <div className="relative shrink-0 w-4 h-4 flex items-center justify-center">
+                                                    <task.icon className={cn("w-4 h-4 transition-opacity duration-300", task.status === 'running' ? "opacity-0" : "opacity-100")} />
+                                                    
+                                                    {/* Status Overlays */}
+                                                    {task.status === 'running' && (
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                                                        </div>
+                                                    )}
+                                                    {task.status === 'completed' && (
+                                                        <div className="absolute -bottom-1 -right-1 bg-card rounded-full ring-2 ring-card">
+                                                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 fill-emerald-500/20" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                
                                                 <span className="text-sm truncate flex-1 text-left font-normal">{task.label}</span>
                                                 
                                                 <div 

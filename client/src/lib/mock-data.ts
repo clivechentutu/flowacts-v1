@@ -135,6 +135,50 @@ export const SCENARIOS: Scenario[] = [
         timestamp: '10:07 AM',
         metadata: { 'Form Fields': '7', 'Type': 'HubSpot Embed' },
         parentId: 'evt-6' // BRANCHES FROM PRICING (evt-6)
+      },
+      {
+        id: 'evt-branch-4',
+        type: 'user',
+        content: 'Fill out the form with test data: "John Doe", "Acme Corp", "john@acme.com".',
+        timestamp: '10:08 AM'
+      },
+      {
+        id: 'evt-branch-5',
+        type: 'ai',
+        content: 'Filling form... Submitting...',
+        timestamp: '10:08 AM'
+      },
+      {
+        id: 'evt-branch-6',
+        type: 'action',
+        title: '3c. Form Submitted',
+        content: 'Success message displayed. "Thanks for contacting us!"',
+        image: saasSignupForm, // Reusing generic
+        timestamp: '10:09 AM',
+        metadata: { 'Response': '200 OK', 'Lead ID': '12345' },
+        parentId: 'evt-branch-3'
+      },
+      {
+        id: 'evt-branch-7',
+        type: 'user',
+        content: 'Did I get a confirmation email?',
+        timestamp: '10:10 AM'
+      },
+      {
+        id: 'evt-branch-8',
+        type: 'ai',
+        content: 'Checking inbox... Yes, email received.',
+        timestamp: '10:10 AM'
+      },
+      {
+        id: 'evt-branch-9',
+        type: 'action',
+        title: '3d. Email Received',
+        content: 'Subject: "Welcome to Enterprise Sales". Contains calendar link.',
+        image: saasDashboard, // Reusing generic
+        timestamp: '10:11 AM',
+        metadata: { 'Sender': 'sales@competitor.com', 'DKIM': 'Pass' },
+        parentId: 'evt-branch-6'
       }
     ]
   },
