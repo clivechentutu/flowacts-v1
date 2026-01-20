@@ -102,14 +102,12 @@ export default function Home() {
                   />
                   
                   <div className="flex justify-between items-center p-4 pt-0 border-t-0 bg-transparent">
-                     <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="h-9 gap-2 text-muted-foreground hover:text-foreground">
+                     <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Attach">
                           <Paperclip className="w-4 h-4" />
-                          <span className="text-xs">Attach</span>
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-9 gap-2 text-muted-foreground hover:text-foreground">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Search">
                           <Globe className="w-4 h-4" />
-                          <span className="text-xs">Search</span>
                         </Button>
                         
                         <div className="h-4 w-px bg-border mx-1 self-center" />
