@@ -59,9 +59,9 @@ export function TaskSidebar({ events }: TaskSidebarProps) {
                                 </>
                              ) : (
                                 <>
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                    <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap">
-                                        All Completed
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 fill-emerald-500/10" />
+                                    <span className="text-[10px] text-emerald-600 font-bold whitespace-nowrap">
+                                        DONE
                                     </span>
                                 </>
                              )}
