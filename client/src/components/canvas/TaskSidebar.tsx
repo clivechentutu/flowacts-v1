@@ -35,7 +35,7 @@ export function TaskSidebar({ events }: TaskSidebarProps) {
       >
         <div className={cn("flex items-center", isOpen ? "justify-between p-2 bg-background/95 backdrop-blur" : "justify-start")}>
             {!isOpen && (
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-row items-center gap-2">
                     <Button
                         variant="ghost"
                         size="icon"
