@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 
 interface ShellProps {
   nav?: ReactNode;
-  rightPanel: ReactNode;
+  rightPanel?: ReactNode;
   children: ReactNode;
 }
 
@@ -18,9 +18,11 @@ export function Shell({ nav, rightPanel, children }: ShellProps) {
       </main>
 
       {/* Right Chat Panel */}
-      <aside className="w-[400px] h-full flex-shrink-0 z-20 border-l border-border bg-card order-2 relative shadow-xl">
-        {rightPanel}
-      </aside>
+      {rightPanel && (
+        <aside className="w-[400px] h-full flex-shrink-0 z-20 border-l border-border bg-card order-2 relative shadow-xl">
+          {rightPanel}
+        </aside>
+      )}
     </div>
   );
 }
