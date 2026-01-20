@@ -85,40 +85,51 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
 
       {/* Input */}
       <div className="p-4 border-t border-border bg-card">
-        <form onSubmit={handleSubmit} className="relative">
+        <form 
+          onSubmit={handleSubmit} 
+          className="relative flex flex-col bg-muted/30 border border-border/50 rounded-xl focus-within:ring-1 focus-within:ring-primary/20 transition-all"
+        >
           <Input 
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask Upliftly to analyze a flow..." 
-            className="pr-12 py-6 bg-muted/30 border-border/50 focus-visible:ring-primary/20 rounded-xl text-foreground placeholder:text-muted-foreground"
+            className="border-0 bg-transparent focus-visible:ring-0 shadow-none px-4 py-3 min-h-[48px] text-foreground placeholder:text-muted-foreground"
           />
-          <Button 
-            type="submit" 
-            size="icon" 
-            className="absolute right-2 top-2 h-8 w-8 rounded-lg"
-            disabled={!input.trim()}
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+          
+          <div className="flex justify-between items-center p-2 pt-0">
+             <div className="flex gap-1">
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+                  title="Attach"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+             </div>
+             
+             <div className="flex gap-1">
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+                  title="Search"
+                >
+                  <Globe className="w-4 h-4" />
+                </Button>
+                <Button 
+                  type="submit" 
+                  size="icon" 
+                  className="h-8 w-8 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
+                  disabled={!input.trim()}
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+             </div>
+          </div>
         </form>
-        <div className="mt-3 flex gap-2 px-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-            title="Attach"
-          >
-            <Paperclip className="w-4 h-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-            title="Search"
-          >
-            <Globe className="w-4 h-4" />
-          </Button>
-        </div>
       </div>
     </div>
   );
