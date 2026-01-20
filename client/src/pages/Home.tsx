@@ -47,7 +47,48 @@ export default function Home() {
   const [homeInput, setHomeInput] = useState("");
   const [isThinkingMode, setIsThinkingMode] = useState(false);
 
-  const activeScenario = SCENARIOS.find(s => s.id === activeScenarioId)!;
+  // Helper to find or reconstruct scenario from ID
+  const getScenarioById = (id: string) => {
+    const existing = SCENARIOS.find(s => s.id === id);
+    if (existing) return existing;
+
+    // Handle dummy scenarios
+    if (id.startsWith('comp-dummy-')) {
+        const index = parseInt(id.split('-').pop() || '0');
+        return { ...SCENARIOS[0], id, name: `${SCENARIOS[0].name} ${index + 1}`, goal: `${SCENARIOS[0].goal} - Variant ${index + 1}` };
+    }
+    if (id.startsWith('ad-dummy-')) {
+        const index = parseInt(id.split('-').pop() || '0');
+        return { ...SCENARIOS[1], id, name: `${SCENARIOS[1].name} ${index + 1}`, goal: `${SCENARIOS[1].goal} - Variant ${index + 1}` };
+    }
+    if (id.startsWith('comp-')) {
+         const index = parseInt(id.split('-').pop() || '0');
+         return { ...SCENARIOS[0], id, name: `${SCENARIOS[0].name} ${index + 1}`, goal: `${SCENARIOS[0].goal} - Variant ${index + 1}` };
+    }
+    if (id.startsWith('ad-')) {
+         const index = parseInt(id.split('-').pop() || '0');
+         return { ...SCENARIOS[1], id, name: `${SCENARIOS[1].name} ${index + 1}`, goal: `${SCENARIOS[1].goal} - Variant ${index + 1}` };
+    }
+    if (id.startsWith('prod-')) {
+         const template = { ...SCENARIOS[0], name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' };
+         const index = parseInt(id.split('-').pop() || '0');
+         return { ...template, id, name: `${template.name} ${index + 1}`, goal: `${template.goal} - Variant ${index + 1}` };
+    }
+    if (id.startsWith('learn-')) {
+         const template = { ...SCENARIOS[0], name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' };
+         const index = parseInt(id.split('-').pop() || '0');
+         return { ...template, id, name: `${template.name} ${index + 1}`, goal: `${template.goal} - Variant ${index + 1}` };
+    }
+    if (id.startsWith('fact-')) {
+         const template = { ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' };
+         const index = parseInt(id.split('-').pop() || '0');
+         return { ...template, id, name: `${template.name} ${index + 1}`, goal: `${template.goal} - Variant ${index + 1}` };
+    }
+
+    return SCENARIOS[0]; // Fallback
+  };
+
+  const activeScenario = getScenarioById(activeScenarioId);
 
   // Simulate progressive revealing of the story
   useEffect(() => {
