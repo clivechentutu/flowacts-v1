@@ -101,7 +101,7 @@ export default function Home() {
                     className="w-full bg-transparent border-0 focus:ring-0 resize-none p-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium"
                   />
                   
-                  <div className="flex justify-between items-center p-4 pt-2 bg-muted/20">
+                  <div className="flex justify-between items-center p-4 pt-2">
                      <div className="flex gap-2">
                         <Button variant="ghost" size="sm" className="h-9 gap-2 text-muted-foreground hover:text-foreground">
                           <Paperclip className="w-4 h-4" />
