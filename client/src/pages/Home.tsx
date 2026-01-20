@@ -316,7 +316,7 @@ export default function Home() {
               </div>
 
               {/* History Tasks Section */}
-              <div className="w-full space-y-4 mt-12 md:mt-16 animate-in fade-in slide-in-from-bottom-3 duration-700 delay-150">
+              <div className="w-full space-y-4 mt-24 md:mt-32 animate-in fade-in slide-in-from-bottom-3 duration-700 delay-150">
                  <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-4">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
