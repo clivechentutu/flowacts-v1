@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Sparkles, User, Paperclip, Globe } from "lucide-react";
+import { Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -26,14 +26,25 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   return (
     <div className="flex flex-col h-full bg-card border-r border-border shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10">
       {/* Header */}
-      <div className="p-6 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-            <Sparkles className="h-5 w-5" />
+      <div className="p-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="flex items-center justify-between gap-2">
+          {/* Task Title Area - approx 4/7 width */}
+          <div className="flex-1 min-w-0 pr-2">
+            <h2 className="font-heading font-bold text-sm leading-tight text-foreground truncate">Competitor Onboarding Analysis</h2>
+            <p className="text-[10px] text-muted-foreground truncate">Last edited 2m ago</p>
           </div>
-          <div>
-            <h2 className="font-heading font-bold text-lg leading-tight text-foreground">Upliftly AI</h2>
-            <p className="text-xs text-muted-foreground">Collaborative Analysis</p>
+          
+          {/* Icons Area */}
+          <div className="flex items-center gap-1 shrink-0">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="New Chat">
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Materials">
+              <FileText className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Share">
+              <Share2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
