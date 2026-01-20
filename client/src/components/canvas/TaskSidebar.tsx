@@ -50,11 +50,11 @@ export function TaskSidebar({ events }: TaskSidebarProps) {
                     {events.length > 0 && (
                         <div className="flex items-center gap-2 bg-muted/50 px-2 py-1 rounded-full border border-border/50 backdrop-blur-sm animate-in fade-in zoom-in duration-300">
                              {/* Check if last event is recent/active */}
-                             {tasks.length > 0 && tasks.length < 15 ? (
+                             {tasks.length < 15 ? (
                                 <>
                                     <Loader2 className="h-3 w-3 text-emerald-500 animate-spin" />
                                     <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap max-w-[100px] truncate">
-                                        Processing Step {tasks.length}...
+                                        {tasks.length === 0 ? "Initializing..." : `Processing Step ${tasks.length}...`}
                                     </span>
                                 </>
                              ) : (
