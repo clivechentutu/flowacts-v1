@@ -316,7 +316,7 @@ export default function Home() {
               </div>
 
               {/* History Tasks Section */}
-              <div className="w-full space-y-4">
+              <div className="w-full space-y-4 mt-12 md:mt-16 animate-in fade-in slide-in-from-bottom-3 duration-700 delay-150">
                  <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-4">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
@@ -404,21 +404,21 @@ export default function Home() {
                     {/* Navigation Arrows */}
                     <button 
                         onClick={() => scroll('left')}
-                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 h-8 w-8 rounded-full bg-background border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all opacity-0 group-hover/history:opacity-100 z-20"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-5 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all opacity-0 group-hover/history:opacity-100 z-20 hover:scale-110 active:scale-95"
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        <ChevronLeft className="w-6 h-6" />
                     </button>
                     <button 
                         onClick={() => scroll('right')}
-                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 h-8 w-8 rounded-full bg-background border border-border shadow-md flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all opacity-0 group-hover/history:opacity-100 z-20"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-5 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all opacity-0 group-hover/history:opacity-100 z-20 hover:scale-110 active:scale-95"
                     >
-                        <ChevronRight className="w-5 h-5" />
+                        <ChevronRight className="w-6 h-6" />
                     </button>
                  </div>
               </div>
 
               {/* Categorized Scenarios */}
-              <div className="w-full space-y-6 mt-4">
+              <div className="w-full space-y-6 mt-8 md:mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
                  {/* Tabs */}
                  <div className="flex items-center justify-center gap-1 p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar mx-auto w-full max-w-fit">
                     {CATEGORIES.map(category => (
