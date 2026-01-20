@@ -216,14 +216,14 @@ export default function Home() {
     const factScenarios = generateDummies({ ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' }, 2, 'fact');
 
     if (activeCategory === 'all') {
+        // Collect ALL scenarios from all categories
         return [
-            ...competitorScenarios.slice(0, 1),
-            ...adScenarios.slice(0, 1),
-            ...productScenarios.slice(0, 1),
-            ...learningScenarios.slice(0, 1),
-            ...factScenarios.slice(0, 1),
-            ...competitorScenarios.slice(1, 2)
-        ].slice(0, 6);
+            ...competitorScenarios,
+            ...adScenarios,
+            ...productScenarios,
+            ...learningScenarios,
+            ...factScenarios
+        ];
     } else if (activeCategory === 'competitor') {
         return competitorScenarios;
     } else if (activeCategory === 'ad') {
