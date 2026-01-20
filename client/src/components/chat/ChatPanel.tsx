@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2 } from "lucide-react";
+import { Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2, Zap, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -15,6 +15,7 @@ interface ChatPanelProps {
 
 export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   const [input, setInput] = useState("");
+  const [isThinkingMode, setIsThinkingMode] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +118,31 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
                   title="Attach"
                 >
                   <Paperclip className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className={cn(
+                    "h-8 px-2 text-xs font-medium rounded-lg gap-1.5 transition-colors border border-transparent",
+                    isThinkingMode 
+                      ? "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                  onClick={() => setIsThinkingMode(!isThinkingMode)}
+                  title={isThinkingMode ? "Switch to Fast Mode" : "Switch to Thinking Mode"}
+                >
+                  {isThinkingMode ? (
+                    <>
+                      <Brain className="w-3.5 h-3.5" />
+                      <span>Thinking</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>Fast</span>
+                    </>
+                  )}
                 </Button>
              </div>
              
