@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { TaskNavigation } from "@/components/layout/TaskNavigation";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { FlowCanvas } from "@/components/canvas/FlowCanvas";
 import { SCENARIOS, StoryEvent } from "@/lib/mock-data";
@@ -89,7 +90,10 @@ export default function Home() {
   return (
     <Shell
       nav={
-        <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="flex h-full">
+            <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+            <TaskNavigation />
+        </div>
       }
       rightPanel={
         <ChatPanel 
