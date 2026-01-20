@@ -15,7 +15,10 @@ import {
   Search as SearchIcon,
   LayoutGrid,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Edit,
+  BarChart,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,12 +42,14 @@ export function TaskNavigation() {
   const [filterFavorites, setFilterFavorites] = useState(false);
   
   const [tasks, setTasks] = useState([
-    { id: 1, icon: FileText, label: 'Reverse Photo Search Keywords', starred: false },
-    { id: 2, icon: Brain, label: 'AI Market Opportunities', starred: false },
-    { id: 3, icon: LayoutGrid, label: 'Twitter Viewer Pricing', starred: true },
-    { id: 4, icon: SearchIcon, label: 'AI Persona Tool Research', starred: true },
-    { id: 5, icon: FileText, label: 'Website Data Storage Query', starred: false },
-    { id: 6, icon: Brain, label: 'Shopify Plugin Research', starred: true },
+    { id: 1, icon: FileText, label: 'Reverse Photo Search Keywords Optimization', starred: false },
+    { id: 2, icon: Brain, label: '挖掘AI领域新机会及适合项目方向', starred: false },
+    { id: 3, icon: LayoutGrid, label: 'Twitter Viewer Subscription Pricing Research', starred: true },
+    { id: 4, icon: SearchIcon, label: 'AI用户角色模拟分析工具市场调研', starred: true },
+    { id: 5, icon: FileText, label: '网站数据存储和删除操作查询及整合', starred: false },
+    { id: 6, icon: Brain, label: 'Shopify插件市场AI产品调研与分析', starred: true },
+    { id: 7, icon: BarChart, label: '监测并分析7天内多平台更新变化', starred: false },
+    { id: 8, icon: MessageSquare, label: 'Creating SEO-Friendly Blog Content Strategy', starred: false },
   ]);
 
   const toggleStar = (e: React.MouseEvent, id: number) => {
@@ -80,17 +85,17 @@ export function TaskNavigation() {
       )}>
             {/* Top Actions */}
             <div className="p-4 space-y-1">
-                <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground h-9 px-2">
-                    <Plus className="w-4 h-4" />
-                    <span className="text-sm font-medium">New Task</span>
+                <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
+                    <Edit className="w-4 h-4" />
+                    <span className="text-sm font-medium">新建任务</span>
                 </Button>
-                <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground h-9 px-2">
+                <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
                     <Search className="w-4 h-4" />
-                    <span className="text-sm font-medium">Search</span>
+                    <span className="text-sm font-medium">搜索</span>
                 </Button>
-                <Button variant="ghost" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground h-9 px-2">
+                <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
                     <Library className="w-4 h-4" />
-                    <span className="text-sm font-medium">Library</span>
+                    <span className="text-sm font-medium">库</span>
                 </Button>
             </div>
 
@@ -100,20 +105,20 @@ export function TaskNavigation() {
                 <div className="p-4 space-y-6">
                     {/* Projects Section */}
                     <div>
-                        <div className="flex items-center justify-between mb-2 px-2">
-                            <h3 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">Projects</h3>
-                            <Plus className="w-3 h-3 text-muted-foreground cursor-pointer hover:text-foreground" />
+                        <div className="flex items-center justify-between mb-2 px-2 group cursor-pointer">
+                            <h3 className="text-xs font-semibold text-muted-foreground/70">项目</h3>
+                            <Plus className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground" />
                         </div>
                         <div className="space-y-0.5">
-                            {['Erasa Related', 'Twitter Project', 'Opportunity Mining', 'Product Research', 'DR Related'].map((folder) => (
-                                <Button key={folder} variant="ghost" className="w-full justify-start gap-2 h-8 px-2 text-muted-foreground hover:text-foreground">
-                                    <Folder className="w-3.5 h-3.5" />
+                            {['erasa相关', '推特项目相关', '项目机会挖掘相关', '具体产品调研相关', 'DR相关'].map((folder) => (
+                                <Button key={folder} variant="ghost" className="w-full justify-start gap-3 h-8 px-2 text-muted-foreground hover:text-foreground">
+                                    <Folder className="w-4 h-4" />
                                     <span className="text-sm truncate">{folder}</span>
                                 </Button>
                             ))}
-                            <Button variant="ghost" className="w-full justify-start gap-2 h-8 px-2 text-muted-foreground/50 hover:text-foreground">
-                                <MoreHorizontal className="w-3.5 h-3.5" />
-                                <span className="text-sm">See More</span>
+                            <Button variant="ghost" className="w-full justify-start gap-3 h-8 px-2 text-muted-foreground/50 hover:text-foreground">
+                                <MoreHorizontal className="w-4 h-4" />
+                                <span className="text-sm">查看更多</span>
                             </Button>
                         </div>
                     </div>
@@ -121,19 +126,19 @@ export function TaskNavigation() {
                     {/* All Tasks Section */}
                     <div>
                         <div className="flex items-center justify-between mb-2 px-2">
-                            <h3 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">All Tasks</h3>
+                            <h3 className="text-xs font-semibold text-muted-foreground/70">所有任务</h3>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" className={cn("h-4 w-4 hover:bg-transparent", filterFavorites ? "text-primary" : "text-muted-foreground")}>
-                                        <Filter className="w-3 h-3" />
+                                        <Filter className="w-3.5 h-3.5" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => setFilterFavorites(false)}>
-                                        Show All
+                                        显示所有
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => setFilterFavorites(true)}>
-                                        Starred Only
+                                        仅显示收藏
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -146,12 +151,12 @@ export function TaskNavigation() {
                                             <Button 
                                                 variant="ghost" 
                                                 className={cn(
-                                                    "w-full justify-start gap-2 h-8 px-2 group relative pr-8", // added padding right for star
+                                                    "w-full justify-start gap-3 h-8 px-2 group relative pr-8", 
                                                     task.id === 4 ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:text-foreground"
                                                 )}
                                             >
-                                                <task.icon className="w-3.5 h-3.5 shrink-0" />
-                                                <span className="text-sm truncate flex-1 text-left">{task.label}</span>
+                                                <task.icon className="w-4 h-4 shrink-0" />
+                                                <span className="text-sm truncate flex-1 text-left font-normal">{task.label}</span>
                                                 
                                                 <div 
                                                     role="button"
@@ -165,7 +170,7 @@ export function TaskNavigation() {
                                                 </div>
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent side="right" sideOffset={10}>
+                                        <TooltipContent side="right" sideOffset={10} className="max-w-[300px] break-words">
                                             {task.label}
                                         </TooltipContent>
                                     </Tooltip>
