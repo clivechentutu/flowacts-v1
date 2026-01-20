@@ -61,52 +61,26 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
 
   useEffect(() => {
     setPositions(prev => {
-      const childrenMap: Record<string, string[]> = {};
-      const roots: string[] = [];
+      // Snake Layout for optimal screen usage
+      return canvasEvents.map((event, index) => {
+        const existing = prev.find(p => p.id === event.id);
+        if (existing) return existing;
 
-      // 1. Build Tree
-      canvasEvents.forEach(e => {
-        if (e.parentId && canvasEvents.find(ce => ce.id === e.parentId)) {
-           if (!childrenMap[e.parentId]) childrenMap[e.parentId] = [];
-           childrenMap[e.parentId].push(e.id);
+        const row = Math.floor(index / CARDS_PER_ROW);
+        const col = index % CARDS_PER_ROW;
+        const isEvenRow = row % 2 === 0;
+
+        let x = 0;
+        if (isEvenRow) {
+            x = 100 + (col * (CARD_WIDTH + GAP_X));
         } else {
-           roots.push(e.id);
+            const rowWidth = (CARDS_PER_ROW - 1) * (CARD_WIDTH + GAP_X);
+            x = 100 + (rowWidth - (col * (CARD_WIDTH + GAP_X)));
         }
+
+        const y = 100 + (row * (CARD_HEIGHT + GAP_Y));
+        return { id: event.id, x, y };
       });
-
-      // 2. Calculate Positions (Tree Layout)
-      const newPositions: {id: string, x: number, y: number}[] = [];
-      const usedPositions = new Set<string>(); // "x,y" string to prevent overlap
-
-      const processNode = (id: string, depth: number, offset: number) => {
-         if (newPositions.find(p => p.id === id)) return;
-
-         let x = 100 + (offset * (CARD_WIDTH + GAP_X));
-         const y = 100 + (depth * (CARD_HEIGHT + GAP_Y));
-         
-         // Simple collision avoidance for branches
-         while (usedPositions.has(`${x},${y}`)) {
-            x += (CARD_WIDTH + GAP_X);
-            offset += 1;
-         }
-
-         newPositions.push({ id, x, y });
-         usedPositions.add(`${x},${y}`);
-
-         const children = childrenMap[id] || [];
-         children.forEach((childId, index) => {
-            // Child inherit parent's offset + index shift
-            // If it's the first child, keep straight line (same offset)
-            // If it's a branch (index > 0), move right
-            const childOffset = offset + index;
-            processNode(childId, depth + 1, childOffset);
-         });
-      };
-
-      // Process all roots
-      roots.forEach((rootId, i) => processNode(rootId, 0, i * 2));
-
-      return newPositions;
     });
   }, [canvasEvents.length]); // Re-calculate when number of events changes
 
