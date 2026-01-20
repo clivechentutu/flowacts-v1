@@ -158,18 +158,12 @@ export function TaskNavigation() {
                                                 )}
                                             >
                                                 <div className="relative shrink-0 w-4 h-4 flex items-center justify-center">
-                                                    <task.icon className={cn("w-4 h-4 transition-opacity duration-300", task.status === 'running' ? "opacity-0" : "opacity-100")} />
-                                                    
-                                                    {/* Status Overlays */}
-                                                    {task.status === 'running' && (
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
-                                                        </div>
-                                                    )}
-                                                    {task.status === 'completed' && (
-                                                        <div className="absolute -bottom-1 -right-1 bg-card rounded-full ring-2 ring-card">
-                                                            <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 fill-emerald-500/20" />
-                                                        </div>
+                                                    {task.status === 'running' ? (
+                                                        <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                                                    ) : task.status === 'completed' ? (
+                                                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                                    ) : (
+                                                        <task.icon className="w-4 h-4" />
                                                     )}
                                                 </div>
                                                 
