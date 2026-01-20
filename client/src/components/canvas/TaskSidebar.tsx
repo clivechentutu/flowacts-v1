@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { StoryEvent } from '@/lib/mock-data';
-import { ChevronRight, ChevronLeft, CheckCircle2, ListTodo } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle2, ListTodo, Loader2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface TaskSidebarProps {
   events: StoryEvent[];
+  isRunning?: boolean;
 }
 
-export function TaskSidebar({ events }: TaskSidebarProps) {
+export function TaskSidebar({ events, isRunning = false }: TaskSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Filter for actionable steps that look like tasks
@@ -28,18 +29,26 @@ export function TaskSidebar({ events }: TaskSidebarProps) {
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground relative"
                     onClick={() => setIsOpen(true)}
                     title="Show Tasks"
                 >
-                    <ListTodo className="h-5 w-5" />
+                    {isRunning ? (
+                       <Loader2 className="h-5 w-5 animate-spin text-green-500" />
+                    ) : (
+                       <Check className="h-5 w-5 text-green-500" />
+                    )}
                 </Button>
             )}
 
             {isOpen && (
                 <>
                     <div className="flex items-center gap-2 pl-1">
-                        <ListTodo className="h-4 w-4 text-primary" />
+                        {isRunning ? (
+                           <Loader2 className="h-4 w-4 animate-spin text-green-500" />
+                        ) : (
+                           <Check className="h-4 w-4 text-green-500" />
+                        )}
                         <span className="text-xs font-bold uppercase tracking-wider text-foreground">Tasks</span>
                     </div>
                     <Button

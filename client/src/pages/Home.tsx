@@ -11,6 +11,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'home' | 'experience' | 'library'>('experience');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [events, setEvents] = useState<StoryEvent[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
   const { toast } = useToast();
 
   const activeScenario = SCENARIOS.find(s => s.id === activeScenarioId)!;
@@ -18,10 +19,14 @@ export default function Home() {
   // Simulate progressive revealing of the story
   useEffect(() => {
     setEvents([]);
+    setIsRunning(true);
     
     let timeout: NodeJS.Timeout;
     const playNextStep = (index: number) => {
-      if (index >= activeScenario.events.length) return;
+      if (index >= activeScenario.events.length) {
+        setIsRunning(false);
+        return;
+      }
       const event = activeScenario.events[index];
       const delay = event.type === 'action' ? 2000 : event.type === 'ai' ? 1000 : 800;
       
@@ -81,7 +86,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <FlowCanvas events={events} />
+            <FlowCanvas events={events} isRunning={isRunning} />
           </>
         );
     }
