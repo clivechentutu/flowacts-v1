@@ -97,11 +97,11 @@ export default function Home() {
                   <textarea 
                     value={homeInput}
                     onChange={(e) => setHomeInput(e.target.value)}
-                    placeholder="Ask anything... e.g. 'Analyze the signup flow for competitor.com'" 
-                    className="w-full bg-transparent border-0 focus:ring-0 resize-none p-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium"
+                    placeholder="Ask anything... 'Analyze the signup flow for competitor.com'" 
+                    className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none p-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium shadow-none ring-0 selection:bg-primary/20"
                   />
                   
-                  <div className="flex justify-between items-center p-4 pt-2">
+                  <div className="flex justify-between items-center p-4 pt-0 border-t-0 bg-transparent">
                      <div className="flex gap-2">
                         <Button variant="ghost" size="sm" className="h-9 gap-2 text-muted-foreground hover:text-foreground">
                           <Paperclip className="w-4 h-4" />
