@@ -15,6 +15,7 @@ export interface StoryEvent {
   image?: string; // For action cards
   timestamp: string;
   metadata?: Record<string, string>;
+  parentId?: string; // For branching logic
 }
 
 export interface Scenario {
@@ -72,16 +73,17 @@ export const SCENARIOS: Scenario[] = [
         content: 'Identified 3 tiers. "Pro" plan is highlighted.',
         image: saasPricingPage,
         timestamp: '10:02 AM',
-        metadata: { 'Elements': '3 Cards', 'CTA': 'Start Free Trial' }
+        metadata: { 'Elements': '3 Cards', 'CTA': 'Start Free Trial' },
+        parentId: 'evt-3'
       },
-      // REMOVED standalone Insight Card - now merged into previous Action
       {
         id: 'evt-8',
         type: 'action',
         title: '3. Started Signup Process',
         content: 'Clicked "Start Free Trial"',
         image: saasSignupForm,
-        timestamp: '10:03 AM'
+        timestamp: '10:03 AM',
+        parentId: 'evt-6'
       },
       {
         id: 'evt-9',
@@ -95,14 +97,6 @@ export const SCENARIOS: Scenario[] = [
         content: 'Good question. Testing with a weak password... The system provided an inline validation error.',
         timestamp: '10:04 AM'
       },
-      // REMOVED Alert Card for now as per instructions to hide intermediate states
-      // {
-      //   id: 'evt-11',
-      //   type: 'alert',
-      //   title: 'UX FRICTION',
-      //   content: 'Password strength requirement is not explicitly stated, only shown after a failed attempt. This could cause minor friction.',
-      //   timestamp: '10:04 AM'
-      // },
       {
         id: 'evt-12',
         type: 'user',
@@ -116,7 +110,31 @@ export const SCENARIOS: Scenario[] = [
         content: 'Signup successful. Redirected to main dashboard.',
         image: saasDashboard,
         timestamp: '10:05 AM',
-        metadata: { 'Redirect': '302 Found', 'TTFB': '1.2s' }
+        metadata: { 'Redirect': '302 Found', 'TTFB': '1.2s' },
+        parentId: 'evt-8'
+      },
+      // BRANCHING SCENARIO EVENTS
+      {
+        id: 'evt-branch-1',
+        type: 'user',
+        content: 'Wait, go back to pricing. What if I click the Enterprise Contact button instead?',
+        timestamp: '10:06 AM'
+      },
+      {
+        id: 'evt-branch-2',
+        type: 'ai',
+        content: 'Checking the Enterprise flow...',
+        timestamp: '10:06 AM'
+      },
+      {
+        id: 'evt-branch-3',
+        type: 'action',
+        title: '3b. Enterprise Contact',
+        content: 'Clicked "Contact Sales". Loaded HubSpot form.',
+        image: modernSaasHomepage, // Reusing generic image for demo
+        timestamp: '10:07 AM',
+        metadata: { 'Form Fields': '7', 'Type': 'HubSpot Embed' },
+        parentId: 'evt-6' // BRANCHES FROM PRICING (evt-6)
       }
     ]
   },

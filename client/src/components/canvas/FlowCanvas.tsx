@@ -61,27 +61,54 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
 
   useEffect(() => {
     setPositions(prev => {
-      return canvasEvents.map((event, index) => {
-        const existing = prev.find(p => p.id === event.id);
-        if (existing) return existing;
+      const childrenMap: Record<string, string[]> = {};
+      const roots: string[] = [];
 
-        const row = Math.floor(index / CARDS_PER_ROW);
-        const col = index % CARDS_PER_ROW;
-        const isEvenRow = row % 2 === 0;
-
-        let x = 0;
-        if (isEvenRow) {
-            x = 100 + (col * (CARD_WIDTH + GAP_X));
+      // 1. Build Tree
+      canvasEvents.forEach(e => {
+        if (e.parentId && canvasEvents.find(ce => ce.id === e.parentId)) {
+           if (!childrenMap[e.parentId]) childrenMap[e.parentId] = [];
+           childrenMap[e.parentId].push(e.id);
         } else {
-            const rowWidth = (CARDS_PER_ROW - 1) * (CARD_WIDTH + GAP_X);
-            x = 100 + (rowWidth - (col * (CARD_WIDTH + GAP_X)));
+           roots.push(e.id);
         }
-
-        const y = 100 + (row * (CARD_HEIGHT + GAP_Y));
-        return { id: event.id, x, y };
       });
+
+      // 2. Calculate Positions (Tree Layout)
+      const newPositions: {id: string, x: number, y: number}[] = [];
+      const usedPositions = new Set<string>(); // "x,y" string to prevent overlap
+
+      const processNode = (id: string, depth: number, offset: number) => {
+         if (newPositions.find(p => p.id === id)) return;
+
+         let x = 100 + (offset * (CARD_WIDTH + GAP_X));
+         const y = 100 + (depth * (CARD_HEIGHT + GAP_Y));
+         
+         // Simple collision avoidance for branches
+         while (usedPositions.has(`${x},${y}`)) {
+            x += (CARD_WIDTH + GAP_X);
+            offset += 1;
+         }
+
+         newPositions.push({ id, x, y });
+         usedPositions.add(`${x},${y}`);
+
+         const children = childrenMap[id] || [];
+         children.forEach((childId, index) => {
+            // Child inherit parent's offset + index shift
+            // If it's the first child, keep straight line (same offset)
+            // If it's a branch (index > 0), move right
+            const childOffset = offset + index;
+            processNode(childId, depth + 1, childOffset);
+         });
+      };
+
+      // Process all roots
+      roots.forEach((rootId, i) => processNode(rootId, 0, i * 2));
+
+      return newPositions;
     });
-  }, [canvasEvents.length]);
+  }, [canvasEvents.length]); // Re-calculate when number of events changes
 
   const handleDrag = useCallback((id: string, info: any) => {
     setPositions(prev => prev.map(p => {
@@ -96,7 +123,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     }));
   }, []);
 
-  const contentWidth = 100 + (CARDS_PER_ROW * (CARD_WIDTH + GAP_X)) + 400;
+  const contentWidth = 100 + (4 * (CARD_WIDTH + GAP_X)) + 400; // Expanded width for potential branches
   const contentHeight = positions.length > 0 
     ? Math.max(...positions.map(p => p.y)) + CARD_HEIGHT + 400 
     : 1500;
@@ -195,32 +222,45 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                   </defs>
                   
                   {canvasEvents.map((event, i) => {
-                    if (i === canvasEvents.length - 1) return null;
+                    // Logic: Connect event to its parent if it exists
+                    // Or fall back to linear previous if no parentId (for backward compatibility/roots)
+                    // But here we want explicit tree connections.
                     
                     const currentPos = positions.find(p => p.id === event.id);
-                    const nextEvent = canvasEvents[i + 1];
-                    const nextPos = positions.find(p => p.id === nextEvent.id);
+                    if (!currentPos) return null;
                     
-                    if (!currentPos || !nextPos) return null;
+                    let parentId = event.parentId;
+                    // Fallback for demo: if no parentId, assume it's part of the main chain? 
+                    // No, for the demo to work cleanly with tree layout, we should rely on explicit parentId 
+                    // OR if it's i > 0 and no parentId, maybe link to i-1 (linear fallback).
+                    if (!parentId && i > 0) {
+                         // Check if this node is a root (no parent). If so, don't link to previous.
+                         // But for linear parts of mock data that don't have parentId yet, we want links.
+                         // Simple heuristic: if I am a root (in the tree calc), I have no parent.
+                         // So only draw line if I am NOT a root?
+                         // Actually, let's just look for parentId. If missing, don't draw (except for linear legacy).
+                         // For this specific update, I added parentId to the new nodes.
+                         // I need to make sure the linear nodes have parentIds or implicit links.
+                         
+                         // IMPLICIT LINKING: if no parentId, link to previous node in array IF previous node is not a "leaf" of another branch?
+                         // Safest: Use index-1 as parent if no parentId is set.
+                         const prevEvent = canvasEvents[i-1];
+                         parentId = prevEvent.id;
+                    }
 
-                    const rectSrc = { x: currentPos.x, y: currentPos.y, w: CARD_WIDTH, h: 500 }; 
-                    const rectTgt = { x: nextPos.x, y: nextPos.y, w: CARD_WIDTH, h: 500 };
+                    if (!parentId) return null;
+
+                    const parentPos = positions.find(p => p.id === parentId);
+                    if (!parentPos) return null; // Parent might not be positioned yet or filtered out
+
+                    const rectSrc = { x: parentPos.x, y: parentPos.y, w: CARD_WIDTH, h: 500 }; 
+                    const rectTgt = { x: currentPos.x, y: currentPos.y, w: CARD_WIDTH, h: 500 };
 
                     const centerSrc = { x: rectSrc.x + rectSrc.w / 2, y: rectSrc.y + rectSrc.h / 2 };
                     const centerTgt = { x: rectTgt.x + rectTgt.w / 2, y: rectTgt.y + rectTgt.h / 2 };
 
                     const start = getRectIntersection(rectSrc, centerTgt);
-                    
-                    // IMPORTANT: We need to pull back the end point slightly so the arrowhead doesn't get buried inside the card border
-                    // Calculate raw intersection
                     const rawEnd = getRectIntersection(rectTgt, centerSrc);
-                    
-                    // Back off logic
-                    // Vector from rawEnd to start
-                    // We want to move 'rawEnd' towards 'start' by X pixels (e.g. 2px to clear border)
-                    // The arrowhead itself has length, refX handles the tip position relative to line end.
-                    // If refX is correct, line end is tip.
-                    // But if intersection is EXACTLY on border, and stroke width > 1, maybe it looks clipped.
                     const end = rawEnd; 
 
                     const dx = end.x - start.x;
@@ -238,7 +278,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
 
                     return (
                        <path
-                         key={`path-${event.id}-${nextEvent.id}`}
+                         key={`path-${parentId}-${event.id}`}
                          d={`M ${start.x} ${start.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${end.x} ${end.y}`}
                          stroke="#64748b" 
                          strokeWidth="2"
