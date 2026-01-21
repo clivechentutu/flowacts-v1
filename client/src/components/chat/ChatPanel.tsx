@@ -3,7 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2, Zap, Brain } from "lucide-react";
+import { Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2, Zap, Brain, AtSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -118,6 +118,16 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
                   title="Attach"
                 >
                   <Paperclip className="w-4 h-4" />
+                </Button>
+                
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+                  title="Call Roles"
+                >
+                  <AtSign className="w-4 h-4" />
                 </Button>
                 
                 <div 

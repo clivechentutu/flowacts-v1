@@ -31,7 +31,8 @@ import {
   Calendar,
   Clock,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  AtSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -276,6 +277,9 @@ export default function Home() {
                      <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Attach">
                           <Paperclip className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Call Roles">
+                          <AtSign className="w-4 h-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Search">
                           <Globe className="w-4 h-4" />
