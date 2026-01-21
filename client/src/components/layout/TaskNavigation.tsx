@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -54,7 +53,7 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
         isExpanded ? "w-64" : "w-0 border-r-0" 
       )}
     >
-        {/* Toggle Button - positioned on the right edge */}
+        {/* Toggle Button */}
         <div className="absolute top-6 -right-3 z-50">
              <Button
                 variant="secondary"
@@ -68,43 +67,44 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
         </div>
 
       <div className={cn(
-          "flex flex-col h-full w-64 overflow-hidden opacity-100 visible"
+          "flex flex-col h-full w-64 overflow-hidden visible"
       )}>
             {/* Top Actions */}
             <div className="p-4 space-y-1 flex-shrink-0">
                 <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
                     <Edit className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm font-medium truncate">新建任务</span>
+                    <span className="text-sm font-medium truncate">New Task</span>
                 </Button>
                 <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
                     <Search className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm font-medium truncate">搜索</span>
+                    <span className="text-sm font-medium truncate">Search</span>
                 </Button>
                 <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
                     <Library className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm font-medium truncate">库</span>
+                    <span className="text-sm font-medium truncate">Library</span>
                 </Button>
             </div>
 
             <Separator className="bg-border/50 mx-4 w-auto flex-shrink-0" />
             
-            <ScrollArea className="flex-1 w-full">
+            {/* Projects List - Native Scroll for robustness */}
+            <div className="flex-1 w-full overflow-y-auto overflow-x-hidden">
                 <div className="p-4 pt-4">
                     <h3 className="text-xs font-semibold text-muted-foreground/50 mb-2 px-2 uppercase tracking-wider flex-shrink-0">Projects</h3>
-                    <div className="space-y-0.5">
+                    <div className="flex flex-col gap-0.5 w-full">
                         {projects.map(project => (
-                            <div key={project.id} className="group relative flex items-center w-full hover:bg-muted/50 rounded-md transition-colors pr-7">
+                            <div key={project.id} className="group relative w-full hover:bg-muted/50 rounded-md transition-colors">
                                 <TooltipProvider>
                                     <Tooltip delayDuration={500}>
                                         <TooltipTrigger asChild>
                                             <div 
                                                 className={cn(
-                                                    "flex items-center gap-3 h-9 px-2 w-full cursor-pointer text-muted-foreground hover:text-foreground transition-colors overflow-hidden",
+                                                    "grid grid-cols-[16px_1fr_auto] gap-3 items-center h-9 px-2 w-full cursor-pointer text-muted-foreground hover:text-foreground transition-colors",
                                                     project.isFavorite && "text-foreground font-medium"
                                                 )}
                                             >
                                                 <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                                                <span className="truncate text-sm text-left flex-1 min-w-0 select-none">
+                                                <span className="truncate text-sm text-left select-none min-w-0">
                                                     {project.title}
                                                 </span>
                                                 {project.isFavorite && <Star className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
@@ -116,10 +116,11 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                                     </Tooltip>
                                 </TooltipProvider>
 
-                                <div className="absolute right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center h-full">
+                                {/* Dropdown Menu - Absolute positioned */}
+                                <div className="absolute right-0 top-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center bg-gradient-to-l from-muted/50 via-muted/50 to-transparent pl-2 pr-1">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-muted mr-1">
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-background/80 shadow-sm">
                                                 <MoreHorizontal className="w-3.5 h-3.5" />
                                             </Button>
                                         </DropdownMenuTrigger>
@@ -139,7 +140,7 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                         ))}
                     </div>
                 </div>
-            </ScrollArea>
+            </div>
         </div>
     </div>
   );
