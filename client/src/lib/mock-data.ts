@@ -33,6 +33,7 @@ export interface StoryEvent {
   parentId?: string; // For branching logic
   thoughts?: ThinkingStep[];
   agentActions?: AgentAction[];
+  files?: GeneratedFile[];
 }
 
 export interface Scenario {
@@ -223,6 +224,13 @@ export const SCENARIOS: Scenario[] = [
         timestamp: '10:11 AM',
         metadata: { 'Sender': 'sales@competitor.com', 'DKIM': 'Pass' },
         parentId: 'evt-branch-6'
+      },
+      {
+        id: 'evt-completion',
+        type: 'ai',
+        content: 'Analysis complete. I have compiled all findings into a comprehensive report.',
+        timestamp: '10:12 AM',
+        files: [GENERATED_FILES[0]]
       }
     ]
   },

@@ -1,4 +1,4 @@
-import { StoryEvent, ThinkingStep, AgentAction } from "@/lib/mock-data";
+import { StoryEvent, ThinkingStep, AgentAction, GeneratedFile } from "@/lib/mock-data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { 
   Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2, 
   Zap, Brain, AtSign, ChevronDown, ChevronUp, CheckCircle2, 
-  Loader2, Scan, MousePointerClick, Check
+  Loader2, Scan, MousePointerClick, Check, Download, File
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ChatPanelProps {
@@ -20,20 +20,29 @@ interface ChatPanelProps {
 
 function ThinkingProcess({ steps }: { steps: ThinkingStep[] }) {
   const [isOpen, setIsOpen] = useState(true);
+  const activeStep = steps.find(s => s.status === 'active');
 
   if (!steps || steps.length === 0) return null;
 
   return (
-    <div className="mb-3 rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
+    <div className="mb-3 rounded-xl border border-border/50 bg-background/50 overflow-hidden w-full max-w-full">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+        className="w-full flex items-center justify-between p-3 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Brain className="w-3.5 h-3.5 text-indigo-500" />
-          <span>Thought Process ({steps.length} steps)</span>
+          <div className={cn("relative flex h-2 w-2", activeStep ? "animate-pulse" : "")}>
+             {activeStep && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>}
+             <span className={cn("relative inline-flex rounded-full h-2 w-2", activeStep ? "bg-indigo-500" : "bg-indigo-500/50")}></span>
+          </div>
+          <span className={cn("uppercase tracking-wider text-[10px]", activeStep ? "text-indigo-500 font-semibold" : "")}>
+            {activeStep ? "Thinking..." : "Thought Process"}
+          </span>
         </div>
-        {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] opacity-70">{steps.length} steps</span>
+          {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </div>
       </button>
       
       <AnimatePresence initial={false}>
@@ -44,21 +53,32 @@ function ThinkingProcess({ steps }: { steps: ThinkingStep[] }) {
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="px-3 pb-3 pt-0 space-y-2">
+            <div className="px-3 pb-3 pt-0 space-y-3 border-t border-border/30 mt-1 pt-3">
               {steps.map((step) => (
-                <div key={step.id} className="flex items-start gap-2 text-xs text-muted-foreground/80">
-                  {step.status === 'complete' ? (
-                    <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
-                  ) : step.status === 'active' ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 mt-0.5 shrink-0" />
-                  ) : (
-                    <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30 mt-0.5 shrink-0" />
-                  )}
-                  <div className="flex-1">
-                    <span className={cn(step.status === 'active' && "text-foreground font-medium")}>
+                <div key={step.id} className="flex items-start gap-2.5 text-xs text-muted-foreground/80 group">
+                  <div className="mt-0.5 shrink-0">
+                    {step.status === 'complete' ? (
+                      <div className="h-4 w-4 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20">
+                         <Check className="w-2.5 h-2.5 text-green-500" />
+                      </div>
+                    ) : step.status === 'active' ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                    ) : (
+                      <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className={cn(
+                      "block leading-tight", 
+                      step.status === 'active' && "text-foreground font-medium animate-pulse"
+                    )}>
                       {step.content}
                     </span>
-                    {step.duration && <span className="ml-1.5 opacity-60 text-[10px] font-mono">{step.duration}</span>}
+                    {step.duration && (
+                      <span className="inline-block mt-1 text-[9px] font-mono bg-muted/50 px-1.5 py-0.5 rounded text-muted-foreground/70">
+                        {step.duration}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
@@ -83,23 +103,69 @@ function ActionLog({ actions }: { actions: AgentAction[] }) {
   };
 
   return (
-    <div className="mt-3 space-y-2 border-t border-border/50 pt-3">
-      <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">Agent Actions</div>
-      {actions.map((action) => (
-        <div key={action.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-card border border-border/50 shadow-sm text-xs">
-          <div className={cn(
-            "p-1.5 rounded-md shrink-0", 
-            action.status === 'running' ? "bg-blue-500/10 text-blue-500 animate-pulse" : "bg-muted text-muted-foreground"
-          )}>
-            {action.status === 'running' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : getIcon(action.type)}
+    <div className="mt-4 space-y-3 border-t border-border/40 pt-3">
+      <div className="flex items-center gap-2 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+         <Zap className="w-3 h-3" />
+         <span>Agent Actions</span>
+      </div>
+      <div className="space-y-2">
+        {actions.map((action) => (
+          <div key={action.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-background/50 border border-border/40 shadow-sm text-xs hover:bg-background/80 transition-colors">
+            <div className={cn(
+              "p-1.5 rounded-md shrink-0 border", 
+              action.status === 'running' 
+                ? "bg-blue-500/10 text-blue-500 border-blue-500/20 animate-pulse" 
+                : "bg-muted/50 text-muted-foreground border-border/50"
+            )}>
+              {action.status === 'running' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : getIcon(action.type)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-foreground truncate">{action.description}</div>
+              {action.result && (
+                <div className="text-[10px] text-muted-foreground truncate mt-0.5 font-mono opacity-80">
+                  → {action.result}
+                </div>
+              )}
+            </div>
+            {action.status === 'done' && <CheckCircle2 className="w-3.5 h-3.5 text-green-500/80 shrink-0" />}
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ArtifactDelivery({ file }: { file: GeneratedFile }) {
+  return (
+    <div className="mt-4 p-0 rounded-xl border border-border bg-card overflow-hidden shadow-sm group hover:shadow-md transition-all">
+       <div className="p-3 bg-muted/30 border-b border-border/50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                <FileText className="w-4 h-4" />
+             </div>
+             <div>
+                <div className="text-xs font-semibold text-foreground">Comprehensive Report</div>
+                <div className="text-[10px] text-muted-foreground">Generated from analysis</div>
+             </div>
+          </div>
+          <div className="h-6 px-2 rounded-full bg-green-500/10 text-green-600 text-[10px] font-medium flex items-center border border-green-500/20">
+             Ready
+          </div>
+       </div>
+       <div className="p-3 flex items-center justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-foreground truncate">{action.description}</div>
-            {action.result && <div className="text-[10px] text-muted-foreground truncate mt-0.5">{action.result}</div>}
+             <div className="text-xs font-medium text-foreground truncate">{file.name}</div>
+             <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-2">
+                <span>{file.size}</span>
+                <span>•</span>
+                <span>{file.type.toUpperCase()}</span>
+             </div>
           </div>
-          {action.status === 'done' && <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />}
-        </div>
-      ))}
+          <Button size="sm" variant="secondary" className="h-8 text-xs gap-2 shrink-0">
+             <Download className="w-3.5 h-3.5" />
+             Download
+          </Button>
+       </div>
     </div>
   );
 }
@@ -181,6 +247,7 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
                 {msg.type === 'ai' && msg.thoughts && <ThinkingProcess steps={msg.thoughts} />}
                 {msg.content}
                 {msg.type === 'ai' && msg.agentActions && <ActionLog actions={msg.agentActions} />}
+                {msg.type === 'ai' && msg.files && msg.files.map(f => <ArtifactDelivery key={f.id} file={f} />)}
               </div>
             </div>
           ))}
