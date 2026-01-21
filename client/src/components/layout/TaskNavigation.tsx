@@ -136,7 +136,7 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
              <Button
                 variant="secondary"
                 size="icon"
-                className="absolute top-[1.15rem] -left-3 h-6 w-6 rounded-full shadow-md border border-border"
+                className="absolute top-[8.75rem] -left-3 h-6 w-6 rounded-full shadow-md border border-border"
                 onClick={() => setIsExpanded(!isExpanded)}
                 title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
             >
