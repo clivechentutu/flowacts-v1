@@ -107,7 +107,7 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                     <h3 className="text-xs font-semibold text-muted-foreground/50 mb-2 px-2 uppercase tracking-wider">Projects</h3>
                     <div className="space-y-0.5">
                         {projects.map(project => (
-                            <div key={project.id} className="group relative flex items-center">
+                            <div key={project.id} className="group relative flex items-center w-full">
                                 <TooltipProvider>
                                     <Tooltip delayDuration={500}>
                                         <TooltipTrigger asChild>
@@ -119,7 +119,7 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                                                 )}
                                             >
                                                 <MessageSquare className="w-4 h-4 shrink-0" />
-                                                <span className="truncate text-sm text-left flex-1">{project.title}</span>
+                                                <span className="truncate text-sm text-left flex-1 min-w-0">{project.title}</span>
                                                 {project.isFavorite && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
                                             </Button>
                                         </TooltipTrigger>
