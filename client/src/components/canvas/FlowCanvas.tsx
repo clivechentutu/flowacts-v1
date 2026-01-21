@@ -196,21 +196,21 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
   return (
     <div className="h-full w-full bg-[#f8f9fa] dark:bg-[#09090b] relative overflow-hidden group/canvas">
       {/* Canvas Grid Pattern - Dot style for modern look */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.6] dark:opacity-[0.4]"
+      <div className="absolute inset-0 pointer-events-none opacity-[0.4] dark:opacity-[0.3]"
         style={{
-            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.4) 1px, transparent 1px)`,
-            backgroundSize: '20px 20px',
-            maskImage: 'radial-gradient(circle at center, black, transparent 80%)' // Optional: fade out edges if desired, but for full canvas usually plain
+            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.3) 1px, transparent 1px)`,
+            backgroundSize: '24px 24px',
+            maskImage: 'radial-gradient(circle at center, black, transparent 95%)'
         }}
       />
-      {/* Secondary larger grid for structure */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05]"
+      {/* Secondary larger grid for structure - even more subtle */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.02] dark:opacity-[0.03]"
          style={{
              backgroundImage: `
                 linear-gradient(to right, hsl(var(--foreground)) 1px, transparent 1px),
                 linear-gradient(to bottom, hsl(var(--foreground)) 1px, transparent 1px)
              `,
-             backgroundSize: '100px 100px'
+             backgroundSize: '120px 120px'
          }}
       />
       
