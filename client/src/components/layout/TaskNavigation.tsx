@@ -111,11 +111,11 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                                 <TooltipProvider>
                                     <Tooltip delayDuration={500}>
                                         <TooltipTrigger asChild>
-                                            <div className="w-full">
+                                            <div className="w-full min-w-0">
                                                 <Button 
                                                     variant="ghost" 
                                                     className={cn(
-                                                        "w-full justify-start gap-3 h-9 px-2 text-muted-foreground hover:text-foreground font-normal pr-8 overflow-hidden",
+                                                        "w-full justify-start gap-3 h-9 px-2 text-muted-foreground hover:text-foreground font-normal pr-8",
                                                         project.isFavorite && "text-foreground font-medium"
                                                     )}
                                                 >
