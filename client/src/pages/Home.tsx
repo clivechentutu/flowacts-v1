@@ -39,7 +39,8 @@ import {
   Film,
   Image,
   CheckSquare,
-  Square
+  Square,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -602,20 +603,35 @@ export default function Home() {
 
                 {/* Files Overlay Panel - Absolute positioned, not replacing canvas */}
                 {viewMode === 'files' && (
-                    <div className="absolute top-16 left-1/2 -translate-x-1/2 w-full max-w-4xl max-h-[calc(100vh-140px)] bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl overflow-hidden z-40 flex flex-col animate-in fade-in zoom-in-95 duration-200 origin-top">
-                        <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-lg font-semibold tracking-tight">Generated Files</h2>
-                                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border/50">{GENERATED_FILES.length}</span>
+                    <>
+                        {/* Backdrop for click-away to close */}
+                        <div 
+                            className="absolute inset-0 z-30 bg-transparent" 
+                            onClick={() => setViewMode('canvas')}
+                        />
+                        <div className="absolute top-16 left-1/2 -translate-x-1/2 w-full max-w-4xl max-h-[calc(100vh-140px)] bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl overflow-hidden z-40 flex flex-col animate-in fade-in zoom-in-95 duration-200 origin-top">
+                            <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-lg font-semibold tracking-tight">Generated Files</h2>
+                                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border/50">{GENERATED_FILES.length}</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-2">
+                                    <Button size="sm" onClick={handleDownloadSelected} className="gap-2 h-8 text-xs">
+                                        <Download className="w-3.5 h-3.5" />
+                                        {selectedFiles.length > 0 ? `Download (${selectedFiles.length})` : 'Download All'}
+                                    </Button>
+                                    <div className="w-px h-4 bg-border mx-1" />
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+                                        onClick={() => setViewMode('canvas')}
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </Button>
+                                </div>
                             </div>
-                            
-                            <div className="flex items-center gap-3">
-                                <Button size="sm" onClick={handleDownloadSelected} className="gap-2 h-8 text-xs">
-                                    <Download className="w-3.5 h-3.5" />
-                                    {selectedFiles.length > 0 ? `Download (${selectedFiles.length})` : 'Download All'}
-                                </Button>
-                            </div>
-                        </div>
 
                         {/* Batch Selection Header */}
                         <div className="px-4 py-2 border-b border-border bg-muted/10 flex items-center gap-4 text-xs font-medium text-muted-foreground">
@@ -679,6 +695,7 @@ export default function Home() {
                             ))}
                         </div>
                     </div>
+                    </>
                 )}
             </div>
           </>
