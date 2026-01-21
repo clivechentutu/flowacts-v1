@@ -6,7 +6,6 @@ import { ChatPanel } from "@/components/chat/ChatPanel";
 import { FlowCanvas } from "@/components/canvas/FlowCanvas";
 import { SCENARIOS, StoryEvent, GENERATED_FILES } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Send, 
   Sparkles, 
@@ -39,7 +38,6 @@ import {
   FileJson,
   Film,
   Image,
-  ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -112,10 +110,6 @@ export default function Home() {
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [viewMode, setViewMode] = useState<'canvas' | 'files'>('canvas');
-  const [canvasPages, setCanvasPages] = useState<{id: number, name: string}[]>([{id: 1, name: 'Page 1'}]);
-  const [activeCanvasPageId, setActiveCanvasPageId] = useState(1);
-  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
-
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -250,26 +244,6 @@ export default function Home() {
     }
     
     return [];
-  };
-
-  const toggleFileSelection = (id: string) => {
-    setSelectedFileIds(prev => 
-        prev.includes(id) ? prev.filter(fileId => fileId !== id) : [...prev, id]
-    );
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedFileIds.length === GENERATED_FILES.length) {
-        setSelectedFileIds([]);
-    } else {
-        setSelectedFileIds(GENERATED_FILES.map(f => f.id));
-    }
-  };
-
-  const addNewPage = () => {
-    const newId = canvasPages.length + 1;
-    setCanvasPages([...canvasPages, {id: newId, name: `Page ${newId}`}]);
-    setActiveCanvasPageId(newId);
   };
 
   const renderContent = () => {
@@ -497,29 +471,26 @@ export default function Home() {
                                      activeCategory === 'learning' ? <BookOpen className="w-5 h-5" /> :
                                      <Sparkles className="w-5 h-5" />}
                                 </div>
-                                <div className="p-1 rounded-full bg-background border border-border opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                                <div className="px-2 py-1 bg-muted rounded-md text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                                    Playback Case
                                 </div>
                             </div>
                             
-                            <div>
-                                <h3 className="font-semibold text-lg leading-tight mb-2 group-hover:text-primary transition-colors">
-                                    {scenario.name}
-                                </h3>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors truncate">
+                                        {scenario.name}
+                                    </h4>
+                                    <Play className="w-4 h-4 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
+                                </div>
+                                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
                                     {scenario.goal} - Simulating {scenario.persona}
                                 </p>
                             </div>
 
-                            <div className="mt-auto pt-4 flex items-center gap-4 text-xs font-medium text-muted-foreground">
-                                <span className="flex items-center gap-1.5">
-                                    <Clock className="w-3.5 h-3.5" />
-                                    2m
-                                </span>
-                                <span className="flex items-center gap-1.5">
-                                    <Zap className="w-3.5 h-3.5" />
-                                    Auto-Run
-                                </span>
+                            <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-muted-foreground/70">
+                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                <span>Completed 2m ago</span>
                             </div>
                         </div>
                     ))}
@@ -528,127 +499,90 @@ export default function Home() {
             </div>
           </div>
         );
+      case 'library':
+         return (
+          <div className="flex items-center justify-center h-full w-full bg-background text-muted-foreground">
+             <div className="text-center">
+               <h2 className="text-2xl font-bold mb-2">Library</h2>
+               <p>Past Analysis Results & Assets</p>
+             </div>
+          </div>
+        );
       case 'experience':
       default:
         return (
           <>
-            {/* View Toggle Tabs */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-1 bg-card/80 backdrop-blur-md p-1 rounded-lg border border-border shadow-sm">
               <button
-                onClick={() => setViewMode(prev => prev === 'files' ? 'canvas' : 'files')}
+                onClick={() => setViewMode('canvas')}
                 className={cn(
-                  "px-4 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2",
-                  viewMode === 'files'
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                  "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
+                  viewMode === 'canvas' 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 )}
               >
-                <span>Files</span>
-                <ChevronDown className={cn("w-3 h-3 transition-transform", viewMode === 'files' ? "rotate-180" : "")} />
+                Canvas
+              </button>
+              <button
+                onClick={() => setViewMode('files')}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
+                  viewMode === 'files' 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                Files
               </button>
             </div>
             
-            {/* Canvas Area with Page Navigation */}
-            <div className="relative h-full w-full">
+            {viewMode === 'canvas' ? (
                 <FlowCanvas events={events} />
-                
-                {/* Page Navigation Toolbar - Inside Canvas */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-full px-4 py-2 flex items-center gap-4 z-40">
-                    <div className="flex items-center gap-2">
-                        {canvasPages.map(page => (
-                            <button
-                                key={page.id}
-                                onClick={() => setActiveCanvasPageId(page.id)}
-                                className={cn(
-                                    "p-2 rounded-lg transition-all flex items-center justify-center relative group",
-                                    activeCanvasPageId === page.id 
-                                        ? "bg-primary/10 text-primary" 
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                                )}
-                                title={page.name}
-                            >
-                                <Layout className="w-4 h-4" />
-                                <span className="sr-only">{page.name}</span>
-                                {activeCanvasPageId === page.id && (
-                                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
-                                )}
-                            </button>
-                        ))}
-                        <div className="w-px h-4 bg-border mx-1" />
-                        <button 
-                            onClick={addNewPage}
-                            className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
-                            title="Add New Page"
-                        >
-                            <Plus className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Files Overlay Panel */}
-            {viewMode === 'files' && (
-                <div className="absolute top-[60px] left-1/2 -translate-x-1/2 w-[600px] max-h-[80%] bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl z-50 overflow-hidden flex flex-col animate-in fade-in slide-in-from-top-4 duration-300">
-                    <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
-                        <div className="flex items-center gap-3">
-                            <Checkbox 
-                                id="select-all" 
-                                checked={selectedFileIds.length === GENERATED_FILES.length && GENERATED_FILES.length > 0}
-                                onCheckedChange={toggleSelectAll}
-                            />
-                            <label htmlFor="select-all" className="text-sm font-medium cursor-pointer select-none">
-                                Select All ({GENERATED_FILES.length})
-                            </label>
+            ) : (
+                <div className="h-full w-full bg-background/50 backdrop-blur-sm p-8 overflow-y-auto animate-in fade-in duration-300">
+                    <div className="max-w-4xl mx-auto space-y-6 mt-12">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-2xl font-semibold tracking-tight">Generated Files</h2>
+                            <span className="text-sm text-muted-foreground">{GENERATED_FILES.length} files</span>
                         </div>
-                        <Button 
-                            size="sm" 
-                            disabled={selectedFileIds.length === 0}
-                            className="gap-2 transition-all"
-                        >
-                            <Download className="w-4 h-4" />
-                            Export {selectedFileIds.length > 0 ? `(${selectedFileIds.length})` : ''}
-                        </Button>
-                    </div>
-                    
-                    <div className="overflow-y-auto p-2">
-                        {GENERATED_FILES.map((file, i) => (
-                            <div 
-                                key={file.id} 
-                                className={cn(
-                                    "flex items-center gap-3 p-3 rounded-xl transition-all cursor-pointer group border border-transparent",
-                                    selectedFileIds.includes(file.id) ? "bg-primary/5 border-primary/20" : "hover:bg-muted/50 hover:border-border/50"
-                                )}
-                                onClick={() => toggleFileSelection(file.id)}
-                            >
-                                <Checkbox 
-                                    checked={selectedFileIds.includes(file.id)}
-                                    onCheckedChange={() => toggleFileSelection(file.id)}
-                                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                />
-                                <div className={cn(
-                                    "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
-                                    file.type === 'pdf' && "bg-red-500/10 text-red-500",
-                                    file.type === 'image' && "bg-blue-500/10 text-blue-500",
-                                    file.type === 'json' && "bg-amber-500/10 text-amber-500",
-                                    file.type === 'video' && "bg-purple-500/10 text-purple-500",
-                                )}>
-                                    {file.type === 'pdf' && <FileText className="w-5 h-5" />}
-                                    {file.type === 'image' && <Image className="w-5 h-5" />}
-                                    {file.type === 'json' && <FileJson className="w-5 h-5" />}
-                                    {file.type === 'video' && <Film className="w-5 h-5" />}
+                        <div className="grid gap-3">
+                            {GENERATED_FILES.map((file, i) => (
+                                <div 
+                                    key={file.id} 
+                                    className="flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:shadow-md transition-all group animate-in slide-in-from-bottom-2 duration-500"
+                                    style={{ animationDelay: `${i * 100}ms` }}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn(
+                                            "h-12 w-12 rounded-lg flex items-center justify-center bg-muted",
+                                            file.type === 'pdf' && "bg-red-500/10 text-red-500",
+                                            file.type === 'image' && "bg-blue-500/10 text-blue-500",
+                                            file.type === 'json' && "bg-amber-500/10 text-amber-500",
+                                            file.type === 'video' && "bg-purple-500/10 text-purple-500",
+                                        )}>
+                                            {file.type === 'pdf' && <FileText className="w-6 h-6" />}
+                                            {file.type === 'image' && <Image className="w-6 h-6" />}
+                                            {file.type === 'json' && <FileJson className="w-6 h-6" />}
+                                            {file.type === 'video' && <Film className="w-6 h-6" />}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-medium text-foreground">{file.name}</h3>
+                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                <span className="uppercase text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-muted/50">{file.type}</span>
+                                                <span>•</span>
+                                                <span>{file.size}</span>
+                                                <span>•</span>
+                                                <span>{file.timestamp}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Download className="w-4 h-4" />
+                                    </Button>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-medium text-sm text-foreground truncate">{file.name}</h3>
-                                    <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                                        <span className="uppercase text-[10px] font-bold tracking-wider opacity-70">{file.type}</span>
-                                        <span className="w-0.5 h-0.5 rounded-full bg-muted-foreground/50" />
-                                        <span>{file.size}</span>
-                                        <span className="w-0.5 h-0.5 rounded-full bg-muted-foreground/50" />
-                                        <span>{file.timestamp.split(' ')[1]}</span>
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -679,3 +613,4 @@ export default function Home() {
     </Shell>
   );
 }
+
