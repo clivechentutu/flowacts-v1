@@ -610,12 +610,10 @@ export default function Home() {
                             </div>
                             
                             <div className="flex items-center gap-3">
-                                {selectedFiles.length > 0 && (
-                                    <Button size="sm" onClick={handleDownloadSelected} className="gap-2 h-8 text-xs">
-                                        <Download className="w-3.5 h-3.5" />
-                                        Download ({selectedFiles.length})
-                                    </Button>
-                                )}
+                                <Button size="sm" onClick={handleDownloadSelected} className="gap-2 h-8 text-xs">
+                                    <Download className="w-3.5 h-3.5" />
+                                    {selectedFiles.length > 0 ? `Download (${selectedFiles.length})` : 'Download All'}
+                                </Button>
                             </div>
                         </div>
 
