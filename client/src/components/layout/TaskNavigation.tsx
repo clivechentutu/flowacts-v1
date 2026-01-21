@@ -60,7 +60,7 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                 <div className="p-4 space-y-1 flex-shrink-0">
                     <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
                         <Edit className="w-4 h-4 flex-shrink-0" />
-                        <span className="text-sm font-medium truncate">New Task</span>
+                        <span className="text-sm font-medium truncate">New Project</span>
                     </Button>
                     <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
                         <Search className="w-4 h-4 flex-shrink-0" />
