@@ -194,8 +194,25 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
   };
 
   return (
-    <div className="h-full w-full bg-[#fdfbf7] dark:bg-[#1e1e1e] relative overflow-hidden">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.2] pointer-events-none" />
+    <div className="h-full w-full bg-[#f8f9fa] dark:bg-[#09090b] relative overflow-hidden group/canvas">
+      {/* Canvas Grid Pattern - Dot style for modern look */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.6] dark:opacity-[0.4]"
+        style={{
+            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.4) 1px, transparent 1px)`,
+            backgroundSize: '20px 20px',
+            maskImage: 'radial-gradient(circle at center, black, transparent 80%)' // Optional: fade out edges if desired, but for full canvas usually plain
+        }}
+      />
+      {/* Secondary larger grid for structure */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05]"
+         style={{
+             backgroundImage: `
+                linear-gradient(to right, hsl(var(--foreground)) 1px, transparent 1px),
+                linear-gradient(to bottom, hsl(var(--foreground)) 1px, transparent 1px)
+             `,
+             backgroundSize: '100px 100px'
+         }}
+      />
       
       <TaskSidebar events={events} />
 
