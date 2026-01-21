@@ -199,7 +199,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
       <div className="absolute inset-0 pointer-events-none opacity-[0.4] dark:opacity-[0.3]"
         style={{
             backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.3) 1px, transparent 1px)`,
-            backgroundSize: '24px 24px',
+            backgroundSize: '16px 16px',
             maskImage: 'radial-gradient(circle at center, black, transparent 95%)'
         }}
       />
@@ -210,7 +210,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                 linear-gradient(to right, hsl(var(--foreground)) 1px, transparent 1px),
                 linear-gradient(to bottom, hsl(var(--foreground)) 1px, transparent 1px)
              `,
-             backgroundSize: '120px 120px'
+             backgroundSize: '80px 80px'
          }}
       />
       
