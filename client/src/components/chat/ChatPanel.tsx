@@ -1,16 +1,107 @@
-import { StoryEvent } from "@/lib/mock-data";
+import { StoryEvent, ThinkingStep, AgentAction } from "@/lib/mock-data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2, Zap, Brain, AtSign } from "lucide-react";
+import { 
+  Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2, 
+  Zap, Brain, AtSign, ChevronDown, ChevronUp, CheckCircle2, 
+  Loader2, Scan, MousePointerClick, Check
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ChatPanelProps {
   events: StoryEvent[];
   onSendMessage: (message: string) => void;
   persona: string;
+}
+
+function ThinkingProcess({ steps }: { steps: ThinkingStep[] }) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  if (!steps || steps.length === 0) return null;
+
+  return (
+    <div className="mb-3 rounded-xl border border-border/50 bg-muted/30 overflow-hidden">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <Brain className="w-3.5 h-3.5 text-indigo-500" />
+          <span>Thought Process ({steps.length} steps)</span>
+        </div>
+        {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+      </button>
+      
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="px-3 pb-3 pt-0 space-y-2">
+              {steps.map((step) => (
+                <div key={step.id} className="flex items-start gap-2 text-xs text-muted-foreground/80">
+                  {step.status === 'complete' ? (
+                    <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+                  ) : step.status === 'active' ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500 mt-0.5 shrink-0" />
+                  ) : (
+                    <div className="w-3.5 h-3.5 rounded-full border border-muted-foreground/30 mt-0.5 shrink-0" />
+                  )}
+                  <div className="flex-1">
+                    <span className={cn(step.status === 'active' && "text-foreground font-medium")}>
+                      {step.content}
+                    </span>
+                    {step.duration && <span className="ml-1.5 opacity-60 text-[10px] font-mono">{step.duration}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ActionLog({ actions }: { actions: AgentAction[] }) {
+  if (!actions || actions.length === 0) return null;
+
+  const getIcon = (type: AgentAction['type']) => {
+    switch (type) {
+      case 'browser': return <Globe className="w-3.5 h-3.5" />;
+      case 'analysis': return <Scan className="w-3.5 h-3.5" />;
+      case 'input': return <MousePointerClick className="w-3.5 h-3.5" />;
+      default: return <Zap className="w-3.5 h-3.5" />;
+    }
+  };
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-border/50 pt-3">
+      <div className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">Agent Actions</div>
+      {actions.map((action) => (
+        <div key={action.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-card border border-border/50 shadow-sm text-xs">
+          <div className={cn(
+            "p-1.5 rounded-md shrink-0", 
+            action.status === 'running' ? "bg-blue-500/10 text-blue-500 animate-pulse" : "bg-muted text-muted-foreground"
+          )}>
+            {action.status === 'running' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : getIcon(action.type)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-foreground truncate">{action.description}</div>
+            {action.result && <div className="text-[10px] text-muted-foreground truncate mt-0.5">{action.result}</div>}
+          </div>
+          {action.status === 'done' && <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
@@ -87,7 +178,9 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
                   ? "bg-primary text-primary-foreground rounded-tr-none" 
                   : "bg-card border border-border rounded-tl-none text-foreground"
               )}>
+                {msg.type === 'ai' && msg.thoughts && <ThinkingProcess steps={msg.thoughts} />}
                 {msg.content}
+                {msg.type === 'ai' && msg.agentActions && <ActionLog actions={msg.agentActions} />}
               </div>
             </div>
           ))}

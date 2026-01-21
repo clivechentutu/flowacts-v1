@@ -7,6 +7,21 @@ import ecommerceProductPage from '@assets/generated_images/ecommerce_product_pag
 
 export type EventType = 'action' | 'insight' | 'alert' | 'user' | 'ai';
 
+export interface ThinkingStep {
+  id: string;
+  content: string;
+  status: 'pending' | 'active' | 'complete';
+  duration?: string;
+}
+
+export interface AgentAction {
+  id: string;
+  type: 'browser' | 'analysis' | 'input';
+  description: string;
+  status: 'running' | 'done' | 'failed';
+  result?: string;
+}
+
 export interface StoryEvent {
   id: string;
   type: EventType;
@@ -16,6 +31,8 @@ export interface StoryEvent {
   timestamp: string;
   metadata?: Record<string, string>;
   parentId?: string; // For branching logic
+  thoughts?: ThinkingStep[];
+  agentActions?: AgentAction[];
 }
 
 export interface Scenario {
@@ -60,7 +77,17 @@ export const SCENARIOS: Scenario[] = [
         id: 'evt-2',
         type: 'ai',
         content: 'Understood. Simulating a new user signing up for competitor.com...',
-        timestamp: '10:00 AM'
+        timestamp: '10:00 AM',
+        thoughts: [
+          { id: 't1', content: 'Identifying core user journey for signup flow', status: 'complete', duration: '1.2s' },
+          { id: 't2', content: 'Analyzing pricing structure and entry points', status: 'complete', duration: '0.8s' },
+          { id: 't3', content: 'Determining optimal path for free trial validation', status: 'complete', duration: '0.5s' }
+        ],
+        agentActions: [
+          { id: 'a1', type: 'browser', description: 'Navigating to competitor.com homepage', status: 'done', result: 'Loaded 200 OK' },
+          { id: 'a2', type: 'analysis', description: 'Scanning DOM for "Sign Up" or "Start Trial" CTAs', status: 'done', result: 'Found 3 primary CTAs' },
+          { id: 'a3', type: 'input', description: 'Clicking main hero CTA', status: 'done' }
+        ]
       },
       {
         id: 'evt-3',
