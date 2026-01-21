@@ -12,6 +12,8 @@ export interface StoryEvent {
   type: EventType;
   title?: string;
   content: string; // Text content or Image URL
+  thinking?: string; // AI internal thought process
+  actions?: string[]; // List of actions taken by AI
   image?: string; // For action cards
   timestamp: string;
   metadata?: Record<string, string>;
@@ -59,6 +61,8 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'evt-2',
         type: 'ai',
+        thinking: 'I need to start a fresh session to accurately simulate a new user experience. I will use a clean browser context.',
+        actions: ['Initializing virtual browser...', 'Clearing local storage & cookies'],
         content: 'Understood. Simulating a new user signing up for competitor.com...',
         timestamp: '10:00 AM'
       },
@@ -80,6 +84,8 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'evt-5',
         type: 'ai',
+        thinking: 'Users usually look for pricing in the top navigation bar or footer. I will scan the homepage for these patterns.',
+        actions: ['Scanning header menu...', 'Detected "Pricing" link', 'Navigating to /pricing'],
         content: 'Searching for pricing... Found it. Now proceeding to sign up...',
         timestamp: '10:02 AM'
       },
@@ -111,6 +117,8 @@ export const SCENARIOS: Scenario[] = [
       {
         id: 'evt-10',
         type: 'ai',
+        thinking: 'I need to test the password strength validation logic. I will try a common weak password to trigger the validation error.',
+        actions: ['Typing "123456" into password field', 'Checking for validation messages'],
         content: 'Good question. Testing with a weak password... The system provided an inline validation error.',
         timestamp: '10:04 AM'
       },

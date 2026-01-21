@@ -3,7 +3,23 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Sparkles, User, Paperclip, Globe, Plus, FileText, Share2, Zap, Brain, AtSign } from "lucide-react";
+import { 
+  Send, 
+  Sparkles, 
+  User, 
+  Paperclip, 
+  Globe, 
+  Plus, 
+  FileText, 
+  Share2, 
+  Zap, 
+  Brain, 
+  AtSign,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle2,
+  Loader2
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -11,6 +27,62 @@ interface ChatPanelProps {
   events: StoryEvent[];
   onSendMessage: (message: string) => void;
   persona: string;
+}
+
+function AIMessageContent({ msg }: { msg: StoryEvent }) {
+  const [isThinkingOpen, setIsThinkingOpen] = useState(true);
+
+  if (msg.type !== 'ai') return <>{msg.content}</>;
+
+  const hasThinking = !!msg.thinking;
+  const hasActions = !!msg.actions && msg.actions.length > 0;
+
+  if (!hasThinking && !hasActions) return <>{msg.content}</>;
+
+  return (
+    <div className="flex flex-col w-full min-w-0">
+      {/* Thinking Section */}
+      {hasThinking && (
+         <div className="mb-3">
+             <button 
+                onClick={() => setIsThinkingOpen(!isThinkingOpen)}
+                className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 hover:text-primary/70 transition-colors select-none mb-2 bg-muted/50 px-2 py-1 rounded-md w-fit"
+             >
+                <Brain className="w-3 h-3" />
+                <span>Thought Process</span>
+                {isThinkingOpen ? <ChevronDown className="w-3 h-3 opacity-50" /> : <ChevronRight className="w-3 h-3 opacity-50" />}
+             </button>
+             
+             {isThinkingOpen && (
+                <div className="pl-3 border-l-2 border-primary/20 ml-1 mb-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <p className="text-xs text-muted-foreground/80 italic leading-relaxed">
+                        {msg.thinking}
+                    </p>
+                </div>
+             )}
+         </div>
+      )}
+      
+      {/* Actions Section */}
+      {hasActions && (
+         <div className="space-y-1.5 mb-3">
+             {msg.actions?.map((action, idx) => (
+                 <div key={idx} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/20 px-2.5 py-1.5 rounded-md border border-border/40">
+                     <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+                     </div>
+                     <span>{action}</span>
+                 </div>
+             ))}
+         </div>
+      )}
+      
+      {/* Final Response */}
+      <div className="text-sm leading-relaxed text-foreground">
+          {msg.content}
+      </div>
+    </div>
+  );
 }
 
 export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
@@ -54,7 +126,7 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
       <ScrollArea className="flex-1 p-6">
         <div className="space-y-6">
           <div className="flex gap-3">
-             <Avatar className="h-8 w-8 rounded-lg bg-primary/10 text-primary border border-primary/20">
+             <Avatar className="h-8 w-8 rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0">
                 <AvatarFallback><Sparkles className="w-4 h-4" /></AvatarFallback>
              </Avatar>
              <div className="bg-muted p-4 rounded-2xl rounded-tl-none text-sm text-foreground/90 leading-relaxed max-w-[90%]">
@@ -71,7 +143,7 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
               )}
             >
               <Avatar className={cn(
-                "h-8 w-8 rounded-lg border",
+                "h-8 w-8 rounded-lg border shrink-0",
                 msg.type === 'user' ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary border-primary/20"
               )}>
                 {msg.type === 'user' ? (
@@ -82,12 +154,12 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
               </Avatar>
               
               <div className={cn(
-                "p-4 rounded-2xl text-sm leading-relaxed max-w-[90%] shadow-sm",
+                "p-4 rounded-2xl text-sm leading-relaxed max-w-[90%] shadow-sm overflow-hidden",
                 msg.type === 'user' 
                   ? "bg-primary text-primary-foreground rounded-tr-none" 
-                  : "bg-card border border-border rounded-tl-none text-foreground"
+                  : "bg-card border border-border rounded-tl-none"
               )}>
-                {msg.content}
+                <AIMessageContent msg={msg} />
               </div>
             </div>
           ))}
