@@ -1,17 +1,16 @@
-import { Home, Layers, Library, Settings, LogOut } from "lucide-react";
+import { Home, Layers, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 interface AppSidebarProps {
-  activeTab: 'home' | 'experience' | 'library';
-  onTabChange: (tab: 'home' | 'experience' | 'library') => void;
+  activeTab: 'home' | 'experience';
+  onTabChange: (tab: 'home' | 'experience') => void;
 }
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'experience', icon: Layers, label: 'Experience' },
-    { id: 'library', icon: Library, label: 'Library' },
   ] as const;
 
   return (
