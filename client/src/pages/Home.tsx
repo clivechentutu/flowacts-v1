@@ -4,7 +4,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar";
 import { TaskNavigation } from "@/components/layout/TaskNavigation";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { FlowCanvas } from "@/components/canvas/FlowCanvas";
-import { SCENARIOS, StoryEvent } from "@/lib/mock-data";
+import { SCENARIOS, StoryEvent, GENERATED_FILES } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Send, 
@@ -32,7 +32,12 @@ import {
   Clock,
   ChevronRight,
   ChevronLeft,
-  AtSign
+  AtSign,
+  Download,
+  File,
+  FileJson,
+  Film,
+  Image,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,6 +109,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
+  const [viewMode, setViewMode] = useState<'canvas' | 'files'>('canvas');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -506,22 +512,80 @@ export default function Home() {
       default:
         return (
           <>
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-2">
-              {SCENARIOS.map(scenario => (
-                <button
-                  key={scenario.id}
-                  onClick={() => setActiveScenarioId(scenario.id)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all shadow-sm ${
-                    activeScenarioId === scenario.id 
-                      ? 'bg-primary text-primary-foreground shadow-md transform scale-105' 
-                      : 'bg-card text-muted-foreground hover:bg-muted'
-                  }`}
-                >
-                  {scenario.name}
-                </button>
-              ))}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex gap-1 bg-card/80 backdrop-blur-md p-1 rounded-lg border border-border shadow-sm">
+              <button
+                onClick={() => setViewMode('canvas')}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
+                  viewMode === 'canvas' 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                Canvas
+              </button>
+              <button
+                onClick={() => setViewMode('files')}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
+                  viewMode === 'files' 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                Files
+              </button>
             </div>
-            <FlowCanvas events={events} />
+            
+            {viewMode === 'canvas' ? (
+                <FlowCanvas events={events} />
+            ) : (
+                <div className="h-full w-full bg-background/50 backdrop-blur-sm p-8 overflow-y-auto animate-in fade-in duration-300">
+                    <div className="max-w-4xl mx-auto space-y-6 mt-12">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-2xl font-semibold tracking-tight">Generated Files</h2>
+                            <span className="text-sm text-muted-foreground">{GENERATED_FILES.length} files</span>
+                        </div>
+                        <div className="grid gap-3">
+                            {GENERATED_FILES.map((file, i) => (
+                                <div 
+                                    key={file.id} 
+                                    className="flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:shadow-md transition-all group animate-in slide-in-from-bottom-2 duration-500"
+                                    style={{ animationDelay: `${i * 100}ms` }}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={cn(
+                                            "h-12 w-12 rounded-lg flex items-center justify-center bg-muted",
+                                            file.type === 'pdf' && "bg-red-500/10 text-red-500",
+                                            file.type === 'image' && "bg-blue-500/10 text-blue-500",
+                                            file.type === 'json' && "bg-amber-500/10 text-amber-500",
+                                            file.type === 'video' && "bg-purple-500/10 text-purple-500",
+                                        )}>
+                                            {file.type === 'pdf' && <FileText className="w-6 h-6" />}
+                                            {file.type === 'image' && <Image className="w-6 h-6" />}
+                                            {file.type === 'json' && <FileJson className="w-6 h-6" />}
+                                            {file.type === 'video' && <Film className="w-6 h-6" />}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-medium text-foreground">{file.name}</h3>
+                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                <span className="uppercase text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-muted/50">{file.type}</span>
+                                                <span>•</span>
+                                                <span>{file.size}</span>
+                                                <span>•</span>
+                                                <span>{file.timestamp}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Download className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
           </>
         );
     }

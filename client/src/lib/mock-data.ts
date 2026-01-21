@@ -26,6 +26,23 @@ export interface Scenario {
   events: StoryEvent[];
 }
 
+export interface GeneratedFile {
+  id: string;
+  name: string;
+  type: 'image' | 'pdf' | 'json' | 'video';
+  size: string;
+  timestamp: string;
+  url: string;
+}
+
+export const GENERATED_FILES: GeneratedFile[] = [
+    { id: 'f1', name: 'Competitor_Analysis_Report.pdf', type: 'pdf', size: '2.4 MB', timestamp: '2025-01-21 14:30', url: '#' },
+    { id: 'f2', name: 'User_Flow_Diagram.png', type: 'image', size: '1.2 MB', timestamp: '2025-01-21 14:28', url: '#' },
+    { id: 'f3', name: 'Market_Research_Data.json', type: 'json', size: '45 KB', timestamp: '2025-01-21 14:25', url: '#' },
+    { id: 'f4', name: 'Onboarding_Session_Recording.mp4', type: 'video', size: '15.8 MB', timestamp: '2025-01-21 14:15', url: '#' },
+    { id: 'f5', name: 'Competitor_Pricing_Screenshot.png', type: 'image', size: '850 KB', timestamp: '2025-01-21 14:10', url: '#' },
+];
+
 export const SCENARIOS: Scenario[] = [
   {
     id: 'competitor-analysis',
