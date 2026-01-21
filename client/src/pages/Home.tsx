@@ -568,18 +568,29 @@ export default function Home() {
             
             {/* Page Management - Only visible in Canvas mode */}
             {viewMode === 'canvas' && (
-                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2">
-                    <div className="bg-card/90 backdrop-blur-md border border-border rounded-full shadow-lg flex items-center overflow-hidden h-10">
-                        <div className="px-4 py-1.5 font-medium text-sm text-foreground bg-muted/30 h-full flex items-center">
-                            {activePage}
-                        </div>
-                        <div className="h-5 w-px bg-border"></div>
+                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 flex items-center justify-center animate-in fade-in slide-in-from-top-2 duration-300">
+                     <div className="flex items-center gap-0.5 bg-muted/10 backdrop-blur-[1px] p-0.5 rounded-lg border border-white/5 hover:border-border/20 transition-all group/pages">
+                        {pages.map((page) => (
+                            <button
+                                key={page}
+                                onClick={() => setActivePage(page)}
+                                className={cn(
+                                    "px-3 py-1 rounded-md text-[11px] transition-all duration-200 border border-transparent",
+                                    activePage === page
+                                        ? "bg-card/80 text-foreground font-medium shadow-sm border-border/30"
+                                        : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/10"
+                                )}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                        <div className="w-px h-3 bg-border/20 mx-1" />
                         <button 
                             onClick={handleAddPage}
-                            className="px-3 h-full flex items-center justify-center hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                            className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-muted/20 transition-colors text-muted-foreground/50 hover:text-foreground"
                             title="Add New Page"
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 </div>
@@ -587,7 +598,7 @@ export default function Home() {
             
             <div className="relative w-full h-full">
                 {/* Canvas is ALWAYS rendered underneath */}
-                <FlowCanvas events={events} />
+                <FlowCanvas events={activePage === 'Page 1' ? events : []} />
 
                 {/* Files Overlay Panel - Absolute positioned, not replacing canvas */}
                 {viewMode === 'files' && (
