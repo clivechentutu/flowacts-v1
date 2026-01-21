@@ -111,17 +111,19 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                                 <TooltipProvider>
                                     <Tooltip delayDuration={500}>
                                         <TooltipTrigger asChild>
-                                            <Button 
-                                                variant="ghost" 
-                                                className={cn(
-                                                    "w-full justify-start gap-3 h-9 px-2 text-muted-foreground hover:text-foreground font-normal pr-8",
-                                                    project.isFavorite && "text-foreground font-medium"
-                                                )}
-                                            >
-                                                <MessageSquare className="w-4 h-4 shrink-0" />
-                                                <span className="truncate text-sm text-left flex-1 min-w-0">{project.title}</span>
-                                                {project.isFavorite && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
-                                            </Button>
+                                            <div className="w-full">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    className={cn(
+                                                        "w-full justify-start gap-3 h-9 px-2 text-muted-foreground hover:text-foreground font-normal pr-8 overflow-hidden",
+                                                        project.isFavorite && "text-foreground font-medium"
+                                                    )}
+                                                >
+                                                    <MessageSquare className="w-4 h-4 shrink-0" />
+                                                    <span className="truncate text-sm text-left flex-1 min-w-0">{project.title}</span>
+                                                    {project.isFavorite && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
+                                                </Button>
+                                            </div>
                                         </TooltipTrigger>
                                         <TooltipContent side="right" className="max-w-[200px] break-words z-50">
                                             {project.title}
