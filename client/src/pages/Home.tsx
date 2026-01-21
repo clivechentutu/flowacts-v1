@@ -38,10 +38,13 @@ import {
   FileJson,
   Film,
   Image,
+  CheckSquare,
+  Square
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const HISTORY_TASKS = [
     {
@@ -110,6 +113,10 @@ export default function Home() {
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [viewMode, setViewMode] = useState<'canvas' | 'files'>('canvas');
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [pages, setPages] = useState<string[]>(['Page 1']);
+  const [activePage, setActivePage] = useState('Page 1');
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -201,6 +208,40 @@ export default function Home() {
     setActiveScenarioId(scenarioId);
     setActiveTab('experience');
   };
+
+  const toggleFileSelection = (id: string) => {
+      if (selectedFiles.includes(id)) {
+          setSelectedFiles(selectedFiles.filter(fid => fid !== id));
+      } else {
+          setSelectedFiles([...selectedFiles, id]);
+      }
+  };
+
+  const toggleAllFiles = () => {
+      if (selectedFiles.length === GENERATED_FILES.length) {
+          setSelectedFiles([]);
+      } else {
+          setSelectedFiles(GENERATED_FILES.map(f => f.id));
+      }
+  };
+
+  const handleDownloadSelected = () => {
+      toast({
+          title: "Download Started",
+          description: `Downloading ${selectedFiles.length} files...`,
+      });
+  };
+
+  const handleAddPage = () => {
+      const newPage = `Page ${pages.length + 1}`;
+      setPages([...pages, newPage]);
+      setActivePage(newPage);
+      toast({
+          title: "Page Added",
+          description: `${newPage} has been created.`,
+      });
+  };
+
 
   const getFilteredScenarios = () => {
     // Helper to generate multiple dummy items based on a template
@@ -471,41 +512,29 @@ export default function Home() {
                                      activeCategory === 'learning' ? <BookOpen className="w-5 h-5" /> :
                                      <Sparkles className="w-5 h-5" />}
                                 </div>
-                                <div className="px-2 py-1 bg-muted rounded-md text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                                    Playback Case
-                                </div>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary -mr-2 -mt-2">
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                                </Button>
                             </div>
                             
                             <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <h4 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors truncate">
-                                        {scenario.name}
-                                    </h4>
-                                    <Play className="w-4 h-4 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
-                                </div>
-                                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                                <h3 className="font-semibold text-lg text-foreground leading-tight group-hover:text-primary transition-colors">
+                                    {scenario.name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground line-clamp-2">
                                     {scenario.goal} - Simulating {scenario.persona}
                                 </p>
                             </div>
 
-                            <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-muted-foreground/70">
-                                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                <span>Completed 2m ago</span>
+                            <div className="pt-2 flex items-center gap-2 text-xs font-medium text-muted-foreground/80">
+                                <Play className="w-3 h-3 fill-current" />
+                                <span>Start Simulation</span>
                             </div>
                         </div>
                     ))}
                  </div>
               </div>
             </div>
-          </div>
-        );
-      case 'library':
-         return (
-          <div className="flex items-center justify-center h-full w-full bg-background text-muted-foreground">
-             <div className="text-center">
-               <h2 className="text-2xl font-bold mb-2">Library</h2>
-               <p>Past Analysis Results & Assets</p>
-             </div>
           </div>
         );
       case 'experience':
@@ -537,55 +566,112 @@ export default function Home() {
               </button>
             </div>
             
-            {viewMode === 'canvas' ? (
-                <FlowCanvas events={events} />
-            ) : (
-                <div className="h-full w-full bg-background/50 backdrop-blur-sm p-8 overflow-y-auto animate-in fade-in duration-300">
-                    <div className="max-w-4xl mx-auto space-y-6 mt-12">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-2xl font-semibold tracking-tight">Generated Files</h2>
-                            <span className="text-sm text-muted-foreground">{GENERATED_FILES.length} files</span>
+            {/* Page Management - Only visible in Canvas mode */}
+            {viewMode === 'canvas' && (
+                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2">
+                    <div className="bg-card/90 backdrop-blur-md border border-border rounded-full shadow-lg flex items-center overflow-hidden h-10">
+                        <div className="px-4 py-1.5 font-medium text-sm text-foreground bg-muted/30 h-full flex items-center">
+                            {activePage}
                         </div>
-                        <div className="grid gap-3">
+                        <div className="h-5 w-px bg-border"></div>
+                        <button 
+                            onClick={handleAddPage}
+                            className="px-3 h-full flex items-center justify-center hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+                            title="Add New Page"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
+            
+            <div className="relative w-full h-full">
+                {/* Canvas is ALWAYS rendered underneath */}
+                <FlowCanvas events={events} />
+
+                {/* Files Overlay Panel - Absolute positioned, not replacing canvas */}
+                {viewMode === 'files' && (
+                    <div className="absolute top-16 left-1/2 -translate-x-1/2 w-full max-w-4xl max-h-[calc(100vh-140px)] bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl overflow-hidden z-40 flex flex-col animate-in fade-in zoom-in-95 duration-200 origin-top">
+                        <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-lg font-semibold tracking-tight">Generated Files</h2>
+                                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border/50">{GENERATED_FILES.length}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                                {selectedFiles.length > 0 && (
+                                    <Button size="sm" onClick={handleDownloadSelected} className="gap-2 h-8 text-xs">
+                                        <Download className="w-3.5 h-3.5" />
+                                        Download ({selectedFiles.length})
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Batch Selection Header */}
+                        <div className="px-4 py-2 border-b border-border bg-muted/10 flex items-center gap-4 text-xs font-medium text-muted-foreground">
+                            <div className="flex items-center gap-3 w-8 shrink-0 justify-center">
+                                <Checkbox 
+                                    checked={selectedFiles.length === GENERATED_FILES.length && GENERATED_FILES.length > 0} 
+                                    onCheckedChange={toggleAllFiles}
+                                    id="select-all-files"
+                                />
+                            </div>
+                            <div className="flex-1">File Name</div>
+                            <div className="w-24 text-right">Size</div>
+                            <div className="w-32 text-right">Date</div>
+                            <div className="w-10"></div>
+                        </div>
+
+                        <div className="overflow-y-auto p-2 space-y-1">
                             {GENERATED_FILES.map((file, i) => (
                                 <div 
                                     key={file.id} 
-                                    className="flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:shadow-md transition-all group animate-in slide-in-from-bottom-2 duration-500"
-                                    style={{ animationDelay: `${i * 100}ms` }}
+                                    className={cn(
+                                        "flex items-center gap-4 p-2 rounded-lg transition-all group",
+                                        selectedFiles.includes(file.id) ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50 border border-transparent"
+                                    )}
                                 >
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3 w-8 shrink-0 justify-center">
+                                        <Checkbox 
+                                            checked={selectedFiles.includes(file.id)} 
+                                            onCheckedChange={() => toggleFileSelection(file.id)}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
                                         <div className={cn(
-                                            "h-12 w-12 rounded-lg flex items-center justify-center bg-muted",
+                                            "h-9 w-9 rounded-md flex items-center justify-center shrink-0",
                                             file.type === 'pdf' && "bg-red-500/10 text-red-500",
                                             file.type === 'image' && "bg-blue-500/10 text-blue-500",
                                             file.type === 'json' && "bg-amber-500/10 text-amber-500",
                                             file.type === 'video' && "bg-purple-500/10 text-purple-500",
                                         )}>
-                                            {file.type === 'pdf' && <FileText className="w-6 h-6" />}
-                                            {file.type === 'image' && <Image className="w-6 h-6" />}
-                                            {file.type === 'json' && <FileJson className="w-6 h-6" />}
-                                            {file.type === 'video' && <Film className="w-6 h-6" />}
+                                            {file.type === 'pdf' && <FileText className="w-4 h-4" />}
+                                            {file.type === 'image' && <Image className="w-4 h-4" />}
+                                            {file.type === 'json' && <FileJson className="w-4 h-4" />}
+                                            {file.type === 'video' && <Film className="w-4 h-4" />}
                                         </div>
-                                        <div>
-                                            <h3 className="font-medium text-foreground">{file.name}</h3>
-                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                                <span className="uppercase text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded bg-muted/50">{file.type}</span>
-                                                <span>•</span>
-                                                <span>{file.size}</span>
-                                                <span>•</span>
-                                                <span>{file.timestamp}</span>
-                                            </p>
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-sm text-foreground truncate">{file.name}</p>
+                                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{file.type}</p>
                                         </div>
                                     </div>
-                                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Download className="w-4 h-4" />
-                                    </Button>
+                                    
+                                    <div className="w-24 text-right text-xs text-muted-foreground font-mono">{file.size}</div>
+                                    <div className="w-32 text-right text-xs text-muted-foreground">{file.timestamp.split(' ')[1]}</div>
+                                    
+                                    <div className="w-10 flex justify-end">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Download className="w-4 h-4 text-muted-foreground" />
+                                        </Button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
           </>
         );
     }
@@ -613,4 +699,3 @@ export default function Home() {
     </Shell>
   );
 }
-
