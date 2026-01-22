@@ -9,9 +9,10 @@ interface ActionCardProps {
   timestamp: string;
   metadata?: Record<string, string>;
   isLast?: boolean;
+  onInsightClick?: () => void;
 }
 
-export function ActionCard({ title, content, image, timestamp, metadata, isLast }: ActionCardProps) {
+export function ActionCard({ title, content, image, timestamp, metadata, isLast, onInsightClick }: ActionCardProps) {
   return (
     <CardBase isLast={isLast} className="min-w-[360px] max-w-[360px] flex flex-col h-full bg-card border-border">
       <div className="p-3 border-b border-border/50 flex justify-between items-center bg-muted/50 flex-shrink-0">
@@ -55,7 +56,13 @@ export function ActionCard({ title, content, image, timestamp, metadata, isLast 
       <div 
         className="bg-primary/5 border-t border-primary/10 p-3 flex gap-3 mt-auto cursor-pointer hover:bg-primary/10 transition-colors group/insight"
         role="button"
-        onPointerDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+             e.stopPropagation();
+        }}
+        onClick={(e) => {
+             e.stopPropagation();
+             onInsightClick?.();
+        }}
       >
         <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 mt-0.5 group-hover/insight:bg-primary group-hover/insight:text-primary-foreground transition-colors">
           <Sparkles className="w-3.5 h-3.5" />

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
 import { FileCard } from "./cards/FileCard";
+import { SuperFloat } from "./SuperFloat";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
@@ -56,7 +57,19 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
   const [cardInputs, setCardInputs] = useState<Record<string, string>>({});
   // droppedFiles state is now lifted
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [openFloats, setOpenFloats] = useState<string[]>([]);
   const { toast } = useToast();
+
+  const toggleFloat = (id: string) => {
+    setOpenFloats(prev => {
+        if (prev.includes(id)) return prev.filter(f => f !== id);
+        return [...prev, id];
+    });
+  };
+
+  const closeAllFloats = () => {
+    setOpenFloats([]);
+  };
 
   const canvasEvents = useMemo(() => {
     const actionEvents = events.filter(e => ['action'].includes(e.type));
@@ -342,6 +355,13 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
       >
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
+            {/* Global Dismiss for Floats */}
+            {openFloats.length > 0 && (
+                <div 
+                    className="absolute inset-0 z-40 bg-transparent" 
+                    onClick={closeAllFloats}
+                />
+            )}
             <Controls />
             <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
               <div 
@@ -435,6 +455,31 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                        />
                     );
                   })}
+                  {/* Super Float Tethers */}
+                  {openFloats.map(floatId => {
+                      const cardPos = positions.find(p => p.id === floatId);
+                      if (!cardPos) return null;
+                      
+                      const floatX = cardPos.x + CARD_WIDTH + 60;
+                      const floatY = cardPos.y;
+                      
+                      const start = { x: cardPos.x + CARD_WIDTH, y: cardPos.y + 400 };
+                      const end = { x: floatX, y: floatY + 60 };
+                      
+                      const cp1 = { x: start.x + 40, y: start.y };
+                      const cp2 = { x: end.x - 40, y: end.y };
+
+                      return (
+                          <path
+                              key={`tether-${floatId}`}
+                              d={`M ${start.x} ${start.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${end.x} ${end.y}`}
+                              stroke="rgba(59, 130, 246, 0.5)"
+                              strokeWidth="2"
+                              fill="none"
+                              strokeDasharray="4"
+                          />
+                      );
+                  })}
                 </svg>
 
                 {/* Cards Layer */}
@@ -481,6 +526,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                                   timestamp={event.timestamp}
                                   metadata={event.metadata}
                                   isLast={true} 
+                                  onInsightClick={() => toggleFloat(event.id)}
                                 />
                             )}
                          </div>
@@ -529,6 +575,29 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                     </motion.div>
                   );
                 })}
+
+                {/* Super Floats Layer */}
+                <AnimatePresence>
+                    {openFloats.map(floatId => {
+                        const cardPos = positions.find(p => p.id === floatId);
+                        const event = canvasEvents.find(e => e.id === floatId);
+                        if (!cardPos || !event) return null;
+                        
+                        const floatX = cardPos.x + CARD_WIDTH + 60;
+                        const floatY = cardPos.y;
+
+                        return (
+                            <SuperFloat 
+                                key={`float-${floatId}`}
+                                cardId={floatId}
+                                title={event.title}
+                                content={event.content}
+                                onClose={() => toggleFloat(floatId)}
+                                position={{ x: floatX, y: floatY }}
+                            />
+                        );
+                    })}
+                </AnimatePresence>
               </div>
             </TransformComponent>
           </>

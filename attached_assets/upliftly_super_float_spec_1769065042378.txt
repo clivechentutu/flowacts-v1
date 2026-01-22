@@ -1,0 +1,118 @@
+# Upliftly "Super Float" (Tethered Float) Interaction Specification
+
+**Version:** 1.0
+**Date:** 2026-01-22
+**Author:** Manus AI
+**Target Audience:** Frontend Developers (Replit/React), UI Designers
+
+---
+
+## 1. Overview (概述)
+
+The "Super Float" (or Tethered Float) is a secondary information container designed to display detailed AI insights without expanding the dimensions of the primary Card component on the Canvas. It solves the problem of displaying long-form content (analysis, charts, code) while maintaining a clean, grid-based Canvas layout.
+
+**Core Philosophy:**
+*   **Non-Intrusive:** Does not affect the layout flow of the Canvas.
+*   **Context-Aware:** Visually tethered to its parent Card to maintain context.
+*   **Action-Oriented:** Serves as the primary hub for Copy, Download, and Share actions.
+
+---
+
+## 2. Visual Structure (视觉构造)
+
+### 2.1 Container Style (容器样式)
+*   **Dimensions:**
+    *   Width: `400px` (Fixed, wider than the standard 320px Card to accommodate reading).
+    *   Max-Height: `600px` (Scrollable content area).
+*   **Appearance:**
+    *   Background: `rgba(20, 20, 22, 0.95)` (Dark mode default, slightly translucent).
+    *   Border: `1px solid rgba(255, 255, 255, 0.1)`.
+    *   Shadow: `0px 20px 40px rgba(0, 0, 0, 0.5)` (Heavy shadow to indicate high elevation).
+    *   Radius: `12px`.
+    *   Backdrop Filter: `blur(12px)` (Frosted glass effect).
+
+### 2.2 The Tether (连接线)
+*   **Visual:** A dynamic Bézier curve connecting the **Right-Center** of the Parent Card to the **Left-Center** of the Super Float.
+*   **Style:**
+    *   Color: `rgba(59, 130, 246, 0.5)` (Primary Blue, 50% opacity).
+    *   Thickness: `2px`.
+    *   Endcaps: Small dot (`4px`) on the Card side, seamless merge on the Float side.
+
+### 2.3 Layout (内部布局)
+1.  **Header (Fixed):**
+    *   Icon: AI Sparkle (Blue).
+    *   Title: "AI Insight" or specific analysis type (e.g., "Performance Audit").
+    *   Actions: `Copy`, `Download`, `Share`, `Close (x)`.
+2.  **Body (Scrollable):**
+    *   Markdown rendered content (Headers, Paragraphs, Lists).
+    *   Code blocks with syntax highlighting.
+    *   Data tables or mini-charts.
+3.  **Footer (Optional):**
+    *   Quick actions (e.g., "Regenerate", "Ask Follow-up").
+
+---
+
+## 3. Interaction Logic (交互逻辑)
+
+### 3.1 Triggering (触发)
+*   **Action:** User clicks the "AI Insight" summary area at the bottom of a Card.
+*   **Animation:**
+    *   The Float `scales up` from `0.9` to `1.0`.
+    *   Opacity fades in from `0` to `1`.
+    *   The Tether "grows" from the Card to the Float.
+    *   Duration: `200ms` (Ease-out).
+
+### 3.2 Positioning & Collision (定位与避让)
+*   **Default Position:** `Card.Right + 40px`.
+*   **Edge Detection:**
+    *   If `Float.Right > Viewport.Right`: Flip to **Left** side (`Card.Left - 40px - Float.Width`).
+    *   If `Float.Bottom > Viewport.Bottom`: Shift **Upwards** to fit.
+*   **Z-Index:** Must be higher than all Cards and Connections (`z-index: 1000`).
+
+### 3.3 Multi-Window Behavior (多窗口共存)
+*   **Rule:** Allow multiple Super Floats to be open simultaneously to enable comparison.
+*   **Focus:** Clicking a Float brings it to the top (`z-index++`).
+*   **Global Dismiss:** Clicking on the empty Canvas background closes ALL open Floats.
+
+---
+
+## 4. Export Capabilities (输出能力)
+
+The Header Action Bar is the critical feature for this component.
+
+### 4.1 Copy (复制)
+*   **Icon:** `Clipboard` (Lucide React).
+*   **Interaction:**
+    *   Click -> Toast "Copied to clipboard".
+*   **Payload (Smart Clipboard):**
+    *   **Plain Text:** The raw Markdown content of the insight.
+    *   **HTML:** A formatted snippet including the Card Title + Insight Content (for pasting into Notion/Docs).
+
+### 4.2 Download (下载)
+*   **Icon:** `Download` (Lucide React).
+*   **Interaction:**
+    *   Click -> Dropdown Menu:
+        1.  `Save as Image (.png)`: Renders the **Super Float content only** as a high-res PNG card.
+        2.  `Save Card + Insight (.png)`: Renders a combined image of the **Parent Card + Super Float** side-by-side (The "Evidence Combo").
+        3.  `Export as PDF`: Generates a single-page PDF report of this specific insight.
+
+### 4.3 Share (分享)
+*   **Icon:** `Share2` (Lucide React).
+*   **Interaction:**
+    *   Click -> Modal "Share Insight".
+    *   **Features:**
+        *   Generate public read-only link (e.g., `upliftly.ai/s/xyz123`).
+        *   "Send to Slack/Teams" integration button.
+
+---
+
+## 5. Implementation Notes (开发备注)
+
+*   **Component Name:** `SuperFloat.tsx`
+*   **State Management:** Use a global store (e.g., Zustand) to track `openFloatIds` array.
+*   **Portal:** Render Floats using `React.createPortal` into a dedicated layer above the Canvas to avoid `overflow: hidden` clipping issues from the Canvas container.
+*   **Tether Rendering:** Use an SVG layer underneath the Portal layer to draw the connecting curves.
+
+---
+
+**End of Specification**
