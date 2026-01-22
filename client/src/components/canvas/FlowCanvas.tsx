@@ -460,8 +460,8 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                       const cardPos = positions.find(p => p.id === floatId);
                       if (!cardPos) return null;
                       
-                      const floatX = cardPos.x + CARD_WIDTH + 60;
-                      const floatY = cardPos.y;
+                      const floatX = cardPos.x + CARD_WIDTH + 80; // Increased gap for wider document
+                      const floatY = cardPos.y - 50; // Shift up slightly to center vertically relative to card start
                       
                       const start = { x: cardPos.x + CARD_WIDTH, y: cardPos.y + 400 };
                       const end = { x: floatX, y: floatY + 60 };
