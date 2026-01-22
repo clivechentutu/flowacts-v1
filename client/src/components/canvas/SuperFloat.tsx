@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { X, Sparkles, Copy, Download, Share2, RefreshCw, MessageSquare } from "lucide-react";
+import { motion, useDragControls } from "framer-motion";
+import { X, Sparkles, Copy, Download, Share2, Pin, PinOff, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
@@ -18,10 +18,14 @@ interface SuperFloatProps {
   onClose: () => void;
   position: { x: number; y: number };
   isFlipped?: boolean; // If true, render to the left of the card
+  isPinned?: boolean;
+  onPinToggle?: () => void;
+  onDrag?: (e: any, info: any) => void;
 }
 
-export function SuperFloat({ cardId, title, content, onClose, position, isFlipped = false }: SuperFloatProps) {
+export function SuperFloat({ cardId, title, content, onClose, position, isFlipped = false, isPinned = false, onPinToggle, onDrag }: SuperFloatProps) {
   const { toast } = useToast();
+  const dragControls = useDragControls();
 
   const handleCopy = () => {
     toast({
@@ -53,28 +57,51 @@ export function SuperFloat({ cardId, title, content, onClose, position, isFlippe
       style={{
         left: position.x,
         top: position.y,
-        // If flipped, we need to adjust position in parent, but here we assume position is the anchor point on the card
-        // Actually, let's handle positioning in the parent to be cleaner, 
-        // passing 'x' and 'y' as the top-left of this component container.
-        // Wait, spec says "Tethered to parent card".
-        // Let's assume 'position' is the top-left of the FLOAT itself.
       }}
     >
         {/* The Float Component */}
         <motion.div
+            drag
+            dragControls={dragControls}
+            dragListener={false}
+            dragMomentum={false}
+            dragElastic={0}
+            onDrag={onDrag}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="pointer-events-auto w-[600px] max-h-[800px] flex flex-col bg-[#141416]/95 dark:bg-[#141416]/95 bg-white/95 backdrop-blur-xl border border-white/10 dark:border-white/10 border-border/50 shadow-2xl rounded-xl overflow-hidden"
+            className={cn(
+                "pointer-events-auto w-[600px] max-h-[800px] flex flex-col bg-[#141416]/95 dark:bg-[#141416]/95 bg-white/95 backdrop-blur-xl border shadow-2xl rounded-xl overflow-hidden transition-colors",
+                isPinned ? "border-primary/50 shadow-primary/10" : "border-white/10 dark:border-white/10 border-border/50"
+            )}
         >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/10 dark:border-white/10 border-border/10 shrink-0">
+            <div 
+                className="flex items-center justify-between p-4 border-b border-white/10 dark:border-white/10 border-border/10 shrink-0 cursor-grab active:cursor-grabbing bg-muted/5 hover:bg-muted/10 transition-colors"
+                onPointerDown={(e) => dragControls.start(e)}
+            >
                 <div className="flex items-center gap-2 text-primary">
+                    <GripHorizontal className="w-4 h-4 text-muted-foreground/50 mr-1" />
                     <Sparkles className="w-5 h-5 fill-current" />
                     <span className="font-heading font-semibold text-lg text-foreground">AI Insight Document</span>
                 </div>
                 <div className="flex items-center gap-1">
+                     <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className={cn(
+                            "h-8 w-8 hover:text-foreground transition-all",
+                            isPinned ? "text-primary bg-primary/10 hover:bg-primary/20" : "text-muted-foreground"
+                        )}
+                        onClick={onPinToggle} 
+                        title={isPinned ? "Unpin" : "Pin to stay open"}
+                    >
+                        {isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                    </Button>
+
+                    <div className="w-px h-5 bg-border/20 mx-1" />
+
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={handleCopy} title="Copy">
                         <Copy className="w-4 h-4" />
                     </Button>

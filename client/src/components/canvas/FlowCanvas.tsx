@@ -58,17 +58,86 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
   // droppedFiles state is now lifted
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [openFloats, setOpenFloats] = useState<string[]>([]);
+  const [floatPositions, setFloatPositions] = useState<Record<string, {x: number, y: number}>>({});
+  const [pinnedFloats, setPinnedFloats] = useState<string[]>([]);
   const { toast } = useToast();
 
   const toggleFloat = (id: string) => {
     setOpenFloats(prev => {
-        if (prev.includes(id)) return prev.filter(f => f !== id);
+        if (prev.includes(id)) {
+            // Close unless pinned? No, toggle always toggles if triggered by click
+            // Actually, if clicked again on card, we might want to close even if pinned? 
+            // Usually Toggle means close if open.
+            return prev.filter(f => f !== id);
+        }
+        
+        // Initialize position if not already set (re-center or use default logic later)
+        // We'll calculate default position in render if not in state, so no need to set here explicitly 
+        // unless we want to "reset" position on reopen. Let's keep position memory if dragged?
+        // Let's clear position on open to reset to default? No, persistence is nicer.
         return [...prev, id];
     });
   };
 
   const closeAllFloats = () => {
-    setOpenFloats([]);
+    // Only close unpinned floats
+    setOpenFloats(prev => prev.filter(id => pinnedFloats.includes(id)));
+  };
+  
+  const togglePin = (id: string) => {
+      setPinnedFloats(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
+  };
+  
+  const handleFloatDrag = (id: string, info: any) => {
+      // We need to update the specific float position
+      // info.delta gives us the movement since last frame (or event)
+      // BUT `info.delta` is in screen pixels, potentially scaled?
+      // Framer motion drag on a scaled container handles scale automatically usually? 
+      // Actually, if we use `drag` prop on motion.div, framer applies visual transform.
+      // We want to update the React state `floatPositions` so the tether updates.
+      // And we want the position to be "permanent" in our state.
+      
+      const scale = scaleRef.current || 1;
+      
+      setFloatPositions(prev => {
+          const current = prev[id];
+          // If we don't have a position yet (it was using default calculation), we need to grab that default first.
+          // This is tricky inside the callback.
+          // Better approach: When starting drag, or on every drag frame, we add delta.
+          // But `info.delta` is cleaner.
+          
+          if (!current) {
+               // If no custom position exists, we can't easily add delta to "unknown".
+               // The render logic calculates default.
+               // We should probably INITIALIZE the position in state when the float renders or opens.
+               return prev; 
+          }
+          
+          return {
+              ...prev,
+              [id]: {
+                  x: current.x + (info.delta.x / scale),
+                  y: current.y + (info.delta.y / scale)
+              }
+          };
+      });
+  };
+
+  // We need a way to initialize the position in state when a float is opened or rendered,
+  // so that drag operations have a base to work from.
+  // Or, we change the drag logic:
+  // The `SuperFloat` is positioned by `style={{ left, top }}`.
+  // `onDrag` gives us delta. We update `left, top`.
+  // To support this, we need to know the calculated default position inside the render loop 
+  // and inject it into `floatPositions` if missing.
+  // But we can't set state during render.
+  // Solution: Just calculate the `activePosition` in render. 
+  // If `floatPositions[id]` exists, use it. Else calculate default.
+  // BUT `onDrag` provides delta. We need to add delta to `activePosition`.
+  // If `activePosition` was default, we need to "commit" it to state + delta.
+  
+  const updateFloatPosition = (id: string, newPos: {x: number, y: number}) => {
+      setFloatPositions(prev => ({ ...prev, [id]: newPos }));
   };
 
   const canvasEvents = useMemo(() => {
