@@ -118,6 +118,7 @@ export default function Home() {
   const [activeFileTab, setActiveFileTab] = useState<'generated' | 'uploaded'>('generated');
   const [pages, setPages] = useState<string[]>(['Page 1']);
   const [activePage, setActivePage] = useState('Page 1');
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
