@@ -1,9 +1,10 @@
-import { motion, useDragControls } from "framer-motion";
+import { motion } from "framer-motion";
 import { X, Sparkles, Copy, Download, Share2, Pin, PinOff, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,12 +21,60 @@ interface SuperFloatProps {
   isFlipped?: boolean; // If true, render to the left of the card
   isPinned?: boolean;
   onPinToggle?: () => void;
-  onDrag?: (e: any, info: any) => void;
+  onDrag?: (delta: { x: number; y: number }) => void;
 }
 
 export function SuperFloat({ cardId, title, content, onClose, position, isFlipped = false, isPinned = false, onPinToggle, onDrag }: SuperFloatProps) {
   const { toast } = useToast();
-  const dragControls = useDragControls();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Manual Drag Handling to avoid Framer Motion / React State conflicts
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation(); // Stop propagation to canvas immediately
+        
+        setIsDragging(true);
+        const startX = e.clientX;
+        const startY = e.clientY;
+        
+        let lastX = startX;
+        let lastY = startY;
+
+        const handlePointerMove = (moveEvent: PointerEvent) => {
+            moveEvent.preventDefault();
+            moveEvent.stopPropagation();
+            
+            const deltaX = moveEvent.clientX - lastX;
+            const deltaY = moveEvent.clientY - lastY;
+            
+            lastX = moveEvent.clientX;
+            lastY = moveEvent.clientY;
+            
+            if (onDrag) {
+                onDrag({ x: deltaX, y: deltaY });
+            }
+        };
+
+        const handlePointerUp = () => {
+            setIsDragging(false);
+            document.removeEventListener('pointermove', handlePointerMove);
+            document.removeEventListener('pointerup', handlePointerUp);
+        };
+
+        document.addEventListener('pointermove', handlePointerMove);
+        document.addEventListener('pointerup', handlePointerUp);
+    };
+
+    header.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+        header.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [onDrag]);
 
   const handleCopy = () => {
     toast({
@@ -61,36 +110,27 @@ export function SuperFloat({ cardId, title, content, onClose, position, isFlippe
     >
         {/* The Float Component */}
         <motion.div
-            drag
-            dragControls={dragControls}
-            dragListener={false}
-            dragMomentum={false}
-            dragElastic={0}
-            onDrag={onDrag}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
                 "pointer-events-auto w-[600px] max-h-[800px] flex flex-col bg-[#141416]/95 dark:bg-[#141416]/95 bg-white/95 backdrop-blur-xl border shadow-2xl rounded-xl overflow-hidden transition-colors super-float-container",
-                isPinned ? "border-primary/50 shadow-primary/10" : "border-white/10 dark:border-white/10 border-border/50"
+                isPinned ? "border-primary/50 shadow-primary/10" : "border-white/10 dark:border-white/10 border-border/50",
+                isDragging ? "cursor-grabbing shadow-2xl scale-[1.01]" : ""
             )}
         >
             {/* Header */}
             <div 
-                className="flex items-center justify-between p-4 border-b border-white/10 dark:border-white/10 border-border/10 shrink-0 cursor-grab active:cursor-grabbing bg-muted/5 hover:bg-muted/10 transition-colors super-float-header"
-                onPointerDown={(e) => {
-                    // Prevent react-zoom-pan-pinch from capturing this event
-                    e.stopPropagation(); 
-                    dragControls.start(e);
-                }}
+                ref={headerRef}
+                className="flex items-center justify-between p-4 border-b border-white/10 dark:border-white/10 border-border/10 shrink-0 cursor-grab active:cursor-grabbing bg-muted/5 hover:bg-muted/10 transition-colors super-float-header touch-none"
             >
-                <div className="flex items-center gap-2 text-primary">
+                <div className="flex items-center gap-2 text-primary pointer-events-none">
                     <GripHorizontal className="w-4 h-4 text-muted-foreground/50 mr-1" />
                     <Sparkles className="w-5 h-5 fill-current" />
                     <span className="font-heading font-semibold text-lg text-foreground">AI Insight Document</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1" onPointerDown={(e) => e.stopPropagation()}>
                      <Button 
                         variant="ghost" 
                         size="icon" 

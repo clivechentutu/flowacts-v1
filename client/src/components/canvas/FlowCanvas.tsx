@@ -529,14 +529,21 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                       const cardPos = positions.find(p => p.id === floatId);
                       if (!cardPos) return null;
                       
-                      const floatX = cardPos.x + CARD_WIDTH + 80; // Increased gap for wider document
-                      const floatY = cardPos.y - 50; // Shift up slightly to center vertically relative to card start
+                      const defaultX = cardPos.x + CARD_WIDTH + 80;
+                      const defaultY = cardPos.y - 50;
+
+                      // Use stored position if available, else default
+                      const currentPos = floatPositions[floatId];
+                      const floatX = currentPos ? currentPos.x : defaultX;
+                      const floatY = currentPos ? currentPos.y : defaultY;
                       
                       const start = { x: cardPos.x + CARD_WIDTH, y: cardPos.y + 400 };
                       const end = { x: floatX, y: floatY + 60 };
                       
-                      const cp1 = { x: start.x + 40, y: start.y };
-                      const cp2 = { x: end.x - 40, y: end.y };
+                      // Dynamic curvature based on distance
+                      const dx = end.x - start.x;
+                      const cp1 = { x: start.x + Math.max(40, dx * 0.5), y: start.y };
+                      const cp2 = { x: end.x - Math.max(40, dx * 0.5), y: end.y };
 
                       return (
                           <path
@@ -652,8 +659,13 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                         const event = canvasEvents.find(e => e.id === floatId);
                         if (!cardPos || !event) return null;
                         
-                        const floatX = cardPos.x + CARD_WIDTH + 60;
-                        const floatY = cardPos.y;
+                        const defaultX = cardPos.x + CARD_WIDTH + 80;
+                        const defaultY = cardPos.y - 50;
+
+                        // Use stored position if available, else default
+                        const currentPos = floatPositions[floatId];
+                        const currentX = currentPos ? currentPos.x : defaultX;
+                        const currentY = currentPos ? currentPos.y : defaultY;
 
                         return (
                             <SuperFloat 
@@ -662,7 +674,15 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                                 title={event.title}
                                 content={event.content}
                                 onClose={() => toggleFloat(floatId)}
-                                position={{ x: floatX, y: floatY }}
+                                position={{ x: currentX, y: currentY }}
+                                isPinned={pinnedFloats.includes(floatId)}
+                                onPinToggle={() => togglePin(floatId)}
+                                onDrag={(delta) => {
+                                    const scale = scaleRef.current || 1;
+                                    const newX = currentX + (delta.x / scale);
+                                    const newY = currentY + (delta.y / scale);
+                                    updateFloatPosition(floatId, { x: newX, y: newY });
+                                }}
                             />
                         );
                     })}
