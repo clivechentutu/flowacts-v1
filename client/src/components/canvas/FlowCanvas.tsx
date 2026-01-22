@@ -376,7 +376,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     // Fallback for demo: if no parentId, assume it's part of the main chain? 
                     // No, for the demo to work cleanly with tree layout, we should rely on explicit parentId 
                     // OR if it's i > 0 and no parentId, maybe link to i-1 (linear fallback).
-                    if (!parentId && i > 0) {
+                    if (!parentId && i > 0 && event.type !== 'file') {
                          // Check if this node is a root (no parent). If so, don't link to previous.
                          // But for linear parts of mock data that don't have parentId yet, we want links.
                          // Simple heuristic: if I am a root (in the tree calc), I have no parent.
