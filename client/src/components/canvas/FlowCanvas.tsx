@@ -3,6 +3,7 @@ import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
 import { FileCard } from "./cards/FileCard";
 import { SuperFloat } from "./SuperFloat";
+import { MediaPreviewModal } from "./MediaPreviewModal";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
@@ -70,6 +71,19 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
   const [floatPositions, setFloatPositions] = useState<Record<string, {x: number, y: number}>>({});
   const [pinnedFloats, setPinnedFloats] = useState<string[]>([]);
   
+  // Preview Modal State
+  const [previewMedia, setPreviewMedia] = useState<{
+      isOpen: boolean;
+      title: string;
+      type: string;
+      url?: string;
+      content?: string;
+  }>({
+      isOpen: false,
+      title: '',
+      type: 'image',
+  });
+
   // Screenshot State
   const [isScreenshotMode, setIsScreenshotMode] = useState(false);
   const [selectionBox, setSelectionBox] = useState<{startX: number, startY: number, currentX: number, currentY: number} | null>(null);
@@ -223,6 +237,27 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
               }
           };
       });
+  };
+
+  const handleMediaClick = (event: StoryEvent) => {
+     let type = 'document';
+     let url = undefined;
+
+     if (event.type === 'file') {
+         type = event.fileType || 'document';
+         // Mock URL or real one if implemented
+     } else {
+         type = 'image';
+         url = event.image;
+     }
+
+     setPreviewMedia({
+         isOpen: true,
+         title: event.title || 'Untitled',
+         type,
+         url,
+         content: event.content
+     });
   };
 
   // We need a way to initialize the position in state when a float is opened or rendered,
@@ -695,6 +730,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                                     fileType={event.fileType}
                                     timestamp={event.timestamp}
                                     isLast={true}
+                                    onMediaClick={() => handleMediaClick(event)}
                                 />
                             ) : (
                                 <ActionCard 
@@ -705,6 +741,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                                   metadata={event.metadata}
                                   isLast={true} 
                                   onInsightClick={() => toggleFloat(event.id)}
+                                  onMediaClick={() => handleMediaClick(event)}
                                 />
                             )}
                          </div>
@@ -819,6 +856,16 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
               </div>
           </div>
       )}
+
+      {/* Media Preview Modal */}
+      <MediaPreviewModal 
+        isOpen={previewMedia.isOpen}
+        onClose={() => setPreviewMedia(prev => ({ ...prev, isOpen: false }))}
+        title={previewMedia.title}
+        type={previewMedia.type}
+        url={previewMedia.url}
+        content={previewMedia.content}
+      />
     </div>
   );
 }

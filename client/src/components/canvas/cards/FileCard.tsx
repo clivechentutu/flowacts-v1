@@ -8,9 +8,10 @@ interface FileCardProps {
   fileType?: string;
   timestamp: string;
   isLast?: boolean;
+  onMediaClick?: () => void;
 }
 
-export function FileCard({ title, content, fileType, timestamp, isLast }: FileCardProps) {
+export function FileCard({ title, content, fileType, timestamp, isLast, onMediaClick }: FileCardProps) {
   const getIcon = () => {
     if (fileType === 'folder') return <Folder className="w-12 h-12 text-yellow-500 fill-yellow-500/20" />;
     if (fileType?.startsWith('image')) return <FileImage className="w-12 h-12 text-blue-500" />;
@@ -40,7 +41,10 @@ export function FileCard({ title, content, fileType, timestamp, isLast }: FileCa
         <span className="text-[10px] text-muted-foreground font-mono">{timestamp}</span>
       </div>
       
-      <div className="flex-1 flex flex-col items-center justify-center p-8 bg-muted/20 gap-4 group cursor-pointer">
+      <div 
+        className="flex-1 flex flex-col items-center justify-center p-8 bg-muted/20 gap-4 group cursor-pointer"
+        onClick={onMediaClick}
+      >
          <div className="p-6 rounded-3xl bg-background shadow-sm border border-border group-hover:scale-110 group-hover:shadow-md transition-all duration-300">
             {getIcon()}
          </div>

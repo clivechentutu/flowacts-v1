@@ -10,9 +10,10 @@ interface ActionCardProps {
   metadata?: Record<string, string>;
   isLast?: boolean;
   onInsightClick?: () => void;
+  onMediaClick?: () => void;
 }
 
-export function ActionCard({ title, content, image, timestamp, metadata, isLast, onInsightClick }: ActionCardProps) {
+export function ActionCard({ title, content, image, timestamp, metadata, isLast, onInsightClick, onMediaClick }: ActionCardProps) {
   return (
     <CardBase isLast={isLast} className="min-w-[360px] max-w-[360px] flex flex-col h-full bg-card border-border">
       <div className="p-3 border-b border-border/50 flex justify-between items-center bg-muted/50 flex-shrink-0">
@@ -25,7 +26,7 @@ export function ActionCard({ title, content, image, timestamp, metadata, isLast,
         <span className="text-[10px] text-muted-foreground font-mono">{timestamp}</span>
       </div>
       
-      <div className="p-0 flex-shrink-0">
+      <div className="p-0 flex-shrink-0" onClick={onMediaClick}>
         <div className="relative aspect-[16/10] overflow-hidden bg-muted group cursor-zoom-in">
           <img src={image} alt={title} className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
           
