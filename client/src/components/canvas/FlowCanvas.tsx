@@ -150,32 +150,77 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     e.preventDefault();
     setIsDraggingFile(false);
     
+    // Handle folders using webkitGetAsEntry if available
+    const items = Array.from(e.dataTransfer.items || []);
     const files = Array.from(e.dataTransfer.files);
+    
     if (files.length === 0) return;
 
-    const newEvents: StoryEvent[] = files.map((file, index) => {
-        // Calculate a nice format for size
-        const size = file.size > 1024 * 1024 
-            ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
-            : `${(file.size / 1024).toFixed(1)} KB`;
+    // Check if we have directory entries
+    const entries = items
+      .map(item => item.webkitGetAsEntry ? item.webkitGetAsEntry() : null)
+      .filter(entry => entry !== null);
 
-        return {
-            id: `file-${Date.now()}-${index}`,
+    const newEvents: StoryEvent[] = [];
+
+    // If we have directory entries, process them
+    if (entries.length > 0) {
+      entries.forEach((entry, index) => {
+        if (entry!.isDirectory) {
+          // It's a folder
+          newEvents.push({
+            id: `folder-${Date.now()}-${index}`,
             type: 'file',
-            title: file.name,
-            content: size,
+            title: entry!.name,
+            content: 'Folder',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            fileType: file.type,
-            // Link to the last event in the canvas for continuity, or just add as a new root
+            fileType: 'folder', // Custom type for folder
             parentId: undefined
-        };
-    });
+          });
+        } else {
+           // It's a file
+           const file = files.find(f => f.name === entry!.name);
+           if (file) {
+              const size = file.size > 1024 * 1024 
+                ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+                : `${(file.size / 1024).toFixed(1)} KB`;
+
+              newEvents.push({
+                id: `file-${Date.now()}-${index}`,
+                type: 'file',
+                title: file.name,
+                content: size,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                fileType: file.type,
+                parentId: undefined
+              });
+           }
+        }
+      });
+    } else {
+       // Fallback to standard file drop if webkitGetAsEntry not supported
+        files.forEach((file, index) => {
+            const size = file.size > 1024 * 1024 
+                ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+                : `${(file.size / 1024).toFixed(1)} KB`;
+
+            newEvents.push({
+                id: `file-${Date.now()}-${index}`,
+                type: 'file',
+                title: file.name,
+                content: size,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                fileType: file.type,
+                parentId: undefined
+            });
+        });
+    }
 
     setDroppedFiles(prev => [...prev, ...newEvents]);
     
     toast({
-        title: "Files Added",
-        description: `Added ${files.length} file(s) to the canvas.`,
+        title: "Items Added",
+        description: `Added ${newEvents.length} item(s) to the canvas.`,
     });
   };
 

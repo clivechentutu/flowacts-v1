@@ -1,6 +1,6 @@
 import { CardBase } from "./CardBase";
 import { Badge } from "@/components/ui/badge";
-import { FileText, FileImage, FileVideo, FileAudio, File } from "lucide-react";
+import { FileText, FileImage, FileVideo, FileAudio, File, Folder } from "lucide-react";
 
 interface FileCardProps {
   title: string;
@@ -12,6 +12,7 @@ interface FileCardProps {
 
 export function FileCard({ title, content, fileType, timestamp, isLast }: FileCardProps) {
   const getIcon = () => {
+    if (fileType === 'folder') return <Folder className="w-12 h-12 text-yellow-500 fill-yellow-500/20" />;
     if (fileType?.startsWith('image')) return <FileImage className="w-12 h-12 text-blue-500" />;
     if (fileType?.startsWith('video')) return <FileVideo className="w-12 h-12 text-purple-500" />;
     if (fileType?.startsWith('audio')) return <FileAudio className="w-12 h-12 text-pink-500" />;
@@ -20,6 +21,7 @@ export function FileCard({ title, content, fileType, timestamp, isLast }: FileCa
   };
 
   const getBadgeColor = () => {
+     if (fileType === 'folder') return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
      if (fileType?.startsWith('image')) return "bg-blue-500/10 text-blue-500 border-blue-500/20";
      if (fileType?.startsWith('video')) return "bg-purple-500/10 text-purple-500 border-purple-500/20";
      if (fileType?.startsWith('audio')) return "bg-pink-500/10 text-pink-500 border-pink-500/20";
