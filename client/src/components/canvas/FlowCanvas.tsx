@@ -415,7 +415,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
         maxScale={4}
         centerOnInit={true}
         wheel={{ step: 0.05 }}
-        panning={{ velocityDisabled: false, excluded: ["draggable-card"] }} 
+        panning={{ velocityDisabled: false, excluded: ["draggable-card", "super-float-header", "super-float-container"] }} 
         doubleClick={{ disabled: true }}
         limitToBounds={false}
         onTransformed={(e) => {

@@ -72,14 +72,18 @@ export function SuperFloat({ cardId, title, content, onClose, position, isFlippe
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={cn(
-                "pointer-events-auto w-[600px] max-h-[800px] flex flex-col bg-[#141416]/95 dark:bg-[#141416]/95 bg-white/95 backdrop-blur-xl border shadow-2xl rounded-xl overflow-hidden transition-colors",
+                "pointer-events-auto w-[600px] max-h-[800px] flex flex-col bg-[#141416]/95 dark:bg-[#141416]/95 bg-white/95 backdrop-blur-xl border shadow-2xl rounded-xl overflow-hidden transition-colors super-float-container",
                 isPinned ? "border-primary/50 shadow-primary/10" : "border-white/10 dark:border-white/10 border-border/50"
             )}
         >
             {/* Header */}
             <div 
-                className="flex items-center justify-between p-4 border-b border-white/10 dark:border-white/10 border-border/10 shrink-0 cursor-grab active:cursor-grabbing bg-muted/5 hover:bg-muted/10 transition-colors"
-                onPointerDown={(e) => dragControls.start(e)}
+                className="flex items-center justify-between p-4 border-b border-white/10 dark:border-white/10 border-border/10 shrink-0 cursor-grab active:cursor-grabbing bg-muted/5 hover:bg-muted/10 transition-colors super-float-header"
+                onPointerDown={(e) => {
+                    // Prevent react-zoom-pan-pinch from capturing this event
+                    e.stopPropagation(); 
+                    dragControls.start(e);
+                }}
             >
                 <div className="flex items-center gap-2 text-primary">
                     <GripHorizontal className="w-4 h-4 text-muted-foreground/50 mr-1" />
@@ -136,8 +140,13 @@ export function SuperFloat({ cardId, title, content, onClose, position, isFlippe
             </div>
 
             {/* Body */}
-            <ScrollArea className="flex-1 max-h-[700px]">
-                <div className="p-8 space-y-6 text-base text-muted-foreground leading-relaxed font-serif-reading">
+            <div 
+                className="flex-1 overflow-hidden relative"
+                onPointerDown={(e) => e.stopPropagation()} // Stop propagation for content interaction
+                onWheel={(e) => e.stopPropagation()} // Allow scrolling, stop zoom
+            >
+                <ScrollArea className="h-full max-h-[700px]">
+                    <div className="p-8 space-y-6 text-base text-muted-foreground leading-relaxed font-serif-reading">
                     <h1 className="text-2xl font-heading font-bold text-foreground mb-4">{title}</h1>
                     
                     <div className="prose prose-lg dark:prose-invert max-w-none text-foreground/80">
@@ -190,7 +199,8 @@ export function SuperFloat({ cardId, title, content, onClose, position, isFlippe
                         </p>
                     </div>
                 </div>
-            </ScrollArea>
+                </ScrollArea>
+            </div>
 
 
             {/* Footer - Removed Regenerate, kept simplified actions if needed or just remove completely */}
