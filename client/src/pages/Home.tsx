@@ -116,6 +116,8 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'canvas' | 'files'>('canvas');
   const [uploadedFiles, setUploadedFiles] = useState<StoryEvent[]>([]);
   const [activeFileTab, setActiveFileTab] = useState<'generated' | 'uploaded'>('generated');
+  const [pages, setPages] = useState<string[]>(['Page 1']);
+  const [activePage, setActivePage] = useState('Page 1');
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
