@@ -167,7 +167,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             fileType: file.type,
             // Link to the last event in the canvas for continuity, or just add as a new root
-            parentId: canvasEvents.length > 0 ? canvasEvents[canvasEvents.length - 1].id : undefined
+            parentId: undefined
         };
     });
 
