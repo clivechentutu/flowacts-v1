@@ -114,9 +114,8 @@ export default function Home() {
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [viewMode, setViewMode] = useState<'canvas' | 'files'>('canvas');
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [pages, setPages] = useState<string[]>(['Page 1']);
-  const [activePage, setActivePage] = useState('Page 1');
+  const [uploadedFiles, setUploadedFiles] = useState<StoryEvent[]>([]);
+  const [activeFileTab, setActiveFileTab] = useState<'generated' | 'uploaded'>('generated');
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -599,7 +598,12 @@ export default function Home() {
             
             <div className="relative w-full h-full">
                 {/* Canvas is ALWAYS rendered underneath */}
-                <FlowCanvas events={activePage === 'Page 1' ? events : []} />
+                <FlowCanvas 
+                    events={activePage === 'Page 1' ? events : []} 
+                    droppedFiles={uploadedFiles} 
+                    onFileDrop={(files) => setUploadedFiles(files)} 
+                    onFileDelete={(id) => setUploadedFiles(prev => prev.filter(f => f.id !== id))}
+                />
 
                 {/* Files Overlay Panel - Absolute positioned, not replacing canvas */}
                 {viewMode === 'files' && (
@@ -611,17 +615,40 @@ export default function Home() {
                         />
                         <div className="absolute top-16 left-1/2 -translate-x-1/2 w-full max-w-4xl max-h-[calc(100vh-140px)] bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl overflow-hidden z-40 flex flex-col animate-in fade-in zoom-in-95 duration-200 origin-top">
                             <div className="p-4 border-b border-border flex items-center justify-between bg-muted/30">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-lg font-semibold tracking-tight">Generated Files</h2>
-                                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full border border-border/50">{GENERATED_FILES.length}</span>
+                                <div className="flex items-center gap-4">
+                                    <h2 className="text-lg font-semibold tracking-tight">Files</h2>
+                                    <div className="flex bg-muted/50 p-0.5 rounded-lg border border-border/50">
+                                        <button
+                                            onClick={() => setActiveFileTab('generated')}
+                                            className={cn(
+                                                "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                                activeFileTab === 'generated' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            Generated
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveFileTab('uploaded')}
+                                            className={cn(
+                                                "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                                                activeFileTab === 'uploaded' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                                            )}
+                                        >
+                                            Uploaded
+                                        </button>
+                                    </div>
                                 </div>
                                 
                                 <div className="flex items-center gap-2">
-                                    <Button size="sm" onClick={handleDownloadSelected} className="gap-2 h-8 text-xs">
-                                        <Download className="w-3.5 h-3.5" />
-                                        {selectedFiles.length > 0 ? `Download (${selectedFiles.length})` : 'Download All'}
-                                    </Button>
-                                    <div className="w-px h-4 bg-border mx-1" />
+                                    {activeFileTab === 'generated' && (
+                                        <>
+                                            <Button size="sm" onClick={handleDownloadSelected} className="gap-2 h-8 text-xs">
+                                                <Download className="w-3.5 h-3.5" />
+                                                {selectedFiles.length > 0 ? `Download (${selectedFiles.length})` : 'Download All'}
+                                            </Button>
+                                            <div className="w-px h-4 bg-border mx-1" />
+                                        </>
+                                    )}
                                     <Button 
                                         variant="ghost" 
                                         size="icon" 
@@ -633,67 +660,127 @@ export default function Home() {
                                 </div>
                             </div>
 
-                        {/* Batch Selection Header */}
-                        <div className="px-4 py-2 border-b border-border bg-muted/10 flex items-center gap-4 text-xs font-medium text-muted-foreground">
-                            <div className="flex items-center gap-3 w-8 shrink-0 justify-center">
-                                <Checkbox 
-                                    checked={selectedFiles.length === GENERATED_FILES.length && GENERATED_FILES.length > 0} 
-                                    onCheckedChange={toggleAllFiles}
-                                    id="select-all-files"
-                                />
-                            </div>
-                            <div className="flex-1">File Name</div>
-                            <div className="w-24 text-right">Size</div>
-                            <div className="w-32 text-right">Date</div>
-                            <div className="w-10"></div>
-                        </div>
-
-                        <div className="overflow-y-auto p-2 space-y-1">
-                            {GENERATED_FILES.map((file, i) => (
-                                <div 
-                                    key={file.id} 
-                                    className={cn(
-                                        "flex items-center gap-4 p-2 rounded-lg transition-all group",
-                                        selectedFiles.includes(file.id) ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50 border border-transparent"
-                                    )}
-                                >
+                        {activeFileTab === 'generated' ? (
+                            <>
+                                {/* Batch Selection Header */}
+                                <div className="px-4 py-2 border-b border-border bg-muted/10 flex items-center gap-4 text-xs font-medium text-muted-foreground">
                                     <div className="flex items-center gap-3 w-8 shrink-0 justify-center">
                                         <Checkbox 
-                                            checked={selectedFiles.includes(file.id)} 
-                                            onCheckedChange={() => toggleFileSelection(file.id)}
+                                            checked={selectedFiles.length === GENERATED_FILES.length && GENERATED_FILES.length > 0} 
+                                            onCheckedChange={toggleAllFiles}
+                                            id="select-all-files"
                                         />
                                     </div>
-
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                        <div className={cn(
-                                            "h-9 w-9 rounded-md flex items-center justify-center shrink-0",
-                                            file.type === 'pdf' && "bg-red-500/10 text-red-500",
-                                            file.type === 'image' && "bg-blue-500/10 text-blue-500",
-                                            file.type === 'json' && "bg-amber-500/10 text-amber-500",
-                                            file.type === 'video' && "bg-purple-500/10 text-purple-500",
-                                        )}>
-                                            {file.type === 'pdf' && <FileText className="w-4 h-4" />}
-                                            {file.type === 'image' && <Image className="w-4 h-4" />}
-                                            {file.type === 'json' && <FileJson className="w-4 h-4" />}
-                                            {file.type === 'video' && <Film className="w-4 h-4" />}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="font-medium text-sm text-foreground truncate">{file.name}</p>
-                                            <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{file.type}</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="w-24 text-right text-xs text-muted-foreground font-mono">{file.size}</div>
-                                    <div className="w-32 text-right text-xs text-muted-foreground">{file.timestamp.split(' ')[1]}</div>
-                                    
-                                    <div className="w-10 flex justify-end">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Download className="w-4 h-4 text-muted-foreground" />
-                                        </Button>
-                                    </div>
+                                    <div className="flex-1">File Name</div>
+                                    <div className="w-24 text-right">Size</div>
+                                    <div className="w-32 text-right">Date</div>
+                                    <div className="w-10"></div>
                                 </div>
-                            ))}
-                        </div>
+
+                                <div className="overflow-y-auto p-2 space-y-1">
+                                    {GENERATED_FILES.map((file, i) => (
+                                        <div 
+                                            key={file.id} 
+                                            className={cn(
+                                                "flex items-center gap-4 p-2 rounded-lg transition-all group",
+                                                selectedFiles.includes(file.id) ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50 border border-transparent"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3 w-8 shrink-0 justify-center">
+                                                <Checkbox 
+                                                    checked={selectedFiles.includes(file.id)} 
+                                                    onCheckedChange={() => toggleFileSelection(file.id)}
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <div className={cn(
+                                                    "h-9 w-9 rounded-md flex items-center justify-center shrink-0",
+                                                    file.type === 'pdf' && "bg-red-500/10 text-red-500",
+                                                    file.type === 'image' && "bg-blue-500/10 text-blue-500",
+                                                    file.type === 'json' && "bg-amber-500/10 text-amber-500",
+                                                    file.type === 'video' && "bg-purple-500/10 text-purple-500",
+                                                )}>
+                                                    {file.type === 'pdf' && <FileText className="w-4 h-4" />}
+                                                    {file.type === 'image' && <Image className="w-4 h-4" />}
+                                                    {file.type === 'json' && <FileJson className="w-4 h-4" />}
+                                                    {file.type === 'video' && <Film className="w-4 h-4" />}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-sm text-foreground truncate">{file.name}</p>
+                                                    <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{file.type}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="w-24 text-right text-xs text-muted-foreground font-mono">{file.size}</div>
+                                            <div className="w-32 text-right text-xs text-muted-foreground">{file.timestamp.split(' ')[1]}</div>
+                                            
+                                            <div className="w-10 flex justify-end">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <Download className="w-4 h-4 text-muted-foreground" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* Uploaded Files Header */}
+                                <div className="px-4 py-2 border-b border-border bg-muted/10 flex items-center gap-4 text-xs font-medium text-muted-foreground">
+                                    <div className="flex-1">File Name</div>
+                                    <div className="w-24 text-right">Size</div>
+                                    <div className="w-32 text-right">Date</div>
+                                    <div className="w-10"></div>
+                                </div>
+
+                                <div className="overflow-y-auto p-2 space-y-1">
+                                    {uploadedFiles.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+                                            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+                                                <Upload className="w-6 h-6 text-muted-foreground/50" />
+                                            </div>
+                                            <p className="text-sm font-medium">No uploaded files</p>
+                                            <p className="text-xs text-muted-foreground/60 mt-1">Drag and drop files onto the canvas to add them.</p>
+                                        </div>
+                                    ) : (
+                                        uploadedFiles.map((file) => (
+                                            <div 
+                                                key={file.id} 
+                                                className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50 border border-transparent hover:border-border/50 transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <div className="h-9 w-9 rounded-md flex items-center justify-center shrink-0 bg-blue-500/10 text-blue-500">
+                                                        {file.fileType === 'folder' ? <Layout className="w-4 h-4" /> : <File className="w-4 h-4" />}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="font-medium text-sm text-foreground truncate">{file.title}</p>
+                                                        <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">{file.fileType === 'folder' ? 'Folder' : 'File'}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="w-24 text-right text-xs text-muted-foreground font-mono">{file.content}</div>
+                                                <div className="w-32 text-right text-xs text-muted-foreground">{file.timestamp}</div>
+                                                
+                                                <div className="w-10 flex justify-end">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={() => {
+                                                            setUploadedFiles(prev => prev.filter(f => f.id !== file.id));
+                                                            toast({ description: "File deleted" });
+                                                        }}
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </>
+                        )}
                     </div>
                     </>
                 )}

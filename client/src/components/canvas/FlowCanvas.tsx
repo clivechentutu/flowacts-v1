@@ -51,10 +51,10 @@ const Controls = () => {
   );
 };
 
-export function FlowCanvas({ events }: FlowCanvasProps) {
+export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: FlowCanvasProps & { droppedFiles: StoryEvent[], onFileDrop: (files: StoryEvent[]) => void, onFileDelete?: (id: string) => void }) {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [cardInputs, setCardInputs] = useState<Record<string, string>>({});
-  const [droppedFiles, setDroppedFiles] = useState<StoryEvent[]>([]);
+  // droppedFiles state is now lifted
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const { toast } = useToast();
 
@@ -218,7 +218,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
         });
     }
 
-    setDroppedFiles(prev => [...prev, ...newEvents]);
+    onFileDrop([...droppedFiles, ...newEvents]);
     
     toast({
         title: "Items Added",
