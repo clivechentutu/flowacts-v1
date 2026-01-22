@@ -52,8 +52,12 @@ export function ActionCard({ title, content, image, timestamp, metadata, isLast 
       </div>
 
       {/* Insight Section - Adaptive Colors */}
-      <div className="bg-primary/5 border-t border-primary/10 p-3 flex gap-3 mt-auto">
-        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 mt-0.5">
+      <div 
+        className="bg-primary/5 border-t border-primary/10 p-3 flex gap-3 mt-auto cursor-pointer hover:bg-primary/10 transition-colors group/insight"
+        role="button"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 mt-0.5 group-hover/insight:bg-primary group-hover/insight:text-primary-foreground transition-colors">
           <Sparkles className="w-3.5 h-3.5" />
         </div>
         <div className="flex flex-col gap-1">
