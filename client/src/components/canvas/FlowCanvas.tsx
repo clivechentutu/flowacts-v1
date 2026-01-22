@@ -6,10 +6,11 @@ import { SuperFloat } from "./SuperFloat";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
-import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
 
 interface FlowCanvasProps {
   events: StoryEvent[];
@@ -23,7 +24,7 @@ const GAP_Y = 150;
 const CARDS_PER_ROW = 3;
 
 // Zoom Controls Component
-const Controls = () => {
+const Controls = ({ onScreenshot }: { onScreenshot: () => void }) => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   return (
     <div className="absolute bottom-8 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
@@ -48,6 +49,14 @@ const Controls = () => {
       >
         <Maximize className="w-4 h-4" />
       </button>
+      <div className="w-full h-px bg-border my-1" />
+      <button 
+        onClick={onScreenshot} 
+        className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+        title="Screenshot Area"
+      >
+        <Crop className="w-4 h-4" />
+      </button>
     </div>
   );
 };
@@ -60,7 +69,100 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
   const [openFloats, setOpenFloats] = useState<string[]>([]);
   const [floatPositions, setFloatPositions] = useState<Record<string, {x: number, y: number}>>({});
   const [pinnedFloats, setPinnedFloats] = useState<string[]>([]);
+  
+  // Screenshot State
+  const [isScreenshotMode, setIsScreenshotMode] = useState(false);
+  const [selectionBox, setSelectionBox] = useState<{startX: number, startY: number, currentX: number, currentY: number} | null>(null);
+
   const { toast } = useToast();
+
+  const handleScreenshotStart = () => {
+    setIsScreenshotMode(true);
+    setSelectionBox(null);
+    toast({
+        title: "Screenshot Mode",
+        description: "Click and drag to select an area to capture.",
+    });
+  };
+
+  const handleScreenshotMouseDown = (e: React.MouseEvent) => {
+      if (!isScreenshotMode) return;
+      e.preventDefault();
+      setSelectionBox({
+          startX: e.clientX,
+          startY: e.clientY,
+          currentX: e.clientX,
+          currentY: e.clientY
+      });
+  };
+
+  const handleScreenshotMouseMove = (e: React.MouseEvent) => {
+      if (!isScreenshotMode || !selectionBox) return;
+      setSelectionBox(prev => prev ? ({ ...prev, currentX: e.clientX, currentY: e.clientY }) : null);
+  };
+
+  const handleScreenshotMouseUp = async () => {
+      if (!isScreenshotMode || !selectionBox) return;
+      
+      const startX = Math.min(selectionBox.startX, selectionBox.currentX);
+      const startY = Math.min(selectionBox.startY, selectionBox.currentY);
+      const width = Math.abs(selectionBox.currentX - selectionBox.startX);
+      const height = Math.abs(selectionBox.currentY - selectionBox.startY);
+
+      if (width < 10 || height < 10) {
+          // Too small, cancel or just clear selection
+          setSelectionBox(null);
+          return;
+      }
+
+      setIsScreenshotMode(false); // Hide overlay to take shot
+
+      // Small delay to ensure React renders the removal of overlay
+      setTimeout(async () => {
+        try {
+            const canvas = await html2canvas(document.body, {
+                x: startX + window.scrollX,
+                y: startY + window.scrollY,
+                width: width,
+                height: height,
+                useCORS: true,
+                ignoreElements: (element) => element.classList.contains('screenshot-exclude')
+            });
+
+            canvas.toBlob((blob) => {
+                if (!blob) return;
+
+                // Copy to Clipboard
+                try {
+                    const item = new ClipboardItem({ "image/png": blob });
+                    navigator.clipboard.write([item]);
+                    toast({
+                        title: "Screenshot Copied",
+                        description: "Image copied to clipboard. Downloading now...",
+                    });
+                } catch (err) {
+                    console.error("Clipboard write failed", err);
+                }
+
+                // Download
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `flow-capture-${Date.now()}.png`;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+        } catch (err) {
+            console.error("Capture failed:", err);
+            toast({
+                title: "Capture Failed",
+                description: "Could not capture the selected area.",
+                variant: "destructive"
+            });
+        }
+        setSelectionBox(null);
+      }, 50);
+  };
 
   const toggleFloat = (id: string) => {
     setOpenFloats(prev => {
@@ -431,7 +533,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                     onClick={closeAllFloats}
                 />
             )}
-            <Controls />
+            <Controls onScreenshot={handleScreenshotStart} />
             <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
               <div 
                 style={{ 
@@ -692,6 +794,31 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
           </>
         )}
       </TransformWrapper>
+
+      {/* Screenshot Overlay */}
+      {isScreenshotMode && (
+          <div 
+            className="fixed inset-0 z-[9999] cursor-crosshair bg-black/30 screenshot-exclude"
+            onMouseDown={handleScreenshotMouseDown}
+            onMouseMove={handleScreenshotMouseMove}
+            onMouseUp={handleScreenshotMouseUp}
+          >
+              {selectionBox && (
+                  <div 
+                    className="absolute border-2 border-primary bg-primary/20 backdrop-blur-[1px] screenshot-exclude"
+                    style={{
+                        left: Math.min(selectionBox.startX, selectionBox.currentX),
+                        top: Math.min(selectionBox.startY, selectionBox.currentY),
+                        width: Math.abs(selectionBox.currentX - selectionBox.startX),
+                        height: Math.abs(selectionBox.currentY - selectionBox.startY),
+                    }}
+                  />
+              )}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-background/90 text-foreground px-4 py-2 rounded-full shadow-lg border border-border text-sm font-medium pointer-events-none screenshot-exclude">
+                  Drag to select area to capture
+              </div>
+          </div>
+      )}
     </div>
   );
 }
