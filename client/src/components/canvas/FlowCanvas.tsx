@@ -64,6 +64,7 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
   }, [events, droppedFiles]);
 
   const [positions, setPositions] = useState<{id: string, x: number, y: number}[]>([]);
+  const scaleRef = useRef(0.8); // Start with initial scale
 
   useEffect(() => {
     setPositions(prev => {
@@ -134,12 +135,13 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
   }, [canvasEvents.length]); // Re-calculate when number of events changes
 
   const handleDrag = useCallback((id: string, info: any) => {
+    const scale = scaleRef.current || 1;
     setPositions(prev => prev.map(p => {
       if (p.id === id) {
         return { 
           ...p, 
-          x: p.x + info.delta.x, 
-          y: p.y + info.delta.y 
+          x: p.x + (info.delta.x / scale), 
+          y: p.y + (info.delta.y / scale) 
         };
       }
       return p;
@@ -334,6 +336,9 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
         panning={{ velocityDisabled: false, excluded: ["draggable-card"] }} 
         doubleClick={{ disabled: true }}
         limitToBounds={false}
+        onTransformed={(e) => {
+           scaleRef.current = e.state.scale;
+        }}
       >
         {({ zoomIn, zoomOut, resetTransform }) => (
           <>
