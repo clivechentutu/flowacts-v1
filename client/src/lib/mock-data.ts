@@ -5,7 +5,7 @@ import saasDashboard from '@assets/generated_images/saas_analytics_dashboard_scr
 import socialMediaAd from '@assets/generated_images/social_media_ad_50_percent_off.png';
 import ecommerceProductPage from '@assets/generated_images/ecommerce_product_page_40_percent_off.png';
 
-export type EventType = 'action' | 'insight' | 'alert' | 'user' | 'ai';
+export type EventType = 'action' | 'insight' | 'alert' | 'user' | 'ai' | 'file';
 
 export interface StoryEvent {
   id: string;
@@ -18,6 +18,7 @@ export interface StoryEvent {
   timestamp: string;
   metadata?: Record<string, string>;
   parentId?: string; // For branching logic
+  fileType?: string; // For file cards
 }
 
 export interface Scenario {

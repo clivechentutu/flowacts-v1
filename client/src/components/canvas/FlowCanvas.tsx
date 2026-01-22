@@ -1,12 +1,14 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
+import { FileCard } from "./cards/FileCard";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
-import { ZoomIn, ZoomOut, Maximize, Send, Sparkles } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface FlowCanvasProps {
   events: StoryEvent[];
@@ -52,10 +54,14 @@ const Controls = () => {
 export function FlowCanvas({ events }: FlowCanvasProps) {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [cardInputs, setCardInputs] = useState<Record<string, string>>({});
+  const [droppedFiles, setDroppedFiles] = useState<StoryEvent[]>([]);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const { toast } = useToast();
 
-  const canvasEvents = useMemo(() => 
-    events.filter(e => ['action'].includes(e.type)), 
-  [events]);
+  const canvasEvents = useMemo(() => {
+    const actionEvents = events.filter(e => ['action'].includes(e.type));
+    return [...actionEvents, ...droppedFiles];
+  }, [events, droppedFiles]);
 
   const [positions, setPositions] = useState<{id: string, x: number, y: number}[]>([]);
 
@@ -140,6 +146,39 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
     }));
   }, []);
 
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingFile(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    const newEvents: StoryEvent[] = files.map((file, index) => {
+        // Calculate a nice format for size
+        const size = file.size > 1024 * 1024 
+            ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` 
+            : `${(file.size / 1024).toFixed(1)} KB`;
+
+        return {
+            id: `file-${Date.now()}-${index}`,
+            type: 'file',
+            title: file.name,
+            content: size,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            fileType: file.type,
+            // Link to the last event in the canvas for continuity, or just add as a new root
+            parentId: canvasEvents.length > 0 ? canvasEvents[canvasEvents.length - 1].id : undefined
+        };
+    });
+
+    setDroppedFiles(prev => [...prev, ...newEvents]);
+    
+    toast({
+        title: "Files Added",
+        description: `Added ${files.length} file(s) to the canvas.`,
+    });
+  };
+
   const contentWidth = 100 + (4 * (CARD_WIDTH + GAP_X)) + 400; // Expanded width for potential branches
   const contentHeight = positions.length > 0 
     ? Math.max(...positions.map(p => p.y)) + CARD_HEIGHT + 400 
@@ -194,7 +233,32 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
   };
 
   return (
-    <div className="h-full w-full bg-[#f8f9fa] dark:bg-[#09090b] relative overflow-hidden group/canvas">
+    <div 
+        className="h-full w-full bg-[#f8f9fa] dark:bg-[#09090b] relative overflow-hidden group/canvas"
+        onDragOver={(e) => {
+            e.preventDefault();
+            setIsDraggingFile(true);
+        }}
+        onDragLeave={() => setIsDraggingFile(false)}
+        onDrop={handleFileDrop}
+    >
+      {/* Drag Overlay */}
+      <AnimatePresence>
+        {isDraggingFile && (
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 bg-primary/10 backdrop-blur-sm border-4 border-dashed border-primary m-4 rounded-3xl flex items-center justify-center pointer-events-none"
+            >
+                <div className="bg-background/90 p-8 rounded-full shadow-2xl flex flex-col items-center gap-4 animate-bounce">
+                    <Upload className="w-12 h-12 text-primary" />
+                    <span className="font-bold text-lg text-primary">Drop files to add to canvas</span>
+                </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Canvas Grid Pattern - Dot style for modern look */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.4] dark:opacity-[0.3]"
         style={{
@@ -351,14 +415,24 @@ export function FlowCanvas({ events }: FlowCanvasProps) {
                     >
                       <div className="pointer-events-none"> 
                          <div className="pointer-events-auto">
-                            <ActionCard 
-                              title={event.title || 'Action'} 
-                              content={event.content}
-                              image={event.image!}
-                              timestamp={event.timestamp}
-                              metadata={event.metadata}
-                              isLast={true} 
-                            />
+                            {event.type === 'file' ? (
+                                <FileCard 
+                                    title={event.title || 'Unknown File'} 
+                                    content={event.content}
+                                    fileType={event.fileType}
+                                    timestamp={event.timestamp}
+                                    isLast={true}
+                                />
+                            ) : (
+                                <ActionCard 
+                                  title={event.title || 'Action'} 
+                                  content={event.content}
+                                  image={event.image!}
+                                  timestamp={event.timestamp}
+                                  metadata={event.metadata}
+                                  isLast={true} 
+                                />
+                            )}
                          </div>
                       </div>
                         
