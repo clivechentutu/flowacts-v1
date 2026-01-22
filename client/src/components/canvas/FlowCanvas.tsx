@@ -773,7 +773,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                             <SuperFloat 
                                 key={`float-${floatId}`}
                                 cardId={floatId}
-                                title={event.title}
+                                title={event.title || "Insight Document"}
                                 content={event.content}
                                 onClose={() => toggleFloat(floatId)}
                                 position={{ x: currentX, y: currentY }}
