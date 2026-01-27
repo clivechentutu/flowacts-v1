@@ -96,9 +96,14 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
           <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">Settings</span>
         </button>
         <div className="w-full h-px bg-border my-1" />
-        <button className="flex flex-col items-center justify-center w-full h-14 rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all gap-1 group">
-          <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
-           <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">Logout</span>
+        <button className="flex flex-col items-center justify-center w-full pb-2 rounded-lg transition-all group">
+          <div className="w-10 h-10 rounded-full border-2 border-primary/20 p-0.5 group-hover:border-primary/50 transition-colors">
+            <img 
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" 
+              alt="User Avatar" 
+              className="w-full h-full rounded-full bg-muted"
+            />
+          </div>
         </button>
       </div>
     </div>
