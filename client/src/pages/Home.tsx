@@ -554,52 +554,108 @@ export default function Home() {
                 <h2 className="text-2xl font-bold tracking-tight">Library</h2>
              </div>
              
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto w-full">
-                {/* Prompt Templates */}
-                <div className="space-y-4">
-                   <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-amber-500" />
-                      Prompt Templates
-                   </h3>
-                   <div className="grid gap-3">
+             <div className="flex flex-col gap-12 max-w-7xl mx-auto w-full">
+                {/* User's Common Prompts */}
+                <div className="space-y-6">
+                   <div className="flex items-center justify-between">
+                     <h3 className="text-xl font-semibold flex items-center gap-2 text-foreground/90">
+                        <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                        My Common Prompts
+                     </h3>
+                     <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                        View All
+                     </Button>
+                   </div>
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {[1, 2, 3].map(i => (
-                         <div key={i} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
-                            <div className="font-medium mb-1 group-hover:text-primary transition-colors">Creative Writing V{i}</div>
-                            <div className="text-xs text-muted-foreground">Optimized for creative storytelling and world building with enhanced context.</div>
+                         <div key={`my-${i}`} className="p-5 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group shadow-sm">
+                            <div className="flex items-start justify-between mb-2">
+                                <div className="p-1.5 bg-primary/10 rounded-md text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                   <MessageSquare className="w-4 h-4" />
+                                </div>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 -mt-2 text-muted-foreground hover:text-destructive">
+                                   <X className="w-3 h-3" />
+                                </Button>
+                            </div>
+                            <div className="font-semibold mb-1.5 group-hover:text-primary transition-colors">Daily Standup Update {i}</div>
+                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                               Structure for summarizing daily progress, blockers, and next steps for the team.
+                            </p>
+                            <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
+                               <span>Used 12 times</span>
+                               <span>Last: 2d ago</span>
+                            </div>
                          </div>
                       ))}
                    </div>
                 </div>
 
-                {/* Role Templates */}
-                <div className="space-y-4">
-                   <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <Users className="w-5 h-5 text-indigo-500" />
-                      Role Templates
-                   </h3>
-                   <div className="grid gap-3">
-                      {[1, 2, 3].map(i => (
-                         <div key={i} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
-                            <div className="font-medium mb-1 group-hover:text-primary transition-colors">Product Manager {i}</div>
-                            <div className="text-xs text-muted-foreground">Expert in agile methodologies, user research, and product strategy.</div>
-                         </div>
-                      ))}
+                <div className="w-full h-px bg-border/60" />
+
+                {/* Official Recommended Section */}
+                <div className="space-y-6">
+                   <div className="flex items-center justify-between">
+                     <h3 className="text-xl font-semibold flex items-center gap-2 text-foreground/90">
+                        <Sparkles className="w-5 h-5 text-indigo-500" />
+                        Official Recommendations
+                     </h3>
+                     <div className="flex bg-muted/50 p-0.5 rounded-lg text-xs">
+                        <button className="px-3 py-1 bg-background rounded-md shadow-sm font-medium">All</button>
+                        <button className="px-3 py-1 text-muted-foreground hover:text-foreground">Creative</button>
+                        <button className="px-3 py-1 text-muted-foreground hover:text-foreground">Product</button>
+                        <button className="px-3 py-1 text-muted-foreground hover:text-foreground">Technical</button>
+                     </div>
                    </div>
-                </div>
-                
-                 {/* Task Templates */}
-                <div className="space-y-4">
-                   <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <CheckSquare className="w-5 h-5 text-emerald-500" />
-                      Task Templates
-                   </h3>
-                   <div className="grid gap-3">
-                      {[1, 2, 3].map(i => (
-                         <div key={i} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
-                            <div className="font-medium mb-1 group-hover:text-primary transition-colors">Competitor Analysis {i}</div>
-                            <div className="text-xs text-muted-foreground">Standard framework for analyzing market competitors and their feature sets.</div>
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {/* Prompt Templates */}
+                      <div className="space-y-4">
+                         <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider pl-1">Prompt Templates</h4>
+                         <div className="grid gap-3">
+                            {[1, 2, 3].map(i => (
+                               <div key={`prompt-${i}`} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
+                                  <div className="flex items-center gap-3 mb-2">
+                                     <Sparkles className="w-4 h-4 text-amber-500" />
+                                     <div className="font-medium group-hover:text-primary transition-colors">Creative Writing V{i}</div>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">Optimized for creative storytelling and world building with enhanced context.</div>
+                               </div>
+                            ))}
                          </div>
-                      ))}
+                      </div>
+
+                      {/* Role Templates */}
+                      <div className="space-y-4">
+                         <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider pl-1">Role Templates</h4>
+                         <div className="grid gap-3">
+                            {[1, 2, 3].map(i => (
+                               <div key={`role-${i}`} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
+                                  <div className="flex items-center gap-3 mb-2">
+                                     <Users className="w-4 h-4 text-indigo-500" />
+                                     <div className="font-medium group-hover:text-primary transition-colors">Product Manager {i}</div>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">Expert in agile methodologies, user research, and product strategy.</div>
+                               </div>
+                            ))}
+                         </div>
+                      </div>
+                      
+                       {/* Task Templates */}
+                      <div className="space-y-4">
+                         <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider pl-1">Task Templates</h4>
+                         <div className="grid gap-3">
+                            {[1, 2, 3].map(i => (
+                               <div key={`task-${i}`} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
+                                  <div className="flex items-center gap-3 mb-2">
+                                     <CheckSquare className="w-4 h-4 text-emerald-500" />
+                                     <div className="font-medium group-hover:text-primary transition-colors">Competitor Analysis {i}</div>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">Standard framework for analyzing market competitors and their feature sets.</div>
+                               </div>
+                            ))}
+                         </div>
+                      </div>
                    </div>
                 </div>
              </div>
