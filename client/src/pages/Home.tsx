@@ -626,7 +626,9 @@ export default function Home() {
         ...template,
         id: `${prefix}-${i}`,
         name: `${template.name} ${i + 1}`,
-        goal: `${template.goal} - Variant ${i + 1}`
+        goal: `${template.goal} - Variant ${i + 1}`,
+        // Rotate through thumbnails for variety if not defined, or keep template's
+        thumbnail: template.thumbnail 
       }));
     };
 
@@ -635,9 +637,9 @@ export default function Home() {
     // Define scenarios for each category
     const competitorScenarios = [SCENARIOS[0], ...generateDummies(SCENARIOS[0], 5, 'comp')];
     const adScenarios = [SCENARIOS[1], ...generateDummies(SCENARIOS[1], 5, 'ad')];
-    const productScenarios = generateDummies({ ...SCENARIOS[0], name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner' }, 6, 'prod');
-    const learningScenarios = generateDummies({ ...SCENARIOS[0], name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student' }, 6, 'learn');
-    const factScenarios = generateDummies({ ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist' }, 6, 'fact');
+    const productScenarios = generateDummies({ ...SCENARIOS[0], name: 'User Retention Flow Analysis', goal: 'Optimize retention rates', persona: 'Sarah, Product Owner', thumbnail: '/thumbnails/mobile-flow.jpg' }, 6, 'prod');
+    const learningScenarios = generateDummies({ ...SCENARIOS[0], name: 'React Hooks Deep Dive', goal: 'Structure learning path', persona: 'Dev Student', thumbnail: '/thumbnails/code.jpg' }, 6, 'learn');
+    const factScenarios = generateDummies({ ...SCENARIOS[1], name: 'News Source Verification', goal: 'Check multiple sources', persona: 'Journalist', thumbnail: '/thumbnails/doc.jpg' }, 6, 'fact');
 
     if (activeCategory === 'all') {
         // Collect ALL scenarios from all categories
@@ -925,35 +927,40 @@ export default function Home() {
                         <div 
                             key={scenario.id}
                             onClick={() => handleScenarioClick(scenario.id)}
-                            className="group relative p-5 bg-card hover:bg-muted/50 border border-border rounded-2xl cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5 flex flex-col gap-4"
+                            className="group relative bg-card hover:bg-muted/50 border border-border rounded-2xl cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5 flex flex-col overflow-hidden h-[260px]"
                         >
-                            <div className="flex items-start justify-between">
-                                <div className={cn(
-                                    "h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
-                                    idx % 2 === 0 ? "bg-primary/10 text-primary" : "bg-purple-500/10 text-purple-600"
-                                )}>
-                                    {activeCategory === 'competitor' ? <Layout className="w-5 h-5" /> : 
-                                     activeCategory === 'ad' ? <Eye className="w-5 h-5" /> : 
-                                     activeCategory === 'learning' ? <BookOpen className="w-5 h-5" /> :
-                                     <Sparkles className="w-5 h-5" />}
+                            {/* Thumbnail Image */}
+                            <div className="h-[130px] w-full bg-muted/50 overflow-hidden relative">
+                                {scenario.thumbnail ? (
+                                    <img 
+                                        src={scenario.thumbnail} 
+                                        alt={scenario.name}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                                        <Layout className="w-8 h-8 text-muted-foreground/30" />
+                                    </div>
+                                )}
+                                <div className="absolute top-2 right-2">
+                                     <div className="bg-background/80 backdrop-blur-sm p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <ArrowRight className="w-3.5 h-3.5 text-primary" />
+                                    </div>
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary -mr-2 -mt-2">
-                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                                </Button>
                             </div>
                             
-                            <div className="space-y-2">
-                                <h3 className="font-semibold text-lg text-foreground leading-tight group-hover:text-primary transition-colors">
+                            <div className="p-4 flex flex-col gap-2 flex-1">
+                                <h3 className="font-semibold text-base text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-1">
                                     {scenario.name}
                                 </h3>
-                                <p className="text-sm text-muted-foreground line-clamp-2">
-                                    {scenario.goal} - Simulating {scenario.persona}
+                                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed flex-1">
+                                    {scenario.goal}
                                 </p>
-                            </div>
 
-                            <div className="pt-2 flex items-center gap-2 text-xs font-medium text-muted-foreground/80">
-                                <Play className="w-3 h-3 fill-current" />
-                                <span>Start Simulation</span>
+                                <div className="pt-2 flex items-center gap-2 text-xs font-medium text-muted-foreground/80 mt-auto">
+                                    <Play className="w-3 h-3 fill-current" />
+                                    <span>Start Simulation</span>
+                                </div>
                             </div>
                         </div>
                     ))}

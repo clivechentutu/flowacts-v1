@@ -27,6 +27,7 @@ export interface Scenario {
   persona: string;
   goal: string;
   events: StoryEvent[];
+  thumbnail?: string;
 }
 
 export interface GeneratedFile {
@@ -52,6 +53,7 @@ export const SCENARIOS: Scenario[] = [
     name: 'Competitor Onboarding Analysis',
     persona: 'Alex, Product Manager',
     goal: 'Analyze competitor.com onboarding flow',
+    thumbnail: '/thumbnails/dashboard.jpg',
     events: [
       {
         id: 'evt-1',
@@ -278,6 +280,7 @@ export const SCENARIOS: Scenario[] = [
     name: 'Ad Campaign Consistency Check',
     persona: 'David, Digital Marketing',
     goal: 'Verify Facebook ad consistency',
+    thumbnail: '/thumbnails/landing.jpg',
     events: [
       {
         id: 'ad-1',
