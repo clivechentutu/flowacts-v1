@@ -306,23 +306,24 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
     // Viewport dimensions
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const padding = 100;
+    const paddingRight = 450; // Increased padding to account for AI Chat sidebar on the right
+    const paddingBottom = 100;
 
     let newX = positionX;
     let newY = positionY;
     let shouldScroll = false;
 
     // Check horizontal bounds (only scroll if offscreen to the right)
-    if (cardScreenRight > viewportWidth - padding) {
+    if (cardScreenRight > viewportWidth - paddingRight) {
         // Scroll so the card is visible with some padding from the right edge
-        newX = viewportWidth - padding - (lastPos.x + CARD_WIDTH) * scale;
+        newX = viewportWidth - paddingRight - (lastPos.x + CARD_WIDTH) * scale;
         shouldScroll = true;
     }
 
     // Check vertical bounds (only scroll if offscreen to the bottom)
-    if (cardScreenBottom > viewportHeight - padding) {
+    if (cardScreenBottom > viewportHeight - paddingBottom) {
         // Scroll so the card is visible with some padding from the bottom edge
-        newY = viewportHeight - padding - (lastPos.y + CARD_HEIGHT) * scale;
+        newY = viewportHeight - paddingBottom - (lastPos.y + CARD_HEIGHT) * scale;
         shouldScroll = true;
     }
 
