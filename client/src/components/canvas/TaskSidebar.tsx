@@ -29,11 +29,11 @@ export function TaskSidebar({ events }: TaskSidebarProps) {
     <>
       <div 
         className={cn(
-          "absolute top-6 left-6 z-40 flex flex-col transition-all duration-300 ease-in-out bg-background/95 backdrop-blur border border-border rounded-xl shadow-lg overflow-hidden",
+          "absolute top-6 left-6 z-40 flex flex-col transition-all duration-300 ease-in-out bg-[var(--sidebar-background)]/95 backdrop-blur border border-border rounded-xl shadow-lg overflow-hidden",
           isOpen ? "w-64 max-h-[60vh]" : "w-auto h-auto rounded-lg overflow-visible bg-transparent border-0 shadow-none"
         )}
       >
-        <div className={cn("flex items-center", isOpen ? "justify-between p-2 bg-background/95 backdrop-blur" : "justify-start")}>
+        <div className={cn("flex items-center", isOpen ? "justify-between p-2 bg-[var(--sidebar-background)]/95 backdrop-blur" : "justify-start")}>
             {!isOpen && (
                 <div className="flex flex-row items-center gap-2">
                     <Button

@@ -37,7 +37,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
   ] as const;
 
   return (
-    <div className="w-20 h-full bg-card border-r border-border flex flex-col items-center py-6 gap-6 z-30 flex-shrink-0 transition-all duration-300">
+    <div className="w-20 h-full bg-[var(--sidebar-background)] border-r border-border flex flex-col items-center py-6 gap-6 z-30 flex-shrink-0 transition-all duration-300">
       {/* Logo Placeholder */}
       <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 mb-4">
         <div className="w-5 h-5 text-primary-foreground font-bold text-xs flex items-center justify-center">U</div>
