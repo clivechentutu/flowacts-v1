@@ -181,7 +181,7 @@ export default function Home() {
 
   // Simulate progressive revealing of the story
   useEffect(() => {
-    if (activeTab !== 'experience') return;
+    if (activeTab !== 'project') return;
     
     setEvents([]);
     
