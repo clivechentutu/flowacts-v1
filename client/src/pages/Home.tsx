@@ -264,7 +264,7 @@ const HISTORY_TASKS = [
         date: '2025-01-15',
         isFavorite: true,
         assets: { documents: 2, images: 5, videos: 0 },
-        thumbnail: "https://placehold.co/600x400/indigo/white?text=Competitor+Analysis"
+        thumbnail: "/thumbnails/dashboard.jpg"
     },
     {
         id: 'h2',
@@ -273,7 +273,7 @@ const HISTORY_TASKS = [
         date: '2025-01-18',
         isFavorite: false,
         assets: { documents: 1, images: 8, videos: 1 },
-        thumbnail: "https://placehold.co/600x400/purple/white?text=Mobile+Onboarding"
+        thumbnail: "/thumbnails/mobile-flow.jpg"
     },
     {
         id: 'h3',
@@ -282,7 +282,7 @@ const HISTORY_TASKS = [
         date: '2025-01-19',
         isFavorite: true,
         assets: { documents: 3, images: 12, videos: 2 },
-        thumbnail: "https://placehold.co/600x400/orange/white?text=Holiday+Campaign"
+        thumbnail: "/thumbnails/kanban.jpg"
     },
     {
         id: 'h4',
@@ -291,7 +291,7 @@ const HISTORY_TASKS = [
         date: '2025-01-20',
         isFavorite: true,
         assets: { documents: 1, images: 2, videos: 0 },
-        thumbnail: "https://placehold.co/600x400/blue/white?text=Blog+Post"
+        thumbnail: "/thumbnails/doc.jpg"
     },
     {
         id: 'h5',
@@ -300,7 +300,7 @@ const HISTORY_TASKS = [
         date: '2025-01-20',
         isFavorite: false,
         assets: { documents: 1, images: 0, videos: 0 },
-        thumbnail: "https://placehold.co/600x400/teal/white?text=User+Interview"
+        thumbnail: "/thumbnails/code.jpg"
     },
     {
         id: 'h6',
@@ -309,7 +309,7 @@ const HISTORY_TASKS = [
         date: '2025-01-21',
         isFavorite: false,
         assets: { documents: 2, images: 0, videos: 0 },
-        thumbnail: "https://placehold.co/600x400/pink/white?text=Landing+Page"
+        thumbnail: "/thumbnails/landing.jpg"
     }
 ];
 
