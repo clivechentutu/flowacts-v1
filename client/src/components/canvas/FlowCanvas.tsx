@@ -557,6 +557,10 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
         limitToBounds={false}
         onTransformed={(e) => {
            scaleRef.current = e.state.scale;
+           // Update CSS variable for adaptive UI elements
+           if (e.instance.wrapperComponent) {
+               e.instance.wrapperComponent.style.setProperty('--zoom-scale', e.state.scale.toString());
+           }
         }}
       >
         {({ zoomIn, zoomOut, resetTransform }) => (
@@ -575,8 +579,9 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                   width: `${contentWidth}px`, 
                   height: `${contentHeight}px`,
                   position: 'relative',
-                  transformOrigin: '0 0'
-                }}
+                  transformOrigin: '0 0',
+                  '--zoom-scale': '0.8' // Initial scale
+                } as React.CSSProperties}
               >
                 {/* SVG Connections Layer */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ overflow: 'visible' }}>
@@ -660,38 +665,6 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                          markerEnd="url(#arrowhead-solid)"
                        />
                     );
-                  })}
-                  {/* Super Float Tethers */}
-                  {openFloats.map(floatId => {
-                      const cardPos = positions.find(p => p.id === floatId);
-                      if (!cardPos) return null;
-                      
-                      const defaultX = cardPos.x + CARD_WIDTH + 80;
-                      const defaultY = cardPos.y - 50;
-
-                      // Use stored position if available, else default
-                      const currentPos = floatPositions[floatId];
-                      const floatX = currentPos ? currentPos.x : defaultX;
-                      const floatY = currentPos ? currentPos.y : defaultY;
-                      
-                      const start = { x: cardPos.x + CARD_WIDTH, y: cardPos.y + 400 };
-                      const end = { x: floatX, y: floatY + 60 };
-                      
-                      // Dynamic curvature based on distance
-                      const dx = end.x - start.x;
-                      const cp1 = { x: start.x + Math.max(40, dx * 0.5), y: start.y };
-                      const cp2 = { x: end.x - Math.max(40, dx * 0.5), y: end.y };
-
-                      return (
-                          <path
-                              key={`tether-${floatId}`}
-                              d={`M ${start.x} ${start.y} C ${cp1.x} ${cp1.y}, ${cp2.x} ${cp2.y}, ${end.x} ${end.y}`}
-                              stroke="rgba(59, 130, 246, 0.5)"
-                              strokeWidth="2"
-                              fill="none"
-                              strokeDasharray="4"
-                          />
-                      );
                   })}
                 </svg>
 
