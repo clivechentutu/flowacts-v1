@@ -1,6 +1,6 @@
-import { Home, Layers, Settings, LogOut } from "lucide-react";
+import { Home, Layers, Settings, LogOut, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface AppSidebarProps {
   activeTab: 'home' | 'experience';
@@ -8,6 +8,29 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // Check local storage or system preference
+    const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (storedTheme) {
+      setTheme(storedTheme);
+      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+    } else if (systemPrefersDark) {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
+
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'experience', icon: Layers, label: 'Experience' },
@@ -48,6 +71,20 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
       </nav>
 
       <div className="mt-auto flex flex-col gap-3 w-full px-2">
+        <button 
+          onClick={toggleTheme}
+          className="flex flex-col items-center justify-center w-full h-14 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all gap-1 group"
+        >
+          {theme === 'light' ? (
+             <Sun className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+          ) : (
+             <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform duration-500" />
+          )}
+          <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">
+            {theme === 'light' ? 'Light' : 'Dark'}
+          </span>
+        </button>
+
         <button className="flex flex-col items-center justify-center w-full h-14 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all gap-1 group">
           <Settings className="w-5 h-5 group-hover:rotate-45 transition-transform duration-500" />
           <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">Settings</span>
