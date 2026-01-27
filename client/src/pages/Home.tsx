@@ -47,7 +47,8 @@ import {
   MoreVertical,
   Trash2,
   Pencil,
-  GripVertical
+  GripVertical,
+  FolderKanban
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1260,15 +1261,15 @@ export default function Home() {
 
                                             <div className={cn(
                                                 "p-3 rounded-xl transition-colors",
-                                                file.type === 'document' ? "bg-blue-500/10 text-blue-500" :
+                                                file.type === 'pdf' ? "bg-blue-500/10 text-blue-500" :
                                                 file.type === 'image' ? "bg-emerald-500/10 text-emerald-500" :
                                                 file.type === 'video' ? "bg-amber-500/10 text-amber-500" :
                                                 "bg-indigo-500/10 text-indigo-500"
                                             )}>
-                                                {file.type === 'document' && <FileText className="w-8 h-8" />}
+                                                {file.type === 'pdf' && <FileText className="w-8 h-8" />}
                                                 {file.type === 'image' && <ImageIcon className="w-8 h-8" />}
                                                 {file.type === 'video' && <Film className="w-8 h-8" />}
-                                                {file.type === 'code' && <FileJson className="w-8 h-8" />}
+                                                {file.type === 'json' && <FileJson className="w-8 h-8" />}
                                             </div>
                                             
                                             <div className="px-3 text-center space-y-1">
