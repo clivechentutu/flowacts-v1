@@ -472,8 +472,73 @@ export default function Home() {
 
   const [homeInput, setHomeInput] = useState("");
   const [isThinkingMode, setIsThinkingMode] = useState(false);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const activeScenario = getScenarioById(activeScenarioId);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setHomeInput(newValue);
+
+    const cursorPos = e.target.selectionEnd;
+    const textBeforeCursor = newValue.slice(0, cursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+        const query = textBeforeCursor.slice(lastAtIndex + 1);
+        // Simple heuristic: if query is short and has no newlines, treat as mention search
+        if (!query.includes('\n') && query.length < 20) {
+            setMentionQuery(query);
+            setShowMentions(true);
+            return;
+        }
+    }
+    setShowMentions(false);
+  };
+
+  const handleAtButtonClick = () => {
+      const textarea = inputRef.current;
+      if (!textarea) return;
+
+      const cursorPos = textarea.selectionEnd;
+      const text = homeInput;
+      const newText = text.slice(0, cursorPos) + "@" + text.slice(cursorPos);
+      
+      setHomeInput(newText);
+      setMentionQuery("");
+      setShowMentions(true);
+      
+      setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(cursorPos + 1, cursorPos + 1);
+      }, 0);
+  };
+
+  const handleSelectMention = (card: PromptCard) => {
+      const textarea = inputRef.current;
+      if (!textarea) return;
+      
+      const cursorPos = textarea.selectionEnd;
+      const text = homeInput;
+      const textBeforeCursor = text.slice(0, cursorPos);
+      const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+      
+      if (lastAtIndex !== -1) {
+          const textBeforeAt = text.slice(0, lastAtIndex);
+          const textAfterCursor = text.slice(cursorPos);
+          const newText = textBeforeAt + card.description + " " + textAfterCursor;
+          setHomeInput(newText);
+          setShowMentions(false);
+          
+          setTimeout(() => {
+             textarea.focus();
+             const newCursorPos = (textBeforeAt + card.description + " ").length;
+             textarea.setSelectionRange(newCursorPos, newCursorPos);
+          }, 0);
+      }
+  };
 
   // Simulate progressive revealing of the story
   useEffect(() => {
@@ -613,10 +678,44 @@ export default function Home() {
 
               {/* Large Chat Input */}
               <div className="w-full relative group max-w-3xl">
+                {showMentions && (
+                    <div className="absolute bottom-full left-0 mb-2 w-full max-w-sm max-h-[300px] overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-50 p-1 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/30 rounded-md mb-1">
+                            Suggested Prompts
+                        </div>
+                        {[...commonPrompts, ...recommendedPrompts]
+                            .filter(p => p.title.toLowerCase().includes(mentionQuery.toLowerCase()) || p.description.toLowerCase().includes(mentionQuery.toLowerCase()))
+                            .map((prompt) => (
+                            <button
+                                key={prompt.id}
+                                onClick={() => handleSelectMention(prompt)}
+                                className="w-full flex flex-col items-start gap-1 p-2 rounded-lg hover:bg-muted/80 transition-colors text-left group/item"
+                            >
+                                <div className="flex items-center gap-2 w-full">
+                                    {prompt.icon === 'sparkles' && <Sparkles className="w-3.5 h-3.5 text-amber-500" />}
+                                    {prompt.icon === 'users' && <Users className="w-3.5 h-3.5 text-indigo-500" />}
+                                    {prompt.icon === 'check-square' && <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />}
+                                    {prompt.icon === 'message-square' && <MessageSquare className="w-3.5 h-3.5 text-primary" />}
+                                    <span className="text-sm font-medium text-foreground group-hover/item:text-primary transition-colors line-clamp-1">{prompt.title}</span>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground line-clamp-1 pl-5.5 opacity-80">
+                                    {prompt.description}
+                                </p>
+                            </button>
+                        ))}
+                        {[...commonPrompts, ...recommendedPrompts].filter(p => p.title.toLowerCase().includes(mentionQuery.toLowerCase())).length === 0 && (
+                            <div className="p-3 text-center text-xs text-muted-foreground">
+                                No matching prompts found
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div className="relative flex flex-col bg-card border border-border shadow-xl rounded-2xl focus-within:ring-2 focus-within:ring-primary/20 transition-all overflow-hidden">
                   <textarea 
+                    ref={inputRef}
                     value={homeInput}
-                    onChange={(e) => setHomeInput(e.target.value)}
+                    onChange={handleInputChange}
                     placeholder="Ask anything... 'Analyze the signup flow for competitor.com'" 
                     className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none p-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium shadow-none ring-0 selection:bg-primary/20"
                   />
@@ -626,7 +725,13 @@ export default function Home() {
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Attach">
                           <Paperclip className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Call Roles">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" 
+                            title="Call Roles"
+                            onClick={handleAtButtonClick}
+                        >
                           <AtSign className="w-4 h-4" />
                         </Button>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Search">
