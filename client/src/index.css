@@ -3,33 +3,33 @@
 
 @layer base {
   :root {
-    /* Warm Theme Base */
-    --background: 45 25% 97%;
-    --foreground: 222.2 47.4% 11.2%; /* Keep text contrast high */
+    /* Warm Theme Base - Aligned with #faf9f6 */
+    --background: 40 20% 98%; 
+    --foreground: 222.2 47.4% 11.2%; 
     
-    --card: 45 25% 97%;
+    --card: 40 20% 98%;
     --card-foreground: 222.2 47.4% 11.2%;
     
-    --popover: 45 25% 97%;
+    --popover: 40 20% 98%;
     --popover-foreground: 222.2 47.4% 11.2%;
     
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 45 10% 94%;
+    --secondary: 40 10% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     
-    --muted: 45 10% 94%;
+    --muted: 40 10% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
     
-    --accent: 45 10% 94%;
+    --accent: 40 10% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 45 10% 90%;
-    --input: 45 10% 90%;
+    --border: 40 10% 92%;
+    --input: 40 10% 92%;
     --ring: 217 91% 60%;
     --radius: 0.75rem;
     --chart-1: 12 76% 61%;
