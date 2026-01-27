@@ -50,7 +50,7 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
         {/* Sidebar Container */}
         <div 
           className={cn(
-            "h-full bg-card/95 backdrop-blur-xl transition-all duration-300 ease-in-out overflow-hidden border-r border-border",
+            "h-full bg-[var(--sidebar-background)] backdrop-blur-xl transition-all duration-300 ease-in-out overflow-hidden border-r border-border",
             isExpanded ? "w-64" : "w-0 border-r-0" 
           )}
         >

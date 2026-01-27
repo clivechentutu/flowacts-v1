@@ -97,9 +97,9 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10">
+    <div className="flex flex-col h-full bg-[var(--chat-background)] border-r border-border shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] z-10">
       {/* Header */}
-      <div className="p-4 border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="p-4 border-b border-border bg-[var(--chat-background)]/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="flex items-center justify-between gap-2">
           {/* Task Title Area - approx 4/7 width */}
           <div className="flex-1 min-w-0 pr-2">
