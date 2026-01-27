@@ -1,10 +1,10 @@
-import { Home, Layers, Settings, LogOut, Sun, Moon } from "lucide-react";
+import { Home, FolderKanban, Library, Settings, LogOut, Sun, Moon, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
 interface AppSidebarProps {
-  activeTab: 'home' | 'experience';
-  onTabChange: (tab: 'home' | 'experience') => void;
+  activeTab: 'home' | 'project' | 'library' | 'help';
+  onTabChange: (tab: 'home' | 'project' | 'library' | 'help') => void;
 }
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
@@ -33,7 +33,8 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
-    { id: 'experience', icon: Layers, label: 'Experience' },
+    { id: 'project', icon: FolderKanban, label: 'Project' },
+    { id: 'library', icon: Library, label: 'Library' },
   ] as const;
 
   return (
@@ -50,7 +51,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
           return (
             <button
               key={item.id}
-              onClick={() => onTabChange(item.id)}
+              onClick={() => onTabChange(item.id as any)}
               className={cn(
                 "relative group flex flex-col items-center justify-center w-full h-16 rounded-xl transition-all duration-200 gap-1",
                 isActive 
@@ -83,6 +84,17 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
           <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">
             {theme === 'light' ? 'Light' : 'Dark'}
           </span>
+        </button>
+
+        <button 
+            onClick={() => onTabChange('help')}
+            className={cn(
+                "flex flex-col items-center justify-center w-full h-14 rounded-lg transition-all gap-1 group",
+                activeTab === 'help' ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+        >
+          <HelpCircle className="w-5 h-5 group-hover:scale-110 transition-transform duration-500" />
+          <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">Help</span>
         </button>
 
         <button className="flex flex-col items-center justify-center w-full h-14 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all gap-1 group">
