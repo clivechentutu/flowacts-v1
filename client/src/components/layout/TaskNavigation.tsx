@@ -43,7 +43,7 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
     setProjects(projects.filter(p => p.id !== id));
   };
   
-  if (activeTab !== 'project') return null;
+  if (activeTab !== 'experience') return null;
 
   return (
     <div className="h-full z-20 flex-shrink-0 flex flex-row relative group">
