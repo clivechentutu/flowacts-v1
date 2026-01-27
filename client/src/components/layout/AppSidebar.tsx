@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
 interface AppSidebarProps {
-  activeTab: 'home' | 'project' | 'library';
-  onTabChange: (tab: 'home' | 'project' | 'library') => void;
+  activeTab: 'home' | 'project' | 'library' | 'projects-list';
+  onTabChange: (tab: 'home' | 'project' | 'library' | 'projects-list') => void;
 }
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
@@ -33,7 +33,8 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
-    { id: 'project', icon: FolderKanban, label: 'Project' },
+    { id: 'project', icon: FolderKanban, label: 'Studio' },
+    { id: 'projects-list', icon: Layers, label: 'Project' },
     { id: 'library', icon: Library, label: 'Library' },
   ] as const;
 

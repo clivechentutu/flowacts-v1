@@ -315,7 +315,7 @@ const CATEGORIES = [
 ];
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'library'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'library' | 'projects-list'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
@@ -1127,6 +1127,16 @@ export default function Home() {
              </Dialog>
           </div>
         );
+      case 'projects-list':
+          return (
+             <div className="flex items-center justify-center h-full w-full bg-background text-muted-foreground">
+                <div className="text-center space-y-2">
+                    <FolderKanban className="w-12 h-12 mx-auto opacity-20" />
+                    <p className="font-medium">Projects</p>
+                    <p className="text-sm opacity-60">Coming soon</p>
+                </div>
+             </div>
+          );
       case 'project':
       default:
         return (
