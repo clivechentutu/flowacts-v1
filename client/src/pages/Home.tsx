@@ -263,7 +263,8 @@ const HISTORY_TASKS = [
         description: 'Comprehensive analysis of top 3 competitors in the SaaS market, focusing on pricing strategies and feature sets.',
         date: '2025-01-15',
         isFavorite: true,
-        assets: { documents: 2, images: 5, videos: 0 }
+        assets: { documents: 2, images: 5, videos: 0 },
+        thumbnail: "https://placehold.co/600x400/indigo/white?text=Competitor+Analysis"
     },
     {
         id: 'h2',
@@ -271,7 +272,8 @@ const HISTORY_TASKS = [
         description: 'User journey mapping for the new mobile onboarding experience, identifying drop-off points.',
         date: '2025-01-18',
         isFavorite: false,
-        assets: { documents: 1, images: 8, videos: 1 }
+        assets: { documents: 1, images: 8, videos: 1 },
+        thumbnail: "https://placehold.co/600x400/purple/white?text=Mobile+Onboarding"
     },
     {
         id: 'h3',
@@ -279,7 +281,8 @@ const HISTORY_TASKS = [
         description: 'Visual assets and copy generation for the upcoming holiday season social media push.',
         date: '2025-01-19',
         isFavorite: true,
-        assets: { documents: 3, images: 12, videos: 2 }
+        assets: { documents: 3, images: 12, videos: 2 },
+        thumbnail: "https://placehold.co/600x400/orange/white?text=Holiday+Campaign"
     },
     {
         id: 'h4',
@@ -287,7 +290,8 @@ const HISTORY_TASKS = [
         description: 'Drafting announcement blog post for the new collaboration features.',
         date: '2025-01-20',
         isFavorite: true,
-        assets: { documents: 1, images: 2, videos: 0 }
+        assets: { documents: 1, images: 2, videos: 0 },
+        thumbnail: "https://placehold.co/600x400/blue/white?text=Blog+Post"
     },
     {
         id: 'h5',
@@ -295,7 +299,8 @@ const HISTORY_TASKS = [
         description: 'Generating questions for user research interviews regarding the new dashboard.',
         date: '2025-01-20',
         isFavorite: false,
-        assets: { documents: 1, images: 0, videos: 0 }
+        assets: { documents: 1, images: 0, videos: 0 },
+        thumbnail: "https://placehold.co/600x400/teal/white?text=User+Interview"
     },
     {
         id: 'h6',
@@ -303,7 +308,8 @@ const HISTORY_TASKS = [
         description: 'A/B testing copy variations for the main landing page value prop.',
         date: '2025-01-21',
         isFavorite: false,
-        assets: { documents: 2, images: 0, videos: 0 }
+        assets: { documents: 2, images: 0, videos: 0 },
+        thumbnail: "https://placehold.co/600x400/pink/white?text=Landing+Page"
     }
 ];
 
@@ -1187,31 +1193,45 @@ export default function Home() {
                         .map(task => (
                         <div 
                             key={task.id} 
-                            className="group bg-card border border-border hover:border-primary/50 p-5 rounded-xl transition-all cursor-pointer hover:shadow-md flex flex-col gap-4 h-[200px]"
+                            className="group bg-card border border-border hover:border-primary/50 rounded-xl transition-all cursor-pointer hover:shadow-md flex flex-col h-[280px] overflow-hidden"
                         >
-                            <div className="flex items-start justify-between gap-2">
-                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2" title={task.title}>
-                                    {task.title}
-                                </h3>
-                                {task.isFavorite ? (
-                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0 mt-0.5" />
-                                ) : (
-                                    <Star className="w-4 h-4 text-muted-foreground/20 shrink-0 mt-0.5 group-hover:text-muted-foreground/50 transition-colors" />
-                                )}
+                            <div className="h-[140px] w-full bg-muted/50 overflow-hidden relative">
+                                <img 
+                                    src={task.thumbnail} 
+                                    alt={task.title}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100"
+                                />
+                                <div className="absolute top-2 right-2">
+                                    {task.isFavorite ? (
+                                        <div className="bg-background/80 backdrop-blur-sm p-1.5 rounded-full shadow-sm">
+                                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                                        </div>
+                                    ) : (
+                                        <div className="bg-background/40 backdrop-blur-sm p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Star className="w-3.5 h-3.5 text-muted-foreground/60" />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             
-                            <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed flex-1">
-                                {task.description}
-                            </p>
-                            
-                            <div className="pt-3 mt-auto border-t border-dashed border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1.5">
-                                    <Calendar className="w-3.5 h-3.5 opacity-70" />
-                                    <span>{task.date}</span>
-                                </div>
-                                <div className="flex items-center gap-2 opacity-60">
-                                   {task.assets.documents > 0 && <FileText className="w-3 h-3" />}
-                                   {task.assets.images > 0 && <ImageIcon className="w-3 h-3" />}
+                            <div className="p-4 flex flex-col gap-2 flex-1">
+                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1" title={task.title}>
+                                    {task.title}
+                                </h3>
+                                
+                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed flex-1">
+                                    {task.description}
+                                </p>
+                                
+                                <div className="pt-3 mt-auto border-t border-dashed border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                        <Calendar className="w-3 h-3 opacity-70" />
+                                        <span>{task.date}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 opacity-60">
+                                       {task.assets.documents > 0 && <FileText className="w-3 h-3" />}
+                                       {task.assets.images > 0 && <ImageIcon className="w-3 h-3" />}
+                                    </div>
                                 </div>
                             </div>
                         </div>
