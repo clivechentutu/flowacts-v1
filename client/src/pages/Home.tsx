@@ -678,7 +678,7 @@ export default function Home() {
                     <div className="flex items-center gap-4">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                             <Clock className="w-4 h-4" />
-                            Project
+                            Recent Projects
                         </h3>
                         
                         <div className="flex bg-muted/50 p-0.5 rounded-lg scale-90 origin-left">
