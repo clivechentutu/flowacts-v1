@@ -168,10 +168,10 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-border bg-card">
+      <div className="p-4 border-t border-border bg-[var(--chat-background)]">
         <form 
           onSubmit={handleSubmit} 
-          className="relative flex flex-col bg-muted/30 border border-border/50 rounded-xl focus-within:ring-1 focus-within:ring-primary/20 transition-all"
+          className="relative flex flex-col bg-background border border-border shadow-sm rounded-xl focus-within:ring-1 focus-within:ring-primary/20 focus-within:shadow-md transition-all duration-300"
         >
           <Input 
             value={input}
