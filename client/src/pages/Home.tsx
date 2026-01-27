@@ -776,11 +776,13 @@ export default function Home() {
 
               {/* Categorized Scenarios */}
               <div className="w-full space-y-6 mt-8 md:mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                 <div className="text-center space-y-2 mb-8">
-                    <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-heading uppercase tracking-[0.2em] opacity-80">
-                      see what flowacts can do
+                 <div className="text-center space-y-2 mb-10">
+                    <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl font-heading opacity-90">
+                      See what FlowActs can do
                     </h2>
-                    <div className="h-1 w-12 bg-primary/30 mx-auto rounded-full" />
+                    <p className="text-muted-foreground text-sm max-w-lg mx-auto">
+                      Explore our curated templates to jumpstart your analysis and simulation workflows.
+                    </p>
                  </div>
 
                  {/* Tabs */}
