@@ -776,6 +776,13 @@ export default function Home() {
 
               {/* Categorized Scenarios */}
               <div className="w-full space-y-6 mt-8 md:mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+                 <div className="text-center space-y-2 mb-8">
+                    <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl font-heading uppercase tracking-[0.2em] opacity-80">
+                      see what flowacts can do
+                    </h2>
+                    <div className="h-1 w-12 bg-primary/30 mx-auto rounded-full" />
+                 </div>
+
                  {/* Tabs */}
                  <div className="flex items-center justify-center gap-1 p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar mx-auto w-full max-w-fit">
                     {CATEGORIES.map(category => (
