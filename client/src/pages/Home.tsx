@@ -115,6 +115,7 @@ export default function Home() {
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
+  const [activeLibraryFilter, setActiveLibraryFilter] = useState<'all' | 'creative' | 'product' | 'technical'>('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [viewMode, setViewMode] = useState<'canvas' | 'files'>('canvas');
   const [uploadedFiles, setUploadedFiles] = useState<StoryEvent[]>([]);
@@ -594,16 +595,48 @@ export default function Home() {
                         Official Recommendations
                      </h3>
                      <div className="flex bg-muted/50 p-0.5 rounded-lg text-xs">
-                        <button className="px-2.5 py-1 bg-background rounded-md shadow-sm font-medium text-foreground">All</button>
-                        <button className="px-2.5 py-1 text-muted-foreground hover:text-foreground transition-colors">Creative</button>
-                        <button className="px-2.5 py-1 text-muted-foreground hover:text-foreground transition-colors">Product</button>
-                        <button className="px-2.5 py-1 text-muted-foreground hover:text-foreground transition-colors">Technical</button>
+                        <button 
+                          onClick={() => setActiveLibraryFilter('all')}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md transition-all font-medium",
+                            activeLibraryFilter === 'all' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          All
+                        </button>
+                        <button 
+                          onClick={() => setActiveLibraryFilter('creative')}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md transition-all font-medium",
+                            activeLibraryFilter === 'creative' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Creative
+                        </button>
+                        <button 
+                          onClick={() => setActiveLibraryFilter('product')}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md transition-all font-medium",
+                            activeLibraryFilter === 'product' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Product
+                        </button>
+                        <button 
+                          onClick={() => setActiveLibraryFilter('technical')}
+                          className={cn(
+                            "px-2.5 py-1 rounded-md transition-all font-medium",
+                            activeLibraryFilter === 'technical' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                          )}
+                        >
+                          Technical
+                        </button>
                      </div>
                    </div>
                    
                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                       {/* Mixed Grid of Templates */}
-                      {[1, 2, 3].map(i => (
+                      {(activeLibraryFilter === 'all' || activeLibraryFilter === 'creative') && [1, 2, 3].map(i => (
                          <div key={`prompt-${i}`} className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
                             <div className="flex items-center gap-2 mb-2">
                                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
@@ -613,7 +646,7 @@ export default function Home() {
                          </div>
                       ))}
 
-                      {[1, 2, 3].map(i => (
+                      {(activeLibraryFilter === 'all' || activeLibraryFilter === 'product') && [1, 2, 3].map(i => (
                          <div key={`role-${i}`} className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
                             <div className="flex items-center gap-2 mb-2">
                                 <Users className="w-3.5 h-3.5 text-indigo-500" />
@@ -623,7 +656,7 @@ export default function Home() {
                          </div>
                       ))}
 
-                      {[1, 2, 3].map(i => (
+                      {(activeLibraryFilter === 'all' || activeLibraryFilter === 'technical') && [1, 2, 3].map(i => (
                          <div key={`task-${i}`} className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
                             <div className="flex items-center gap-2 mb-2">
                                 <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />
