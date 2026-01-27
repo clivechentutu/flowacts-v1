@@ -500,7 +500,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
 
   return (
     <div 
-        className="h-full w-full bg-[#f8f9fa] dark:bg-[#09090b] relative overflow-hidden group/canvas"
+        className="h-full w-full bg-[var(--canvas-background)] relative overflow-hidden group/canvas transition-colors duration-300"
         onDragOver={(e) => {
             e.preventDefault();
             setIsDraggingFile(true);
@@ -526,21 +526,21 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
       </AnimatePresence>
 
       {/* Canvas Grid Pattern - Dot style for modern look */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.4] dark:opacity-[0.3]"
+      <div className="absolute inset-0 pointer-events-none opacity-100"
         style={{
-            backgroundImage: `radial-gradient(circle, hsl(var(--muted-foreground) / 0.3) 1px, transparent 1px)`,
-            backgroundSize: '16px 16px',
+            backgroundImage: `radial-gradient(circle, var(--canvas-grid) 1px, transparent 1px)`,
+            backgroundSize: '24px 24px',
             maskImage: 'radial-gradient(circle at center, black, transparent 95%)'
         }}
       />
       {/* Secondary larger grid for structure - even more subtle */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.02] dark:opacity-[0.03]"
+      <div className="absolute inset-0 pointer-events-none opacity-[0.3]"
          style={{
              backgroundImage: `
-                linear-gradient(to right, hsl(var(--foreground)) 1px, transparent 1px),
-                linear-gradient(to bottom, hsl(var(--foreground)) 1px, transparent 1px)
+                linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px)
              `,
-             backgroundSize: '80px 80px'
+             backgroundSize: '120px 120px'
          }}
       />
       
