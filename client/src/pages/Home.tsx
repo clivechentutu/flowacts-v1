@@ -41,7 +41,9 @@ import {
   CheckSquare,
   Square,
   X,
-  Upload
+  Upload,
+  Library,
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,7 +111,7 @@ const CATEGORIES = [
 ];
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'home' | 'experience'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'library'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
@@ -210,7 +212,7 @@ export default function Home() {
 
   const handleScenarioClick = (scenarioId: string) => {
     setActiveScenarioId(scenarioId);
-    setActiveTab('experience');
+    setActiveTab('project');
   };
 
   const toggleFileSelection = (id: string) => {
@@ -542,7 +544,68 @@ export default function Home() {
             </div>
           </div>
         );
-      case 'experience':
+      case 'library':
+        return (
+          <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
+             <div className="flex items-center gap-2 mb-8">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Library className="w-6 h-6 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold tracking-tight">Library</h2>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto w-full">
+                {/* Prompt Templates */}
+                <div className="space-y-4">
+                   <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-amber-500" />
+                      Prompt Templates
+                   </h3>
+                   <div className="grid gap-3">
+                      {[1, 2, 3].map(i => (
+                         <div key={i} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
+                            <div className="font-medium mb-1 group-hover:text-primary transition-colors">Creative Writing V{i}</div>
+                            <div className="text-xs text-muted-foreground">Optimized for creative storytelling and world building with enhanced context.</div>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+
+                {/* Role Templates */}
+                <div className="space-y-4">
+                   <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Users className="w-5 h-5 text-indigo-500" />
+                      Role Templates
+                   </h3>
+                   <div className="grid gap-3">
+                      {[1, 2, 3].map(i => (
+                         <div key={i} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
+                            <div className="font-medium mb-1 group-hover:text-primary transition-colors">Product Manager {i}</div>
+                            <div className="text-xs text-muted-foreground">Expert in agile methodologies, user research, and product strategy.</div>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+                
+                 {/* Task Templates */}
+                <div className="space-y-4">
+                   <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <CheckSquare className="w-5 h-5 text-emerald-500" />
+                      Task Templates
+                   </h3>
+                   <div className="grid gap-3">
+                      {[1, 2, 3].map(i => (
+                         <div key={i} className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
+                            <div className="font-medium mb-1 group-hover:text-primary transition-colors">Competitor Analysis {i}</div>
+                            <div className="text-xs text-muted-foreground">Standard framework for analyzing market competitors and their feature sets.</div>
+                         </div>
+                      ))}
+                   </div>
+                </div>
+             </div>
+          </div>
+        );
+      case 'project':
       default:
         return (
           <>
@@ -804,7 +867,7 @@ export default function Home() {
         </div>
       }
       rightPanel={
-        activeTab === 'experience' ? (
+        activeTab === 'project' ? (
             <ChatPanel 
               events={events} 
               onSendMessage={handleSendMessage} 

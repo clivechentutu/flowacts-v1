@@ -1,10 +1,10 @@
-import { Home, Layers, Settings, LogOut, Sun, Moon } from "lucide-react";
+import { Home, Layers, Settings, LogOut, Sun, Moon, FolderKanban, Library, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 
 interface AppSidebarProps {
-  activeTab: 'home' | 'experience';
-  onTabChange: (tab: 'home' | 'experience') => void;
+  activeTab: 'home' | 'project' | 'library';
+  onTabChange: (tab: 'home' | 'project' | 'library') => void;
 }
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
@@ -33,7 +33,8 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
 
   const navItems = [
     { id: 'home', icon: Home, label: 'Home' },
-    { id: 'experience', icon: Layers, label: 'Experience' },
+    { id: 'project', icon: FolderKanban, label: 'Project' },
+    { id: 'library', icon: Library, label: 'Library' },
   ] as const;
 
   return (
@@ -83,6 +84,11 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
           <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">
             {theme === 'light' ? 'Light' : 'Dark'}
           </span>
+        </button>
+
+        <button className="flex flex-col items-center justify-center w-full h-14 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all gap-1 group">
+          <HelpCircle className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+          <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">Help</span>
         </button>
 
         <button className="flex flex-col items-center justify-center w-full h-14 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all gap-1 group">
