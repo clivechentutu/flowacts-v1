@@ -316,7 +316,8 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
     // Check horizontal bounds (only scroll if offscreen to the right)
     if (cardScreenRight > viewportWidth - paddingRight) {
         // Scroll so the card is visible with some padding from the right edge
-        newX = viewportWidth - paddingRight - (lastPos.x + CARD_WIDTH) * scale;
+        // Increasing paddingRight to ensure it clears the sidebar (approx 450px + extra buffer)
+        newX = viewportWidth - (paddingRight + 100) - (lastPos.x + CARD_WIDTH) * scale;
         shouldScroll = true;
     }
 
