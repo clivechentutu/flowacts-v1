@@ -39,10 +39,10 @@
     --chart-5: 27 87% 67%;
     
     /* Canvas specific vars for warm/soft feel */
-    --canvas-background: #f4f3f1;
+    --canvas-background: #faf9f6;
     --canvas-grid: rgba(60, 60, 67, 0.08);
-    --sidebar-background: #ffffff;
-    --chat-background: #ffffff;
+    --sidebar-background: #eceae5;
+    --chat-background: #eceae5;
   }
 
   .dark {
