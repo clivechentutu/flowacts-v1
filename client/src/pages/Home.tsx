@@ -43,12 +43,216 @@ import {
   X,
   Upload,
   Library,
-  Users
+  Users,
+  MoreVertical,
+  Trash2,
+  Pencil,
+  GripVertical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  DragStartEvent,
+  DragEndEvent,
+  useDroppable
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+interface PromptCard {
+  id: string;
+  title: string;
+  description: string;
+  icon: 'sparkles' | 'users' | 'check-square' | 'message-square';
+  usageCount?: number;
+  lastUsed?: string;
+  category: 'creative' | 'product' | 'technical' | 'common';
+}
+
+const INITIAL_COMMON_PROMPTS: PromptCard[] = [
+  { id: 'common-1', title: 'Daily Standup Update 1', description: 'Structure for summarizing daily progress, blockers, and next steps for the team.', icon: 'message-square', usageCount: 12, lastUsed: '2d ago', category: 'common' },
+  { id: 'common-2', title: 'Daily Standup Update 2', description: 'Structure for summarizing daily progress, blockers, and next steps for the team.', icon: 'message-square', usageCount: 8, lastUsed: '3d ago', category: 'common' },
+  { id: 'common-3', title: 'Daily Standup Update 3', description: 'Structure for summarizing daily progress, blockers, and next steps for the team.', icon: 'message-square', usageCount: 5, lastUsed: '5d ago', category: 'common' },
+  { id: 'common-4', title: 'Daily Standup Update 4', description: 'Structure for summarizing daily progress, blockers, and next steps for the team.', icon: 'message-square', usageCount: 3, lastUsed: '1w ago', category: 'common' },
+  { id: 'common-5', title: 'Daily Standup Update 5', description: 'Structure for summarizing daily progress, blockers, and next steps for the team.', icon: 'message-square', usageCount: 1, lastUsed: '2w ago', category: 'common' },
+];
+
+const INITIAL_RECOMMENDED_PROMPTS: PromptCard[] = [
+  { id: 'rec-1', title: 'Creative Writing V1', description: 'Optimized for creative storytelling and world building with enhanced context.', icon: 'sparkles', category: 'creative' },
+  { id: 'rec-2', title: 'Creative Writing V2', description: 'Optimized for creative storytelling and world building with enhanced context.', icon: 'sparkles', category: 'creative' },
+  { id: 'rec-3', title: 'Creative Writing V3', description: 'Optimized for creative storytelling and world building with enhanced context.', icon: 'sparkles', category: 'creative' },
+  { id: 'rec-4', title: 'Product Manager 1', description: 'Expert in agile methodologies, user research, and product strategy.', icon: 'users', category: 'product' },
+  { id: 'rec-5', title: 'Product Manager 2', description: 'Expert in agile methodologies, user research, and product strategy.', icon: 'users', category: 'product' },
+  { id: 'rec-6', title: 'Product Manager 3', description: 'Expert in agile methodologies, user research, and product strategy.', icon: 'users', category: 'product' },
+  { id: 'rec-7', title: 'Competitor Analysis 1', description: 'Standard framework for analyzing market competitors and their feature sets.', icon: 'check-square', category: 'technical' },
+  { id: 'rec-8', title: 'Competitor Analysis 2', description: 'Standard framework for analyzing market competitors and their feature sets.', icon: 'check-square', category: 'technical' },
+  { id: 'rec-9', title: 'Competitor Analysis 3', description: 'Standard framework for analyzing market competitors and their feature sets.', icon: 'check-square', category: 'technical' },
+];
+
+function SortablePromptCard({ 
+  card, 
+  isOverlay = false, 
+  onEdit, 
+  onDelete 
+}: { 
+  card: PromptCard; 
+  isOverlay?: boolean;
+  onEdit?: (card: PromptCard) => void;
+  onDelete?: (id: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: card.id, data: { card } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+  };
+
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'sparkles': return <Sparkles className="w-3.5 h-3.5 text-amber-500" />;
+      case 'users': return <Users className="w-3.5 h-3.5 text-indigo-500" />;
+      case 'check-square': return <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />;
+      case 'message-square': return <MessageSquare className="w-3.5 h-3.5 text-primary" />;
+      default: return <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />;
+    }
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "relative p-3 rounded-xl border bg-card transition-all group flex flex-col h-full shadow-sm",
+        isOverlay ? "border-primary shadow-lg cursor-grabbing scale-105 z-50" : "border-border hover:bg-muted/50 hover:border-primary/50",
+        card.category === 'common' && "cursor-grab active:cursor-grabbing"
+      )}
+      {...attributes}
+      {...listeners}
+    >
+       <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <div className={cn(
+              "p-1 rounded-md",
+              card.icon === 'message-square' ? "bg-primary/10" : "bg-muted/50"
+            )}>
+               {getIcon(card.icon)}
+            </div>
+            {card.category === 'common' && (
+               <div className="md:hidden">
+                 <GripVertical className="w-3 h-3 text-muted-foreground/30" />
+               </div>
+            )}
+          </div>
+          
+          {card.category === 'common' && !isOverlay && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 -mt-2 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100">
+                  <MoreVertical className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-32">
+                <DropdownMenuItem onClick={() => onEdit?.(card)} className="text-xs">
+                  <Pencil className="w-3 h-3 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete?.(card.id)} className="text-xs text-destructive focus:text-destructive">
+                  <Trash2 className="w-3 h-3 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+       </div>
+       <div className="font-medium text-sm mb-1 group-hover:text-primary transition-colors truncate">{card.title}</div>
+       <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed mb-3 flex-1">
+          {card.description}
+       </p>
+       {card.category === 'common' && (
+         <div className="text-[10px] text-muted-foreground/60 font-mono mt-auto">
+            Used {card.usageCount} times
+         </div>
+       )}
+    </div>
+  );
+}
+
+function DraggablePromptCard({ card }: { card: PromptCard }) {
+  const {attributes, listeners, setNodeRef, isDragging} = useSortable({
+    id: card.id,
+    data: { card }
+  });
+  
+  const style = {
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'sparkles': return <Sparkles className="w-3.5 h-3.5 text-amber-500" />;
+      case 'users': return <Users className="w-3.5 h-3.5 text-indigo-500" />;
+      case 'check-square': return <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />;
+      case 'message-square': return <MessageSquare className="w-3.5 h-3.5 text-primary" />;
+      default: return <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />;
+    }
+  };
+
+  return (
+    <div 
+       ref={setNodeRef} 
+       style={style}
+       {...attributes} 
+       {...listeners}
+       className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-grab active:cursor-grabbing transition-all group"
+    >
+       <div className="flex items-center gap-2 mb-2">
+           {getIcon(card.icon)}
+           <div className="font-medium text-sm group-hover:text-primary transition-colors truncate">{card.title}</div>
+       </div>
+       <div className="text-[11px] text-muted-foreground line-clamp-2">{card.description}</div>
+    </div>
+  );
+}
 
 const HISTORY_TASKS = [
     {
@@ -136,8 +340,94 @@ export default function Home() {
       });
     }
   };
-  const [homeInput, setHomeInput] = useState("");
-  const [isThinkingMode, setIsThinkingMode] = useState(false);
+  const [commonPrompts, setCommonPrompts] = useState<PromptCard[]>(INITIAL_COMMON_PROMPTS);
+  const [recommendedPrompts, setRecommendedPrompts] = useState<PromptCard[]>(INITIAL_RECOMMENDED_PROMPTS);
+  const [editingCard, setEditingCard] = useState<PromptCard | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (!over) return;
+
+    // Handle drag between lists
+    const activeId = active.id as string;
+    const overId = over.id as string;
+
+    const isCommonActive = commonPrompts.some(p => p.id === activeId);
+    const isRecommendedActive = recommendedPrompts.some(p => p.id === activeId);
+    
+    // Check if dropping over a container or an item within a container
+    const isOverCommonContainer = overId === 'common-prompts-container';
+    const isOverCommonItem = commonPrompts.some(p => p.id === overId);
+    
+    const isOverRecommendedContainer = overId === 'recommended-prompts-container';
+    const isOverRecommendedItem = recommendedPrompts.some(p => p.id === overId);
+
+    // Moving from Recommended to Common
+    if (isRecommendedActive && (isOverCommonContainer || isOverCommonItem)) {
+      const item = recommendedPrompts.find(p => p.id === activeId);
+      if (item) {
+        setRecommendedPrompts(recommendedPrompts.filter(p => p.id !== activeId));
+        setCommonPrompts([...commonPrompts, { ...item, category: 'common', usageCount: 0, lastUsed: 'Just now' }]);
+        toast({ title: "Added to Common Prompts", description: `${item.title} moved to your favorites.` });
+      }
+      return;
+    }
+
+    // Moving from Common to Recommended (removing from common)
+    if (isCommonActive && (isOverRecommendedContainer || isOverRecommendedItem)) {
+      const item = commonPrompts.find(p => p.id === activeId);
+      if (item) {
+        setCommonPrompts(commonPrompts.filter(p => p.id !== activeId));
+        // We restore it to recommended if it originally belonged there or just remove it
+        // Ideally we check if it already exists or just add it back as a recommended template
+        const originalCategory = item.icon === 'sparkles' ? 'creative' : item.icon === 'users' ? 'product' : 'technical';
+        setRecommendedPrompts([...recommendedPrompts, { ...item, category: originalCategory }]);
+        toast({ title: "Removed from Common Prompts", description: `${item.title} moved back to recommendations.` });
+      }
+      return;
+    }
+
+    // Reordering within Common Prompts
+    if (isCommonActive && isOverCommonItem && activeId !== overId) {
+      setCommonPrompts((items) => {
+        const oldIndex = items.findIndex((item) => item.id === activeId);
+        const newIndex = items.findIndex((item) => item.id === overId);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleDeleteCard = (id: string) => {
+    setCommonPrompts(commonPrompts.filter(p => p.id !== id));
+    toast({ title: "Prompt Deleted", description: "The prompt has been removed from your list." });
+  };
+
+  const handleEditCard = (card: PromptCard) => {
+    setEditingCard(card);
+  };
+
+  const saveEditedCard = (newTitle: string, newDesc: string) => {
+    if (!editingCard) return;
+    setCommonPrompts(commonPrompts.map(p => 
+      p.id === editingCard.id ? { ...p, title: newTitle, description: newDesc } : p
+    ));
+    setEditingCard(null);
+    toast({ title: "Changes Saved", description: "Your prompt has been updated." });
+  };
 
   // Helper to find or reconstruct scenario from ID
   const getScenarioById = (id: string) => {
@@ -179,6 +469,9 @@ export default function Home() {
 
     return SCENARIOS[0]; // Fallback
   };
+
+  const [homeInput, setHomeInput] = useState("");
+  const [isThinkingMode, setIsThinkingMode] = useState(false);
 
   const activeScenario = getScenarioById(activeScenarioId);
 
@@ -555,6 +848,12 @@ export default function Home() {
                 <h2 className="text-2xl font-bold tracking-tight">Library</h2>
              </div>
              
+             <DndContext 
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+             >
              <div className="flex flex-col gap-10 max-w-7xl mx-auto w-full">
                 {/* User's Common Prompts */}
                 <div className="space-y-4">
@@ -565,24 +864,30 @@ export default function Home() {
                      </h3>
                    </div>
                    
-                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                      {[1, 2, 3, 4, 5].map(i => (
-                         <div key={`my-${i}`} className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group flex flex-col h-full shadow-sm">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="p-1 bg-primary/10 rounded-md text-primary">
-                                   <MessageSquare className="w-3.5 h-3.5" />
-                                </div>
-                            </div>
-                            <div className="font-medium text-sm mb-1 group-hover:text-primary transition-colors truncate">Daily Standup {i}</div>
-                            <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed mb-3 flex-1">
-                               Summarize daily progress and blockers.
-                            </p>
-                            <div className="text-[10px] text-muted-foreground/60 font-mono">
-                               Used 12 times
-                            </div>
-                         </div>
-                      ))}
-                   </div>
+                   <SortableContext 
+                      items={commonPrompts.map(p => p.id)}
+                      strategy={rectSortingStrategy}
+                   >
+                     <div 
+                        id="common-prompts-container"
+                        className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 min-h-[120px] p-2 -m-2 rounded-xl transition-colors border border-transparent hover:border-dashed hover:border-border/60 hover:bg-muted/5"
+                     >
+                        {commonPrompts.map(card => (
+                           <SortablePromptCard 
+                              key={card.id} 
+                              card={card} 
+                              onEdit={handleEditCard}
+                              onDelete={handleDeleteCard}
+                           />
+                        ))}
+                        {commonPrompts.length === 0 && (
+                           <div className="col-span-full flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground/40 border-2 border-dashed border-border/40 rounded-xl bg-muted/5">
+                              <Star className="w-6 h-6 mb-2 opacity-50" />
+                              <p className="text-sm font-medium">Drag recommended prompts here to save them</p>
+                           </div>
+                        )}
+                     </div>
+                   </SortableContext>
                 </div>
 
                 <div className="w-full h-px bg-border/60" />
@@ -634,40 +939,78 @@ export default function Home() {
                      </div>
                    </div>
                    
-                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {/* Mixed Grid of Templates */}
-                      {(activeLibraryFilter === 'all' || activeLibraryFilter === 'creative') && [1, 2, 3].map(i => (
-                         <div key={`prompt-${i}`} className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                <div className="font-medium text-sm group-hover:text-primary transition-colors truncate">Creative Writing V{i}</div>
-                            </div>
-                            <div className="text-[11px] text-muted-foreground line-clamp-2">Optimized for creative storytelling and world building.</div>
-                         </div>
-                      ))}
-
-                      {(activeLibraryFilter === 'all' || activeLibraryFilter === 'product') && [1, 2, 3].map(i => (
-                         <div key={`role-${i}`} className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Users className="w-3.5 h-3.5 text-indigo-500" />
-                                <div className="font-medium text-sm group-hover:text-primary transition-colors truncate">Product Manager {i}</div>
-                            </div>
-                            <div className="text-[11px] text-muted-foreground line-clamp-2">Expert in agile methodologies and strategy.</div>
-                         </div>
-                      ))}
-
-                      {(activeLibraryFilter === 'all' || activeLibraryFilter === 'technical') && [1, 2, 3].map(i => (
-                         <div key={`task-${i}`} className="p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/50 cursor-pointer transition-all group">
-                            <div className="flex items-center gap-2 mb-2">
-                                <CheckSquare className="w-3.5 h-3.5 text-emerald-500" />
-                                <div className="font-medium text-sm group-hover:text-primary transition-colors truncate">Competitor Analysis {i}</div>
-                            </div>
-                            <div className="text-[11px] text-muted-foreground line-clamp-2">Standard framework for analyzing market competitors.</div>
-                         </div>
-                      ))}
-                   </div>
+                   <SortableContext 
+                      items={recommendedPrompts.map(p => p.id)}
+                      strategy={rectSortingStrategy}
+                   >
+                     <div 
+                       id="recommended-prompts-container"
+                       className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 min-h-[120px] p-2 -m-2 rounded-xl transition-colors border border-transparent hover:border-dashed hover:border-border/60 hover:bg-muted/5"
+                     >
+                        {recommendedPrompts
+                          .filter(card => activeLibraryFilter === 'all' || card.category === activeLibraryFilter)
+                          .map(card => (
+                             <SortablePromptCard key={card.id} card={card} />
+                          ))}
+                        
+                        {recommendedPrompts.length === 0 && (
+                           <div className="col-span-full flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground/40 border-2 border-dashed border-border/40 rounded-xl bg-muted/5">
+                              <Sparkles className="w-6 h-6 mb-2 opacity-50" />
+                              <p className="text-sm font-medium">No recommendations available</p>
+                           </div>
+                        )}
+                     </div>
+                   </SortableContext>
                 </div>
              </div>
+
+             <DragOverlay>
+                {activeDragId ? (
+                  <SortablePromptCard 
+                    card={
+                      [...commonPrompts, ...recommendedPrompts].find(p => p.id === activeDragId)!
+                    }
+                    isOverlay
+                  />
+                ) : null}
+             </DragOverlay>
+             </DndContext>
+
+             {/* Edit Dialog */}
+             <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
+               <DialogContent>
+                 <DialogHeader>
+                   <DialogTitle>Edit Prompt</DialogTitle>
+                   <DialogDescription>
+                     Make changes to your saved prompt card here.
+                   </DialogDescription>
+                 </DialogHeader>
+                 {editingCard && (
+                   <div className="grid gap-4 py-4">
+                     <div className="grid gap-2">
+                       <Label htmlFor="title">Title</Label>
+                       <Input 
+                         id="title" 
+                         defaultValue={editingCard.title} 
+                         onChange={(e) => setEditingCard({ ...editingCard, title: e.target.value })}
+                       />
+                     </div>
+                     <div className="grid gap-2">
+                       <Label htmlFor="desc">Description</Label>
+                       <Textarea 
+                         id="desc" 
+                         defaultValue={editingCard.description} 
+                         onChange={(e) => setEditingCard({ ...editingCard, description: e.target.value })}
+                       />
+                     </div>
+                   </div>
+                 )}
+                 <DialogFooter>
+                   <Button variant="outline" onClick={() => setEditingCard(null)}>Cancel</Button>
+                   <Button onClick={() => saveEditedCard(editingCard?.title || '', editingCard?.description || '')}>Save Changes</Button>
+                 </DialogFooter>
+               </DialogContent>
+             </Dialog>
           </div>
         );
       case 'project':
