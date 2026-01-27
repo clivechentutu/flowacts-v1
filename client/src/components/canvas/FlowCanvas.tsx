@@ -765,45 +765,51 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                 })}
 
                 {/* Super Floats Layer */}
-                <AnimatePresence>
-                    {openFloats.map(floatId => {
-                        const cardPos = positions.find(p => p.id === floatId);
-                        const event = canvasEvents.find(e => e.id === floatId);
-                        if (!cardPos || !event) return null;
-                        
-                        const defaultX = cardPos.x + CARD_WIDTH + 80;
-                        const defaultY = cardPos.y - 50;
-
-                        // Use stored position if available, else default
-                        const currentPos = floatPositions[floatId];
-                        const currentX = currentPos ? currentPos.x : defaultX;
-                        const currentY = currentPos ? currentPos.y : defaultY;
-
-                        return (
-                            <SuperFloat 
-                                key={`float-${floatId}`}
-                                cardId={floatId}
-                                title={event.title || "Insight Document"}
-                                content={event.content}
-                                onClose={() => toggleFloat(floatId)}
-                                position={{ x: currentX, y: currentY }}
-                                isPinned={pinnedFloats.includes(floatId)}
-                                onPinToggle={() => togglePin(floatId)}
-                                onDrag={(delta) => {
-                                    const scale = scaleRef.current || 1;
-                                    const newX = currentX + (delta.x / scale);
-                                    const newY = currentY + (delta.y / scale);
-                                    updateFloatPosition(floatId, { x: newX, y: newY });
-                                }}
-                            />
-                        );
-                    })}
-                </AnimatePresence>
+                
               </div>
             </TransformComponent>
           </>
         )}
       </TransformWrapper>
+
+      {/* Super Floats Layer - Now Rendered Outside TransformWrapper for Screen-Space Positioning */}
+      <AnimatePresence>
+        {openFloats.map(floatId => {
+            // We don't need cardPos for physics anymore, just data lookup
+            const event = canvasEvents.find(e => e.id === floatId);
+            if (!event) return null;
+            
+            // Calculate center of screen for default position
+            // Since we are outside the transform, we use window/screen coordinates
+            // Assuming a standard modal width of ~600px and some height
+            const screenCenterX = typeof window !== 'undefined' ? window.innerWidth / 2 - 300 : 400;
+            const screenCenterY = typeof window !== 'undefined' ? window.innerHeight / 2 - 350 : 300;
+
+            // Use stored position if available, else default to center
+            const currentPos = floatPositions[floatId];
+            const currentX = currentPos ? currentPos.x : screenCenterX;
+            const currentY = currentPos ? currentPos.y : screenCenterY;
+
+            return (
+                <SuperFloat 
+                    key={`float-${floatId}`}
+                    cardId={floatId}
+                    title={event.title || "Insight Document"}
+                    content={event.content}
+                    onClose={() => toggleFloat(floatId)}
+                    position={{ x: currentX, y: currentY }}
+                    isPinned={pinnedFloats.includes(floatId)}
+                    onPinToggle={() => togglePin(floatId)}
+                    onDrag={(delta) => {
+                        // No scale correction needed for screen-space dragging
+                        const newX = currentX + delta.x;
+                        const newY = currentY + delta.y;
+                        updateFloatPosition(floatId, { x: newX, y: newY });
+                    }}
+                />
+            );
+        })}
+      </AnimatePresence>
 
       {/* Screenshot Overlay */}
       {isScreenshotMode && (

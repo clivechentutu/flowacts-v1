@@ -106,10 +106,9 @@ export function SuperFloat({ cardId, title, content, onClose, position, isFlippe
       style={{
         left: position.x,
         top: position.y,
-        // Adaptive sizing: Counter-scale against the zoom level
-        // Uses the CSS variable set by TransformWrapper in FlowCanvas
-        transform: 'scale(calc(1 / var(--zoom-scale, 1)))',
-        transformOrigin: 'top left' 
+        // Removed adaptive sizing as we are now rendering outside the transform context
+        // transform: 'scale(calc(1 / var(--zoom-scale, 1)))', 
+        // transformOrigin: 'top left' 
       }}
     >
         {/* The Float Component */}
