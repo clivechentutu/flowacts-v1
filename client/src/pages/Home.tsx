@@ -48,7 +48,8 @@ import {
   Trash2,
   Pencil,
   GripVertical,
-  FolderKanban
+  FolderKanban,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
