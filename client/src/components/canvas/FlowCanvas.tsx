@@ -6,7 +6,7 @@ import { SuperFloat } from "./SuperFloat";
 import { MediaPreviewModal } from "./MediaPreviewModal";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
-import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
+import { TransformWrapper, TransformComponent, useControls, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -284,6 +284,53 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
 
   const [positions, setPositions] = useState<{id: string, x: number, y: number}[]>([]);
   const scaleRef = useRef(0.8); // Start with initial scale
+  const transformComponentRef = useRef<ReactZoomPanPinchRef>(null);
+
+  // Auto-scroll to new cards if they are out of view
+  useEffect(() => {
+    if (positions.length === 0 || !transformComponentRef.current) return;
+
+    // Get the last added event's position
+    const lastEvent = canvasEvents[canvasEvents.length - 1];
+    if (!lastEvent) return;
+
+    const lastPos = positions.find(p => p.id === lastEvent.id);
+    if (!lastPos) return;
+
+    const { positionX, positionY, scale } = transformComponentRef.current.instance.transformState;
+    
+    // Calculate screen coordinates of the card
+    const cardScreenRight = (lastPos.x + CARD_WIDTH) * scale + positionX;
+    const cardScreenBottom = (lastPos.y + CARD_HEIGHT) * scale + positionY;
+
+    // Viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const padding = 100;
+
+    let newX = positionX;
+    let newY = positionY;
+    let shouldScroll = false;
+
+    // Check horizontal bounds (only scroll if offscreen to the right)
+    if (cardScreenRight > viewportWidth - padding) {
+        // Scroll so the card is visible with some padding from the right edge
+        newX = viewportWidth - padding - (lastPos.x + CARD_WIDTH) * scale;
+        shouldScroll = true;
+    }
+
+    // Check vertical bounds (only scroll if offscreen to the bottom)
+    if (cardScreenBottom > viewportHeight - padding) {
+        // Scroll so the card is visible with some padding from the bottom edge
+        newY = viewportHeight - padding - (lastPos.y + CARD_HEIGHT) * scale;
+        shouldScroll = true;
+    }
+
+    if (shouldScroll) {
+        // Smooth pan to new position
+        transformComponentRef.current.setTransform(newX, newY, scale, 1000, "easeOut");
+    }
+  }, [positions, canvasEvents]); // Dependency on positions ensures this runs after layout update
 
   useEffect(() => {
     setPositions(prev => {
@@ -547,6 +594,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
       <TaskSidebar events={events} />
 
       <TransformWrapper
+        ref={transformComponentRef}
         initialScale={0.8}
         minScale={0.1}
         maxScale={4}
