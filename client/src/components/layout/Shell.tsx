@@ -19,7 +19,7 @@ export function Shell({ nav, rightPanel, children }: ShellProps) {
 
       {/* Right Chat Panel */}
       {rightPanel && (
-        <aside className="w-[260px] h-full flex-shrink-0 z-20 border-l border-border bg-card order-2 relative shadow-xl">
+        <aside className="w-[346px] h-full flex-shrink-0 z-20 border-l border-border bg-card order-2 relative shadow-xl">
           {rightPanel}
         </aside>
       )}
