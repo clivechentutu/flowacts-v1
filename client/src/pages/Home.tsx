@@ -240,6 +240,7 @@ export default function Home() {
       const newPage = `Page ${pages.length + 1}`;
       setPages([...pages, newPage]);
       setActivePage(newPage);
+      setEvents([]); // Clear AI chat events when adding a new page
       toast({
           title: "Page Added",
           description: `${newPage} has been created.`,
@@ -381,7 +382,7 @@ export default function Home() {
                     <div className="flex items-center gap-4">
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                             <Clock className="w-4 h-4" />
-                            Recent Projects
+                            Project
                         </h3>
                         
                         <div className="flex bg-muted/50 p-0.5 rounded-lg scale-90 origin-left">
