@@ -328,6 +328,8 @@ export default function Home() {
   const [pages, setPages] = useState<string[]>(['Page 1']);
   const [activePage, setActivePage] = useState('Page 1');
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
+  const [projectListSearch, setProjectListSearch] = useState("");
+  const [projectListFilter, setProjectListFilter] = useState<'all' | 'favorites'>('all');
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -1130,13 +1132,103 @@ export default function Home() {
         );
       case 'projects-list':
           return (
-             <div className="flex items-center justify-center h-full w-full bg-background text-muted-foreground">
-                <div className="text-center space-y-2">
-                    <FolderKanban className="w-12 h-12 mx-auto opacity-20" />
-                    <p className="font-medium">Projects</p>
-                    <p className="text-sm opacity-60">Coming soon</p>
-                </div>
-             </div>
+             <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
+                 <div className="flex items-center gap-2 mb-8">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Layers className="w-6 h-6 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
+                 </div>
+
+                 {/* Toolbar */}
+                 <div className="flex items-center justify-between mb-6 gap-4">
+                    <div className="relative flex-1 max-w-md">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                       <Input 
+                         placeholder="Search projects..." 
+                         value={projectListSearch}
+                         onChange={(e) => setProjectListSearch(e.target.value)}
+                         className="pl-9 bg-muted/50 border-border/50 focus:bg-background transition-all"
+                       />
+                    </div>
+                    <div className="flex bg-muted/50 p-0.5 rounded-lg">
+                        <button 
+                            onClick={() => setProjectListFilter('all')}
+                            className={cn(
+                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                projectListFilter === 'all' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            All
+                        </button>
+                        <button 
+                            onClick={() => setProjectListFilter('favorites')}
+                            className={cn(
+                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1",
+                                projectListFilter === 'favorites' ? "bg-background shadow-sm text-amber-500" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            <Star className="w-3 h-3 fill-current" />
+                            Favorites
+                        </button>
+                    </div>
+                 </div>
+
+                 {/* Grid */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {HISTORY_TASKS
+                        .filter(task => {
+                            const matchesSearch = task.title.toLowerCase().includes(projectListSearch.toLowerCase()) || 
+                                                  task.description.toLowerCase().includes(projectListSearch.toLowerCase());
+                            const matchesFilter = projectListFilter === 'all' || task.isFavorite;
+                            return matchesSearch && matchesFilter;
+                        })
+                        .map(task => (
+                        <div 
+                            key={task.id} 
+                            className="group bg-card border border-border hover:border-primary/50 p-5 rounded-xl transition-all cursor-pointer hover:shadow-md flex flex-col gap-4 h-[200px]"
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2" title={task.title}>
+                                    {task.title}
+                                </h3>
+                                {task.isFavorite ? (
+                                    <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0 mt-0.5" />
+                                ) : (
+                                    <Star className="w-4 h-4 text-muted-foreground/20 shrink-0 mt-0.5 group-hover:text-muted-foreground/50 transition-colors" />
+                                )}
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground line-clamp-3 leading-relaxed flex-1">
+                                {task.description}
+                            </p>
+                            
+                            <div className="pt-3 mt-auto border-t border-dashed border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5 opacity-70" />
+                                    <span>{task.date}</span>
+                                </div>
+                                <div className="flex items-center gap-2 opacity-60">
+                                   {task.assets.documents > 0 && <FileText className="w-3 h-3" />}
+                                   {task.assets.images > 0 && <ImageIcon className="w-3 h-3" />}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {HISTORY_TASKS.filter(task => {
+                        const matchesSearch = task.title.toLowerCase().includes(projectListSearch.toLowerCase()) || 
+                                              task.description.toLowerCase().includes(projectListSearch.toLowerCase());
+                        const matchesFilter = projectListFilter === 'all' || task.isFavorite;
+                        return matchesSearch && matchesFilter;
+                    }).length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
+                            <Search className="w-10 h-10 mb-4 opacity-20" />
+                            <p className="font-medium">No projects found</p>
+                            <p className="text-sm opacity-60">Try adjusting your filters</p>
+                        </div>
+                    )}
+                 </div>
+              </div>
           );
       case 'project':
       default:
