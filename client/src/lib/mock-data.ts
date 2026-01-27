@@ -205,6 +205,71 @@ export const SCENARIOS: Scenario[] = [
         timestamp: '10:11 AM',
         metadata: { 'Sender': 'sales@competitor.com', 'DKIM': 'Pass' },
         parentId: 'evt-branch-6'
+      },
+      // EXTENDED MAIN FLOW
+      {
+        id: 'evt-14',
+        type: 'user',
+        content: 'Now let\'s explore the settings and setup a profile.',
+        timestamp: '10:12 AM'
+      },
+      {
+        id: 'evt-15',
+        type: 'ai',
+        content: 'Navigating to settings page...',
+        timestamp: '10:12 AM'
+      },
+      {
+        id: 'evt-16',
+        type: 'action',
+        title: '5. Profile Settings',
+        content: 'Opened settings page. "Profile" tab active.',
+        image: saasDashboard,
+        timestamp: '10:12 AM',
+        metadata: { 'Page': '/settings/profile', 'Load': '0.5s' },
+        parentId: 'evt-13' // Chains from Dashboard Loaded
+      },
+      {
+        id: 'evt-17',
+        type: 'user',
+        content: 'Upload a profile picture.',
+        timestamp: '10:13 AM'
+      },
+      {
+        id: 'evt-18',
+        type: 'action',
+        title: '6. Avatar Uploaded',
+        content: 'File "avatar.jpg" uploaded successfully.',
+        image: saasDashboard,
+        timestamp: '10:13 AM',
+        metadata: { 'Size': '240KB', 'Type': 'image/jpeg' },
+        parentId: 'evt-16'
+      },
+      {
+        id: 'evt-19',
+        type: 'user',
+        content: 'Invite a team member: "jane@acme.com".',
+        timestamp: '10:14 AM'
+      },
+      {
+        id: 'evt-20',
+        type: 'action',
+        title: '7. Team Invitation',
+        content: 'Invitation email sent to jane@acme.com',
+        image: saasDashboard,
+        timestamp: '10:14 AM',
+        metadata: { 'Role': 'Editor', 'Status': 'Pending' },
+        parentId: 'evt-18'
+      },
+      {
+         id: 'evt-21',
+         type: 'action',
+         title: '8. Session Ended',
+         content: 'User logged out.',
+         image: modernSaasHomepage,
+         timestamp: '10:15 AM',
+         metadata: { 'Duration': '15m 20s' },
+         parentId: 'evt-20'
       }
     ]
   },
