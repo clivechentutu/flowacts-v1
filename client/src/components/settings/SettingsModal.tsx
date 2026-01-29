@@ -215,7 +215,7 @@ export function SettingsModal({
               </div>
             </div>
 
-            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            <div className="p-6 space-y-6 h-[70vh] overflow-y-auto">
               {active === "account" && (
                 <div className="space-y-4" data-testid="panel-settings-account">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
