@@ -59,15 +59,15 @@ function FieldRow({
     <div
       className={cn(
         "flex items-start justify-between gap-4 rounded-xl border p-4 shadow-sm",
-        "border-border/80 bg-background/70",
-        "dark:border-border/70 dark:bg-card/60"
+        "bg-white/70 border-black/10",
+        "dark:bg-card/60 dark:border-border/70"
       )}
       data-testid={testId}
     >
       <div className="min-w-0">
         <div className="text-sm font-semibold text-foreground truncate">{title}</div>
         {description ? (
-          <div className="mt-1 text-xs text-muted-foreground/90 leading-relaxed">
+          <div className="mt-1 text-xs text-muted-foreground leading-relaxed">
             {description}
           </div>
         ) : null}
@@ -103,14 +103,14 @@ export function SettingsModal({
       <DialogContent
         className={cn(
           "p-0 overflow-hidden max-w-[980px] w-[calc(100vw-2rem)]",
-          "rounded-3xl border border-border/80",
-          "bg-[linear-gradient(180deg,rgba(255,252,248,0.96),rgba(250,244,236,0.94))]",
+          "rounded-3xl border border-black/10 dark:border-border/80",
+          "bg-[linear-gradient(180deg,rgba(255,252,248,0.98),rgba(250,244,236,0.96))]",
           "dark:bg-[linear-gradient(180deg,rgba(18,18,21,0.84),rgba(26,26,30,0.84))]",
           "backdrop-blur-xl shadow-2xl"
         )}
         data-testid="modal-settings"
       >
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/80 bg-[rgba(250,244,236,0.72)] dark:bg-card/50">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-black/10 bg-[rgba(255,252,248,0.72)] dark:border-border/80 dark:bg-card/50">
           <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
             Settings
           </DialogTitle>
@@ -118,7 +118,7 @@ export function SettingsModal({
 
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr]">
           {/* Left */}
-          <div className="border-r border-border/80 bg-[rgba(250,244,236,0.60)] dark:bg-card/40">
+          <div className="border-r border-black/10 bg-[rgba(255,252,248,0.66)] dark:border-border/80 dark:bg-card/40">
             <div className="p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-muted-foreground/80" />
@@ -127,9 +127,9 @@ export function SettingsModal({
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search"
                   className={cn(
-                    "pl-9 bg-background/70 border-border/70",
+                    "pl-9 bg-white/80 border-black/10",
                     "placeholder:text-muted-foreground/70",
-                    "focus:bg-background",
+                    "focus:bg-white",
                     "dark:bg-background/10 dark:border-border/70 dark:text-foreground",
                     "dark:placeholder:text-muted-foreground/60"
                   )}
@@ -151,7 +151,7 @@ export function SettingsModal({
                         "group w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
                         isActive
                           ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
-                          : "text-muted-foreground/90 hover:text-foreground hover:bg-muted/40 dark:hover:bg-muted/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:text-muted-foreground/90 dark:hover:bg-muted/20"
                       )}
                       data-testid={`button-settings-section-${s.id}`}
                     >
@@ -160,7 +160,7 @@ export function SettingsModal({
                           "h-9 w-9 rounded-xl flex items-center justify-center border shadow-sm",
                           isActive
                             ? "bg-primary/10 border-primary/25"
-                            : "bg-background/70 border-border/70 dark:bg-background/10 dark:border-border/70"
+                            : "bg-white/70 border-black/10 dark:bg-background/10 dark:border-border/70"
                         )}
                       >
                         <Icon className="w-4.5 h-4.5" />
@@ -180,8 +180,8 @@ export function SettingsModal({
           </div>
 
           {/* Right */}
-          <div className="bg-[rgba(255,252,248,0.64)] dark:bg-card/30">
-            <div className="px-6 py-5 border-b border-border/80 bg-[rgba(255,252,248,0.40)]">
+          <div className="bg-[rgba(255,252,248,0.72)] dark:bg-card/30">
+            <div className="px-6 py-5 border-b border-black/10 bg-[rgba(255,252,248,0.55)] dark:border-border/80">
               <div className="text-sm text-muted-foreground/90">{headerLabel}</div>
               <div
                 className="mt-1 text-lg font-semibold tracking-tight text-foreground"
@@ -258,7 +258,7 @@ export function SettingsModal({
                     testId="row-account-workspace"
                   />
 
-                  <div className="rounded-2xl border border-border/80 bg-muted/20 dark:bg-muted/10 p-4">
+                  <div className="rounded-2xl border border-black/10 bg-black/5 dark:border-border/80 dark:bg-muted/10 p-4">
                     <div className="text-sm font-semibold text-foreground">Security</div>
                     <div className="mt-1 text-xs text-muted-foreground/90">
                       Password and sign-in options are mocked for prototype.
@@ -411,7 +411,7 @@ export function SettingsModal({
                     ))}
                   </div>
 
-                  <div className="rounded-2xl border border-border/80 bg-muted/20 dark:bg-muted/10 p-4">
+                  <div className="rounded-2xl border border-black/10 bg-black/5 dark:border-border/80 dark:bg-muted/10 p-4">
                     <div className="text-sm font-semibold text-foreground">Usage tips</div>
                     <ul className="mt-3 space-y-2 text-sm text-muted-foreground/90">
                       <li className="flex items-start gap-2" data-testid="text-usage-tip-1">
@@ -433,7 +433,7 @@ export function SettingsModal({
 
               {active === "billing" && (
                 <div className="space-y-4" data-testid="panel-settings-billing">
-                  <div className="rounded-2xl border border-border/70 bg-background/60 dark:bg-card/50 p-4 shadow-sm">
+                  <div className="rounded-2xl border border-black/10 bg-white/60 dark:border-border/70 dark:bg-card/50 p-4 shadow-sm">
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <div className="text-sm font-semibold text-foreground">Current plan</div>
@@ -490,7 +490,7 @@ export function SettingsModal({
 
               {active === "feedback" && (
                 <div className="space-y-4" data-testid="panel-settings-feedback">
-                  <div className="rounded-2xl border border-border/70 bg-background/60 dark:bg-card/50 p-4 shadow-sm">
+                  <div className="rounded-2xl border border-black/10 bg-white/60 dark:border-border/70 dark:bg-card/50 p-4 shadow-sm">
                     <div className="text-sm font-semibold text-foreground">Send feedback</div>
                     <div className="mt-1 text-xs text-muted-foreground/90">
                       Tell us what to improve. We\"ll keep it lightweight for now.
