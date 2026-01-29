@@ -3,6 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import TextareaAutosize from "react-textarea-autosize";
 import { 
   Send, 
   Sparkles, 
@@ -199,14 +200,17 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
           onSubmit={handleSubmit} 
           className="relative flex flex-col bg-background border border-border shadow-sm rounded-xl focus-within:ring-1 focus-within:ring-primary/20 focus-within:shadow-md transition-all duration-300"
         >
-          <Input 
+          <TextareaAutosize
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Upliftly to analyze a flow..." 
-            className="border-0 bg-transparent focus-visible:ring-0 shadow-none px-4 py-3 min-h-[48px] text-foreground placeholder:text-muted-foreground"
+            placeholder="Ask Upliftly to analyze a flow..."
+            minRows={3}
+            maxRows={6}
+            className="w-full resize-none border-0 bg-transparent focus:outline-none shadow-none px-4 py-3 text-foreground placeholder:text-muted-foreground text-sm leading-relaxed"
+            data-testid="input-chat"
           />
           
-          <div className="flex justify-between items-center p-2 pt-0">
+          <div className="flex justify-between items-center px-2 pb-2">
              <div className="flex gap-1">
                 <Button 
                   type="button"
