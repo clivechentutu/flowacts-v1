@@ -11,7 +11,7 @@ import {
   Globe, 
   Plus, 
   FileText, 
-  Share2, 
+  History,
   Zap, 
   Brain, 
   AtSign,
@@ -138,11 +138,11 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="New Chat">
               <Plus className="h-4 w-4" />
             </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="History">
+              <History className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Materials">
               <FileText className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Share">
-              <Share2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
