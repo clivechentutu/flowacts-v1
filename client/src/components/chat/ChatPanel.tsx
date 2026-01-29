@@ -88,12 +88,22 @@ function AIMessageContent({ msg }: { msg: StoryEvent }) {
 export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [isThinkingMode, setIsThinkingMode] = useState(false);
+  const [title, setTitle] = useState("Competitor Onboarding Analysis");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     onSendMessage(input);
     setInput("");
+  };
+
+  const handleTitleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setIsEditingTitle(false);
+    } else if (e.key === 'Escape') {
+      setIsEditingTitle(false);
+    }
   };
 
   return (
@@ -103,7 +113,23 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
         <div className="flex items-center justify-between gap-2">
           {/* Task Title Area - approx 4/7 width */}
           <div className="flex-1 min-w-0 pr-2">
-            <h2 className="font-heading font-bold text-sm leading-tight text-foreground truncate">Competitor Onboarding Analysis</h2>
+            {isEditingTitle ? (
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={handleTitleSubmit}
+                onBlur={() => setIsEditingTitle(false)}
+                className="h-7 py-0 px-2 text-sm font-bold bg-muted/50 border-primary/20 focus-visible:ring-1 focus-visible:ring-primary/30"
+                autoFocus
+              />
+            ) : (
+              <h2 
+                className="font-heading font-bold text-sm leading-tight text-foreground truncate cursor-pointer hover:text-primary transition-colors flex items-center gap-1 group/title"
+                onClick={() => setIsEditingTitle(true)}
+              >
+                {title}
+              </h2>
+            )}
             <p className="text-[10px] text-muted-foreground truncate">Last edited 2m ago</p>
           </div>
           
