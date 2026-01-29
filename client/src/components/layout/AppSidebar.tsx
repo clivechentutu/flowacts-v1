@@ -106,13 +106,23 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
         <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
 
         <div className="w-full h-px bg-border my-1" />
-        <button className="flex flex-col items-center justify-center w-full pb-2 rounded-lg transition-all group">
+        <button
+          className="flex flex-col items-center justify-center w-full pb-2 rounded-lg transition-all group"
+          data-testid="button-user-avatar"
+        >
           <div className="w-10 h-10 rounded-full border-2 border-primary/20 p-0.5 group-hover:border-primary/50 transition-colors">
             <img 
               src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" 
               alt="User Avatar" 
               className="w-full h-full rounded-full bg-muted"
+              data-testid="img-user-avatar"
             />
+          </div>
+          <div
+            className="mt-2 rounded-full bg-orange-500/15 text-orange-700 dark:text-orange-200 border border-orange-500/25 px-2 py-0.5 text-[10px] font-semibold tracking-wide"
+            data-testid="badge-user-plan"
+          >
+            Pro
           </div>
         </button>
       </div>
