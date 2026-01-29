@@ -16,7 +16,6 @@ import {
   Settings,
   User,
   BarChart3,
-  Search,
   ArrowUpRight,
   Mail,
   Copy,
@@ -85,14 +84,15 @@ export function SettingsModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const [active, setActive] = useState<SettingsSection>("settings");
-  const [search, setSearch] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return SECTIONS;
-    return SECTIONS.filter((s) => s.label.toLowerCase().includes(q));
-  }, [search]);
+  const coreSections = useMemo(() => {
+    return SECTIONS.filter((s) => s.id !== "feedback" && s.id !== "get-help");
+  }, []);
+
+  const supportSections = useMemo(() => {
+    return SECTIONS.filter((s) => s.id === "feedback" || s.id === "get-help");
+  }, []);
 
   const headerLabel = useMemo(() => {
     return SECTIONS.find((s) => s.id === active)?.label ?? "Settings";
@@ -119,28 +119,52 @@ export function SettingsModal({
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr]">
           {/* Left */}
           <div className="border-r border-border/70 bg-background/30 dark:bg-card/40">
-            <div className="p-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-muted-foreground/80" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search"
-                  className={cn(
-                    "pl-9 bg-background/70 border-border/70",
-                    "placeholder:text-muted-foreground/70",
-                    "focus:bg-background",
-                    "dark:bg-background/10 dark:border-border/70 dark:text-foreground",
-                    "dark:placeholder:text-muted-foreground/60"
-                  )}
-                  data-testid="input-settings-search"
-                />
-              </div>
-            </div>
-
-            <div className="px-2 pb-4">
+            <div className="px-2 py-4">
               <div className="flex flex-col gap-1">
-                {filtered.map((s) => {
+                {coreSections.map((s) => {
+                  const Icon = s.icon;
+                  const isActive = active === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setActive(s.id)}
+                      className={cn(
+                        "group w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
+                        isActive
+                          ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
+                          : "text-muted-foreground/90 hover:text-foreground hover:bg-muted/40 dark:hover:bg-muted/20"
+                      )}
+                      data-testid={`button-settings-section-${s.id}`}
+                    >
+                      <div
+                        className={cn(
+                          "h-9 w-9 rounded-xl flex items-center justify-center border shadow-sm",
+                          isActive
+                            ? "bg-primary/10 border-primary/25"
+                            : "bg-background/70 border-border/70 dark:bg-background/10 dark:border-border/70"
+                        )}
+                      >
+                        <Icon className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="flex-1 text-left font-medium">{s.label}</div>
+                      <ArrowUpRight
+                        className={cn(
+                          "w-4 h-4 opacity-0 transition-all",
+                          isActive ? "opacity-70" : "group-hover:opacity-40"
+                        )}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                className="mx-3 my-3 border-t border-border/70"
+                data-testid="separator-settings-nav"
+              />
+
+              <div className="flex flex-col gap-1">
+                {supportSections.map((s) => {
                   const Icon = s.icon;
                   const isActive = active === s.id;
                   return (
