@@ -103,14 +103,14 @@ export function SettingsModal({
       <DialogContent
         className={cn(
           "p-0 overflow-hidden max-w-[980px] w-[calc(100vw-2rem)]",
-          "rounded-3xl border-border/70",
-          "bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(250,249,246,0.86))]",
+          "rounded-3xl border border-border/80",
+          "bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(250,249,246,0.94))]",
           "dark:bg-[linear-gradient(180deg,rgba(18,18,21,0.84),rgba(26,26,30,0.84))]",
           "backdrop-blur-xl shadow-2xl"
         )}
         data-testid="modal-settings"
       >
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/70 bg-background/40 dark:bg-card/50">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/80 bg-background/70 dark:bg-card/50">
           <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
             Settings
           </DialogTitle>
@@ -118,7 +118,7 @@ export function SettingsModal({
 
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr]">
           {/* Left */}
-          <div className="border-r border-border/70 bg-background/30 dark:bg-card/40">
+          <div className="border-r border-border/80 bg-background/60 dark:bg-card/40">
             <div className="p-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-muted-foreground/80" />
@@ -180,8 +180,8 @@ export function SettingsModal({
           </div>
 
           {/* Right */}
-          <div className="bg-background/40 dark:bg-card/30">
-            <div className="px-6 py-5 border-b border-border/70">
+          <div className="bg-background/60 dark:bg-card/30">
+            <div className="px-6 py-5 border-b border-border/80">
               <div className="text-sm text-muted-foreground/90">{headerLabel}</div>
               <div
                 className="mt-1 text-lg font-semibold tracking-tight text-foreground"
