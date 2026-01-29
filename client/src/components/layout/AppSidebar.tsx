@@ -1,7 +1,7 @@
 import { Home, Layers, Settings, Sun, Moon, FolderKanban, Library, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { SettingsModal } from "@/components/settings/SettingsModal";
+import { SettingsModal } from "../settings/SettingsModal";
 
 interface AppSidebarProps {
   activeTab: 'home' | 'project' | 'library' | 'projects-list';
@@ -10,6 +10,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     // Check local storage or system preference
@@ -93,10 +94,17 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
           <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">Help</span>
         </button>
 
-        <button className="flex flex-col items-center justify-center w-full h-14 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all gap-1 group">
+        <button
+          className="flex flex-col items-center justify-center w-full h-14 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-all gap-1 group"
+          onClick={() => setIsSettingsOpen(true)}
+          data-testid="button-open-settings"
+        >
           <Settings className="w-5 h-5 group-hover:rotate-45 transition-transform duration-500" />
           <span className="text-[9px] font-medium opacity-70 group-hover:opacity-100">Settings</span>
         </button>
+
+        <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+
         <div className="w-full h-px bg-border my-1" />
         <button className="flex flex-col items-center justify-center w-full pb-2 rounded-lg transition-all group">
           <div className="w-10 h-10 rounded-full border-2 border-primary/20 p-0.5 group-hover:border-primary/50 transition-colors">
