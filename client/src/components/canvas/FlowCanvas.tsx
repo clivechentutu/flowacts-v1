@@ -7,7 +7,7 @@ import { MediaPreviewModal } from "./MediaPreviewModal";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop, Share2, Copy, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -89,6 +89,37 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
   const [selectionBox, setSelectionBox] = useState<{startX: number, startY: number, currentX: number, currentY: number} | null>(null);
 
   const { toast } = useToast();
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Upliftly Canvas",
+          text: "Check out this canvas in Upliftly.",
+          url: shareUrl,
+        });
+        return;
+      }
+    } catch {
+      // fall back to copy
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied",
+        description: "Share link copied to clipboard.",
+      });
+    } catch {
+      toast({
+        title: "Couldn't copy link",
+        description: "Please copy the URL from your browser.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleScreenshotStart = () => {
     setIsScreenshotMode(true);
@@ -622,6 +653,20 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                     onClick={closeAllFloats}
                 />
             )}
+            <div className="absolute top-6 right-6 z-50 flex items-center gap-2 screenshot-exclude">
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-9 px-3 rounded-lg shadow-md border border-border bg-background/85 hover:bg-background/95 backdrop-blur flex items-center gap-2"
+                onClick={handleShare}
+                data-testid="button-canvas-share"
+                title="Share"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="text-xs font-semibold">Share</span>
+              </Button>
+            </div>
+
             <Controls onScreenshot={handleScreenshotStart} />
             <TransformComponent wrapperClass="!w-full !h-full" contentClass="!w-full !h-full">
               <div 
