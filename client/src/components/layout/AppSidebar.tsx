@@ -1,6 +1,7 @@
-import { Home, Layers, Settings, LogOut, Sun, Moon, FolderKanban, Library, HelpCircle } from "lucide-react";
+import { Home, Layers, Settings, Sun, Moon, FolderKanban, Library, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { SettingsModal } from "@/components/settings/SettingsModal";
 
 interface AppSidebarProps {
   activeTab: 'home' | 'project' | 'library' | 'projects-list';
