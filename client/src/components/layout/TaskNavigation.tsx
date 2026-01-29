@@ -7,10 +7,12 @@ import {
   MessageSquare,
   Star,
   MoreHorizontal,
-  Trash2
+  Trash2,
+  Pencil
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Tooltip,
@@ -34,6 +36,8 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
     { id: 'p4', title: 'Website Redesign Feedback Collection', isFavorite: true },
     { id: 'p5', title: 'Q4 Budget Planning', isFavorite: false },
   ]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
 
   const toggleProjectFavorite = (id: string) => {
     setProjects(projects.map(p => p.id === id ? { ...p, isFavorite: !p.isFavorite } : p));
@@ -41,6 +45,23 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
 
   const deleteProject = (id: string) => {
     setProjects(projects.filter(p => p.id !== id));
+  };
+
+  const startRename = (id: string, currentTitle: string) => {
+    setEditingId(id);
+    setEditTitle(currentTitle);
+  };
+
+  const saveRename = () => {
+    if (editingId && editTitle.trim()) {
+      setProjects(projects.map(p => p.id === editingId ? { ...p, title: editTitle.trim() } : p));
+    }
+    setEditingId(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') saveRename();
+    if (e.key === 'Escape') setEditingId(null);
   };
   
   if (activeTab !== 'project') return null;
@@ -86,10 +107,21 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                                                     )}
                                                 >
                                                     <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                                                    <span className="truncate text-sm text-left select-none min-w-0">
-                                                        {project.title}
-                                                    </span>
-                                                    {project.isFavorite && <Star className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
+                                                    {editingId === project.id ? (
+                                                        <Input
+                                                            value={editTitle}
+                                                            onChange={(e) => setEditTitle(e.target.value)}
+                                                            onKeyDown={handleKeyDown}
+                                                            onBlur={saveRename}
+                                                            className="h-6 py-0 px-1 text-sm bg-background border-primary/30 focus-visible:ring-1 focus-visible:ring-primary/40"
+                                                            autoFocus
+                                                        />
+                                                    ) : (
+                                                        <span className="truncate text-sm text-left select-none min-w-0">
+                                                            {project.title}
+                                                        </span>
+                                                    )}
+                                                    {project.isFavorite && !editingId && <Star className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
                                                 </div>
                                             </TooltipTrigger>
                                             <TooltipContent side="right" className="max-w-[200px] break-words z-50">
@@ -110,6 +142,10 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
                                                 <DropdownMenuItem onClick={() => toggleProjectFavorite(project.id)}>
                                                     <Star className={cn("w-4 h-4 mr-2", project.isFavorite ? "fill-amber-400 text-amber-400" : "")} />
                                                     {project.isFavorite ? 'Unfavorite' : 'Favorite'}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => startRename(project.id, project.title)}>
+                                                    <Pencil className="w-4 h-4 mr-2" />
+                                                    Rename
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem onClick={() => deleteProject(project.id)} className="text-red-500 focus:text-red-500 focus:bg-red-500/10">
                                                     <Trash2 className="w-4 h-4 mr-2" />
