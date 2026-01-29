@@ -151,7 +151,7 @@ export function SettingsModal({
                         "group w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
                         isActive
                           ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
-                          : "text-foreground/70 hover:text-foreground hover:bg-black/5 dark:text-muted-foreground/90 dark:hover:bg-muted/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-black/5 dark:text-muted-foreground/90 dark:hover:bg-muted/20"
                       )}
                       data-testid={`button-settings-section-${s.id}`}
                     >
@@ -182,7 +182,7 @@ export function SettingsModal({
           {/* Right */}
           <div className="bg-[rgba(255,252,248,0.72)] dark:bg-card/30">
             <div className="px-6 py-5 border-b border-black/10 bg-[rgba(255,252,248,0.55)] dark:border-border/80">
-              <div className="text-sm text-muted-foreground">{headerLabel}</div>
+              <div className="text-sm text-muted-foreground/90">{headerLabel}</div>
               <div
                 className="mt-1 text-lg font-semibold tracking-tight text-foreground"
                 data-testid="text-settings-section-title"
@@ -260,7 +260,7 @@ export function SettingsModal({
 
                   <div className="rounded-2xl border border-black/10 bg-black/5 dark:border-border/80 dark:bg-muted/10 p-4">
                     <div className="text-sm font-semibold text-foreground">Security</div>
-                    <div className="mt-1 text-xs text-foreground/60">
+                    <div className="mt-1 text-xs text-muted-foreground/90">
                       Password and sign-in options are mocked for prototype.
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -333,7 +333,7 @@ export function SettingsModal({
                               data-testid={`button-settings-theme-${t.id}`}
                             >
                               <div className="h-10 rounded-lg bg-muted/30 shadow-inner dark:bg-muted/20" />
-                              <div className="mt-2 text-foreground/70">{t.label}</div>
+                              <div className="mt-2 text-muted-foreground/90">{t.label}</div>
                             </button>
                           ))}
                         </div>
@@ -400,11 +400,11 @@ export function SettingsModal({
                         className="rounded-2xl border border-border/70 bg-background/60 dark:bg-card/50 p-4 shadow-sm"
                         data-testid={`card-usage-${m.k.toLowerCase()}`}
                       >
-                        <div className="text-xs text-foreground/60">{m.k}</div>
+                        <div className="text-xs text-muted-foreground/90">{m.k}</div>
                         <div className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
                           {m.v}
                         </div>
-                        <div className="mt-1 text-xs text-foreground/60">
+                        <div className="mt-1 text-xs text-muted-foreground/90">
                           {m.sub}
                         </div>
                       </div>
@@ -413,7 +413,7 @@ export function SettingsModal({
 
                   <div className="rounded-2xl border border-black/10 bg-black/5 dark:border-border/80 dark:bg-muted/10 p-4">
                     <div className="text-sm font-semibold text-foreground">Usage tips</div>
-                    <ul className="mt-3 space-y-2 text-sm text-foreground/60">
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground/90">
                       <li className="flex items-start gap-2" data-testid="text-usage-tip-1">
                         <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary/60" />
                         Pin frequent prompts to your Library for faster workflows.
@@ -437,7 +437,7 @@ export function SettingsModal({
                     <div className="flex items-center justify-between gap-4">
                       <div>
                         <div className="text-sm font-semibold text-foreground">Current plan</div>
-                        <div className="mt-1 text-xs text-foreground/60">
+                        <div className="mt-1 text-xs text-muted-foreground/90">
                           Prototype plan · Renews monthly
                         </div>
                       </div>
@@ -492,7 +492,7 @@ export function SettingsModal({
                 <div className="space-y-4" data-testid="panel-settings-feedback">
                   <div className="rounded-2xl border border-black/10 bg-white/60 dark:border-border/70 dark:bg-card/50 p-4 shadow-sm">
                     <div className="text-sm font-semibold text-foreground">Send feedback</div>
-                    <div className="mt-1 text-xs text-foreground/60">
+                    <div className="mt-1 text-xs text-muted-foreground/90">
                       Tell us what to improve. We\"ll keep it lightweight for now.
                     </div>
                     <div className="mt-4 space-y-3">
@@ -544,7 +544,7 @@ export function SettingsModal({
                         data-testid={`card-help-${c.title.replaceAll(" ", "-").toLowerCase()}`}
                       >
                         <div className="text-sm font-semibold text-foreground">{c.title}</div>
-                        <div className="mt-1 text-xs text-foreground/60">
+                        <div className="mt-1 text-xs text-muted-foreground/90">
                           {c.desc}
                         </div>
                         <div className="mt-4">
