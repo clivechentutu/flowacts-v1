@@ -7,9 +7,11 @@ import { MediaPreviewModal } from "./MediaPreviewModal";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop, Share2, Copy, ExternalLink } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop, Share2, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CreditCard, Sparkle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 
@@ -18,11 +20,97 @@ interface FlowCanvasProps {
 }
 
 // Configuration for layout
-const CARD_WIDTH = 360; 
-const CARD_HEIGHT = 500; 
+const CARD_WIDTH = 360;
+const CARD_HEIGHT = 500;
 const GAP_X = 150;
 const GAP_Y = 150;
 const CARDS_PER_ROW = 3;
+
+type KeyframeKind = "blocker" | "success" | "paywall";
+
+function detectKeyframe(event: StoryEvent): KeyframeKind | null {
+  const hay = `${event.title || ""}\n${event.content || ""}\n${Object.entries(event.metadata || {})
+    .map(([k, v]) => `${k}:${v}`)
+    .join("\n")}`.toLowerCase();
+
+  // Paywall / pricing friction
+  if (/(paywall|pricing|upgrade|subscribe|trial ended|payment required|locked)/.test(hay)) return "paywall";
+
+  // Errors / blockers
+  if (/(error|failed|failure|blocked|denied|timeout|invalid|mismatch|critical|risk)/.test(hay)) return "blocker";
+
+  // Success / conversion
+  if (/(success|successful|converted|conversion|completed|submitted|welcome|dashboard loaded|email received|redirected)/.test(hay)) return "success";
+
+  return null;
+}
+
+type ActionGroup = {
+  id: string;
+  kind: "group";
+  title: string;
+  start: StoryEvent;
+  end: StoryEvent;
+  steps: StoryEvent[];
+  keyframe: KeyframeKind | null;
+};
+
+type RenderNode = StoryEvent | ActionGroup;
+
+function toRenderNodes(actionEvents: StoryEvent[]): RenderNode[] {
+  const minor = (e: StoryEvent) => {
+    const t = `${e.title || ""} ${e.content || ""}`.toLowerCase();
+    return /(click|tap|focus|type|typing|enter|input|keystroke|scroll|hover|select|choose|open dropdown|paste)/.test(t);
+  };
+
+  const nodes: RenderNode[] = [];
+
+  let i = 0;
+  while (i < actionEvents.length) {
+    const current = actionEvents[i];
+    const currentKey = detectKeyframe(current);
+
+    // If this is already a keyframe or not a minor step, keep it as a standalone node.
+    if (currentKey || !minor(current)) {
+      nodes.push(current);
+      i += 1;
+      continue;
+    }
+
+    // Start a group of consecutive minor steps, until we reach a non-minor or keyframe.
+    const start = current;
+    const steps: StoryEvent[] = [current];
+    i += 1;
+
+    while (i < actionEvents.length) {
+      const next = actionEvents[i];
+      const nextKey = detectKeyframe(next);
+      if (nextKey || !minor(next)) break;
+      steps.push(next);
+      i += 1;
+    }
+
+    // If we only captured 1 minor step, don't group it.
+    if (steps.length < 2) {
+      nodes.push(start);
+      continue;
+    }
+
+    const end = steps[steps.length - 1];
+
+    nodes.push({
+      id: `group-${start.id}-${end.id}`,
+      kind: "group",
+      title: "Action Group",
+      start,
+      end,
+      steps,
+      keyframe: null,
+    });
+  }
+
+  return nodes;
+}
 
 // Zoom Controls Component
 const Controls = ({ onScreenshot }: { onScreenshot: () => void }) => {
@@ -308,10 +396,36 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
       setFloatPositions(prev => ({ ...prev, [id]: newPos }));
   };
 
+  const actionEvents = useMemo(() => events.filter(e => ['action'].includes(e.type)), [events]);
+
+  const renderNodes = useMemo(() => toRenderNodes(actionEvents), [actionEvents]);
+
   const canvasEvents = useMemo(() => {
-    const actionEvents = events.filter(e => ['action'].includes(e.type));
-    return [...actionEvents, ...droppedFiles];
-  }, [events, droppedFiles]);
+    // For layout + connections, we want a flat list of concrete events.
+    // Groups render as summary nodes, but still need positions for their underlying steps when expanded.
+    // We'll primarily position: group summaries + standalone action events + dropped files.
+    const flattenedForCanvas: StoryEvent[] = [];
+
+    renderNodes.forEach((n) => {
+      if ((n as any).kind === "group") {
+        const g = n as ActionGroup;
+        // Represent the group as a synthetic action-like event for positioning.
+        flattenedForCanvas.push({
+          id: g.id,
+          type: "action",
+          title: `${g.title}: ${g.start.title || ""}`.trim(),
+          content: `${g.steps.length} steps collapsed`,
+          timestamp: g.end.timestamp,
+          metadata: { "Collapsed": `${g.steps.length} steps` },
+          parentId: g.start.parentId,
+        });
+      } else {
+        flattenedForCanvas.push(n as StoryEvent);
+      }
+    });
+
+    return [...flattenedForCanvas, ...droppedFiles];
+  }, [renderNodes, droppedFiles]);
 
   const [positions, setPositions] = useState<{id: string, x: number, y: number}[]>([]);
   const scaleRef = useRef(0.8); // Start with initial scale
@@ -768,14 +882,51 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                   const pos = positions.find(p => p.id === event.id);
                   if (!pos) return null;
 
+                  const keyframe = detectKeyframe(event);
+                  const isGroupSummary = event.id.startsWith("group-");
+
+                  const keyframeStyles =
+                    keyframe === "blocker"
+                      ? "ring-2 ring-red-500/70 shadow-[0_0_0_6px_rgba(239,68,68,0.12)]"
+                      : keyframe === "success"
+                        ? "ring-2 ring-emerald-500/70 shadow-[0_0_0_6px_rgba(16,185,129,0.12)]"
+                        : keyframe === "paywall"
+                          ? "ring-2 ring-fuchsia-500/70 shadow-[0_0_0_6px_rgba(217,70,239,0.12)]"
+                          : "";
+
+                  const keyframeScale = keyframe ? 1.5 : 1;
+
+                  const keyframePill = keyframe ? (
+                    <div
+                      className={cn(
+                        "absolute -top-3 left-10 z-30 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-mono uppercase tracking-wider border backdrop-blur",
+                        keyframe === "blocker" && "bg-red-500/10 text-red-600 border-red-500/20",
+                        keyframe === "success" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                        keyframe === "paywall" && "bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/20"
+                      )}
+                      data-testid={`badge-keyframe-${event.id}`}
+                    >
+                      {keyframe === "blocker" && <AlertTriangle className="w-3 h-3" />}
+                      {keyframe === "success" && <CheckCircle2 className="w-3 h-3" />}
+                      {keyframe === "paywall" && <CreditCard className="w-3 h-3" />}
+                      <span>
+                        {keyframe === "blocker" ? "Blocker" : keyframe === "success" ? "Success" : "Paywall"}
+                      </span>
+                    </div>
+                  ) : null;
+
                   return (
                     <motion.div
                       key={event.id}
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="absolute z-10 cursor-grab active:cursor-grabbing draggable-card group"
+                      className={cn(
+                        "absolute z-10 cursor-grab active:cursor-grabbing draggable-card group",
+                        keyframe && "z-20",
+                        keyframeStyles
+                      )}
                       drag
-                      dragMomentum={false} 
+                      dragMomentum={false}
                       dragElastic={0}
                       onDrag={(e, info) => handleDrag(event.id, info)}
                       onMouseEnter={() => setHoveredCardId(event.id)}
@@ -783,43 +934,125 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                       style={{
                         x: pos.x,
                         y: pos.y,
-                        width: CARD_WIDTH,
+                        width: CARD_WIDTH * keyframeScale,
                         position: 'absolute',
                         top: 0,
-                        left: 0
+                        left: 0,
+                        transformOrigin: 'top left'
                       }}
                     >
-                      <div className="pointer-events-none"> 
-                         <div className="pointer-events-auto">
-                            {event.type === 'file' ? (
-                                <FileCard 
-                                    title={event.title || 'Unknown File'} 
-                                    content={event.content}
-                                    fileType={event.fileType}
-                                    timestamp={event.timestamp}
-                                    isLast={true}
-                                    onMediaClick={() => handleMediaClick(event)}
-                                />
-                            ) : (
-                                <ActionCard 
-                                  title={event.title || 'Action'} 
-                                  content={event.content}
-                                  image={event.image!}
-                                  timestamp={event.timestamp}
-                                  metadata={event.metadata}
-                                  isLast={true} 
-                                  onInsightClick={() => toggleFloat(event.id)}
-                                  onMediaClick={() => handleMediaClick(event)}
-                                />
-                            )}
-                         </div>
-                      </div>
-                        
-                        <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-lg z-20 border-2 border-background pointer-events-none">
-                            {index + 1}
-                        </div>
+                      {keyframePill}
 
-                        {/* AI Chat Input - Appears on Hover */}
+                      {/* Group Summary Card (collapsible) */}
+                      {isGroupSummary ? (
+                        <div className="w-full">
+                          <Collapsible>
+                            <div
+                              className="w-full rounded-2xl border border-border bg-card shadow-sm overflow-hidden"
+                              data-testid={`card-action-group-${event.id}`}
+                            >
+                              <div className="p-3 border-b border-border/50 flex items-center justify-between bg-muted/40">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <div className="h-6 w-6 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                                    <Sparkle className="w-3.5 h-3.5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="font-heading font-semibold text-sm truncate" data-testid={`text-action-group-title-${event.id}`}>Action Group</div>
+                                    <div className="text-[11px] text-muted-foreground truncate" data-testid={`text-action-group-summary-${event.id}`}>{event.content}</div>
+                                  </div>
+                                </div>
+
+                                <CollapsibleTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-2 rounded-lg"
+                                    data-testid={`button-action-group-toggle-${event.id}`}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <span className="text-xs font-semibold">Details</span>
+                                    <ChevronDown className="w-4 h-4" />
+                                  </Button>
+                                </CollapsibleTrigger>
+                              </div>
+
+                              <div className="p-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                                    <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Start</div>
+                                    <div className="text-xs font-medium mt-1" data-testid={`text-action-group-start-${event.id}`}>{event.title || ""}</div>
+                                  </div>
+                                  <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                                    <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">End</div>
+                                    <div className="text-xs font-medium mt-1" data-testid={`text-action-group-end-${event.id}`}>{event.timestamp}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <CollapsibleContent>
+                                <div className="px-4 pb-4">
+                                  <div className="rounded-xl border border-border/60 bg-background/70 p-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Collapsed steps</div>
+                                    </div>
+                                    <ol className="space-y-2">
+                                      {(renderNodes.find(n => (n as any).kind === 'group' && (n as ActionGroup).id === event.id) as ActionGroup | undefined)?.steps.map((s, idx) => (
+                                        <li
+                                          key={s.id}
+                                          className="text-xs text-muted-foreground flex items-start gap-2"
+                                          data-testid={`row-action-group-step-${event.id}-${idx}`}
+                                        >
+                                          <span className="mt-0.5 text-[10px] font-mono text-muted-foreground/70">{idx + 1}.</span>
+                                          <span className="min-w-0">
+                                            <span className="text-foreground/80">{s.title || "(no title)"}</span>
+                                            <span className="text-muted-foreground"> — {s.content}</span>
+                                          </span>
+                                        </li>
+                                      ))}
+                                    </ol>
+                                  </div>
+                                </div>
+                              </CollapsibleContent>
+                            </div>
+                          </Collapsible>
+                        </div>
+                      ) : (
+                        <div className="pointer-events-none">
+                          <div className="pointer-events-auto">
+                            {event.type === 'file' ? (
+                              <FileCard
+                                title={event.title || 'Unknown File'}
+                                content={event.content}
+                                fileType={event.fileType}
+                                timestamp={event.timestamp}
+                                isLast={true}
+                                onMediaClick={() => handleMediaClick(event)}
+                              />
+                            ) : (
+                              <ActionCard
+                                title={event.title || 'Action'}
+                                content={event.content}
+                                image={event.image!}
+                                timestamp={event.timestamp}
+                                metadata={event.metadata}
+                                isLast={true}
+                                onInsightClick={() => toggleFloat(event.id)}
+                                onMediaClick={() => handleMediaClick(event)}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-lg z-20 border-2 border-background pointer-events-none" data-testid={`badge-step-index-${event.id}`}>
+                        {index + 1}
+                      </div>
+
+                      {/* AI Chat Input - Appears on Hover */}
+                      {!isGroupSummary && (
                         <AnimatePresence>
                           {hoveredCardId === event.id && (
                             <motion.div
@@ -829,32 +1062,38 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.2 }}
                               className="absolute top-full left-0 right-0 z-30 pointer-events-auto pt-4"
-                              onPointerDown={(e) => e.stopPropagation()} // Prevent drag when clicking input
+                              onPointerDown={(e) => e.stopPropagation()}
                             >
                               <div className="bg-background/95 backdrop-blur shadow-xl border border-border rounded-xl p-2 flex gap-2 items-center w-full box-border">
-                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0" data-testid={`img-ai-avatar-${event.id}`}>
                                   <Sparkles className="w-3 h-3 text-primary" />
                                 </div>
-                                <Input 
+                                <Input
                                   className="flex-1 h-8 text-xs border-0 bg-transparent focus-visible:ring-0 px-0 shadow-none placeholder:text-muted-foreground/70 min-w-0"
                                   placeholder="Ask AI about this step..."
                                   value={cardInputs[event.id] || ''}
                                   onChange={(e) => setCardInputs(prev => ({ ...prev, [event.id]: e.target.value }))}
+                                  data-testid={`input-ask-ai-${event.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                      // Handle submit mock
                                       console.log('Ask AI:', cardInputs[event.id]);
                                       setCardInputs(prev => ({ ...prev, [event.id]: '' }));
                                     }
                                   }}
                                 />
-                                <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 rounded-full hover:bg-primary/10 hover:text-primary">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6 shrink-0 rounded-full hover:bg-primary/10 hover:text-primary"
+                                  data-testid={`button-ask-ai-send-${event.id}`}
+                                >
                                   <Send className="w-3 h-3" />
                                 </Button>
                               </div>
                             </motion.div>
                           )}
                         </AnimatePresence>
+                      )}
                     </motion.div>
                   );
                 })}
