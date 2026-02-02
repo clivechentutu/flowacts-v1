@@ -882,38 +882,11 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                   const pos = positions.find(p => p.id === event.id);
                   if (!pos) return null;
 
-                  const keyframe = detectKeyframe(event);
                   const isGroupSummary = event.id.startsWith("group-");
 
-                  const keyframeStyles =
-                    keyframe === "blocker"
-                      ? "ring-2 ring-red-500/70 shadow-[0_0_0_6px_rgba(239,68,68,0.12)]"
-                      : keyframe === "success"
-                        ? "ring-2 ring-emerald-500/70 shadow-[0_0_0_6px_rgba(16,185,129,0.12)]"
-                        : keyframe === "paywall"
-                          ? "ring-2 ring-fuchsia-500/70 shadow-[0_0_0_6px_rgba(217,70,239,0.12)]"
-                          : "";
+                  const keyframeScale = 1;
 
-                  const keyframeScale = keyframe ? 1.5 : 1;
-
-                  const keyframePill = keyframe ? (
-                    <div
-                      className={cn(
-                        "absolute -top-3 left-10 z-30 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-mono uppercase tracking-wider border backdrop-blur",
-                        keyframe === "blocker" && "bg-red-500/10 text-red-600 border-red-500/20",
-                        keyframe === "success" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                        keyframe === "paywall" && "bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/20"
-                      )}
-                      data-testid={`badge-keyframe-${event.id}`}
-                    >
-                      {keyframe === "blocker" && <AlertTriangle className="w-3 h-3" />}
-                      {keyframe === "success" && <CheckCircle2 className="w-3 h-3" />}
-                      {keyframe === "paywall" && <CreditCard className="w-3 h-3" />}
-                      <span>
-                        {keyframe === "blocker" ? "Blocker" : keyframe === "success" ? "Success" : "Paywall"}
-                      </span>
-                    </div>
-                  ) : null;
+                  const keyframePill = null;
 
                   return (
                     <motion.div
@@ -921,9 +894,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className={cn(
-                        "absolute z-10 cursor-grab active:cursor-grabbing draggable-card group",
-                        keyframe && "z-20",
-                        keyframeStyles
+                        "absolute z-10 cursor-grab active:cursor-grabbing draggable-card group"
                       )}
                       drag
                       dragMomentum={false}
@@ -941,7 +912,6 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                         transformOrigin: 'top left'
                       }}
                     >
-                      {keyframePill}
 
                       {/* Group Summary Card (collapsible) */}
                       {isGroupSummary ? (
