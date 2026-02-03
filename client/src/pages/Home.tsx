@@ -1449,7 +1449,7 @@ export default function Home() {
                 {activeDragId ? (
                   <SortablePromptCard 
                     card={
-                      [...commonPrompts, ...recommendedPrompts].find(p => p.id === activeDragId)!
+                      [...commonPrompts, ...recommendedPrompts].find(p => p.id === activeDragId) || commonPrompts[0]
                     }
                     isOverlay
                   />
