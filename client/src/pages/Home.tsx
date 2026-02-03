@@ -578,6 +578,7 @@ export default function Home() {
   const [recommendedPrompts, setRecommendedPrompts] = useState<PromptCard[]>(INITIAL_RECOMMENDED_PROMPTS);
   const [editingCard, setEditingCard] = useState<PromptCard | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [activeDragData, setActiveDragData] = useState<any>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -592,6 +593,7 @@ export default function Home() {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveDragId(event.active.id as string);
+    setActiveDragData(event.active.data.current);
   };
 
   // AI Teams State
