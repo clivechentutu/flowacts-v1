@@ -44,9 +44,9 @@
     
     /* Canvas specific vars for warm/soft feel */
     --canvas-background: #FDFBF7;
-    --canvas-grid: rgba(60, 60, 67, 0.06);
-    --sidebar-background: #F7F5F0;
-    --chat-background: #F7F5F0;
+    --canvas-grid: rgba(60, 60, 67, 0.15);
+    --sidebar-background: #EEECE6;
+    --chat-background: #EEECE6;
   }
 
   .dark {
