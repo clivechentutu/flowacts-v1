@@ -129,6 +129,7 @@ interface Team {
   name: string;
   description: string;
   personaIds: string[];
+  status: 'active' | 'pool';
 }
 
 type PersonaGroup = {
@@ -281,48 +282,142 @@ function TeamSection({
   personas: Persona[]; 
   onAddPersona: () => void 
 }) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: team.id,
     data: { type: 'team', teamId: team.id }
+  });
+
+  const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({
+    id: `drag-team-${team.id}`,
+    data: { type: 'team-card', team }
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div 
+        ref={setDraggableRef}
+        style={style}
+        {...attributes} 
+        {...listeners}
+        className={cn("group/team relative h-full", isDragging && "z-50")}
+    >
+        <div 
+        ref={setDroppableRef}
+        className={cn(
+            "p-6 rounded-2xl border-2 border-dashed transition-all min-h-[400px] flex flex-col h-full",
+            isOver ? "border-primary bg-primary/5 shadow-inner scale-[1.01]" : "border-border bg-muted/20",
+            // Add a grab handle cursor for the team card header area if we want, or just make the whole thing draggable but maybe exclude content?
+            // Actually, for team dragging, usually we want a specific handle or make the header draggable.
+            // But let's make the whole card draggable for now, but we need to ensure inner elements are still interactive.
+            // To fix interaction: useDraggable usually handles this, but inputs inside might be tricky.
+        )}
+        >
+        <div className="flex items-center justify-between mb-6 cursor-grab active:cursor-grabbing">
+            <div>
+            <h4 className="font-bold text-lg flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                {team.name}
+            </h4>
+            <p className="text-sm text-muted-foreground">{team.description}</p>
+            </div>
+            <div className="flex items-center gap-2">
+                 <div className="bg-background px-3 py-1 rounded-full text-xs font-semibold border shadow-sm">
+                    {team.personaIds.length} Members
+                </div>
+                {/* Drag Handle Indicator */}
+                <GripVertical className="w-4 h-4 text-muted-foreground/30 group-hover/team:text-muted-foreground transition-colors" />
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 content-start cursor-default" onPointerDown={(e) => e.stopPropagation()}>
+            {team.personaIds.map(id => {
+            const persona = personas.find(p => p.id === id);
+            if (!persona) return null;
+            return <PersonaCard key={`${team.id}-${id}`} dragId={`${team.id}::${id}`} persona={persona} isDraggable />;
+            })}
+            
+            {team.personaIds.length === 0 && !isOver && (
+            <div className="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground opacity-50">
+                <div className="w-12 h-12 rounded-full border-2 border-dashed border-current flex items-center justify-center mb-2">
+                <Plus className="w-6 h-6" />
+                </div>
+                <p className="text-sm font-medium">Drag AI characters here</p>
+            </div>
+            )}
+        </div>
+        </div>
+    </div>
+  );
+}
+
+function DroppableWorkspace({ teams, personas, className }: { teams: Team[], personas: Persona[], className?: string }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'workspace-zone',
+    data: { type: 'workspace-zone' }
   });
 
   return (
     <div 
       ref={setNodeRef}
       className={cn(
-        "p-6 rounded-2xl border-2 border-dashed transition-all min-h-[400px] flex flex-col",
-        isOver ? "border-primary bg-primary/5 shadow-inner scale-[1.01]" : "border-border bg-muted/20"
+        "bg-muted/10 p-6 rounded-2xl border-2 border-dashed transition-all",
+        isOver ? "border-primary bg-primary/5" : "border-border/60",
+        className
       )}
     >
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h4 className="font-bold text-lg flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            {team.name}
-          </h4>
-          <p className="text-sm text-muted-foreground">{team.description}</p>
+      {teams.length === 0 ? (
+        <div className="h-full py-12 flex flex-col items-center justify-center text-muted-foreground opacity-60">
+          <p className="text-sm font-medium">Drag entire teams here to activate them</p>
         </div>
-        <div className="bg-background px-3 py-1 rounded-full text-xs font-semibold border shadow-sm">
-          {team.personaIds.length} Members
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {teams.map(team => (
+            <TeamSection 
+              key={team.id} 
+              team={team} 
+              personas={personas}
+              onAddPersona={() => {}}
+            />
+          ))}
         </div>
-      </div>
+      )}
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 content-start">
-        {team.personaIds.map(id => {
-          const persona = personas.find(p => p.id === id);
-          if (!persona) return null;
-          return <PersonaCard key={`${team.id}-${id}`} dragId={`${team.id}::${id}`} persona={persona} isDraggable />;
-        })}
-        
-        {team.personaIds.length === 0 && !isOver && (
-          <div className="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground opacity-50">
-            <div className="w-12 h-12 rounded-full border-2 border-dashed border-current flex items-center justify-center mb-2">
-              <Plus className="w-6 h-6" />
-            </div>
-            <p className="text-sm font-medium">Drag AI characters here</p>
-          </div>
-        )}
+function DroppableTeamPool({ teams, personas }: { teams: Team[], personas: Persona[] }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'pool-zone',
+    data: { type: 'pool-zone' }
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={cn(
+        "min-h-[200px] transition-all p-4 -m-4 rounded-2xl",
+        isOver ? "bg-muted/20" : ""
+      )}
+    >
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {teams.map(team => (
+          <TeamSection 
+            key={team.id} 
+            team={team} 
+            personas={personas}
+            onAddPersona={() => {}}
+          />
+        ))}
       </div>
+      {teams.length === 0 && (
+        <div className="py-12 flex flex-col items-center justify-center text-muted-foreground opacity-60 border-2 border-dashed border-border/40 rounded-xl">
+          <p className="text-sm">No teams in pool</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -599,8 +694,8 @@ export default function Home() {
   // AI Teams State
   const [allPersonas, setAllPersonas] = useState<Persona[]>(DEFAULT_PERSONAS);
   const [teams, setTeams] = useState<Team[]>([
-    { id: 'team-1', name: 'Strategic Research', description: 'Focused on market analysis and intelligence', personaIds: ['p-1', 'p-5'] },
-    { id: 'team-2', name: 'Product Growth', description: 'Focused on feature differentiation and UX', personaIds: ['p-2', 'p-3'] }
+    { id: 'team-1', name: 'Strategic Research', description: 'Focused on market analysis and intelligence', personaIds: ['p-1', 'p-5'], status: 'pool' },
+    { id: 'team-2', name: 'Product Growth', description: 'Focused on feature differentiation and UX', personaIds: ['p-2', 'p-3'], status: 'pool' }
   ]);
   const [isAddingTeam, setIsAddingTeam] = useState(false);
   const [isAddingPersona, setIsAddingPersona] = useState(false);
@@ -616,6 +711,30 @@ export default function Home() {
     const overId = over.id as string;
     const activeData = active.data.current;
     const overData = over.data.current;
+
+    // Handle Team Dragging
+    if (activeData?.type === 'team-card') {
+      const draggedTeam = activeData.team as Team;
+      
+      // Dropped into Workspace Zone
+      if (overId === 'workspace-zone') {
+        setTeams(prev => prev.map(t => 
+          t.id === draggedTeam.id ? { ...t, status: 'active' } : t
+        ));
+        toast({ title: "Team Activated", description: `${draggedTeam.name} is now active.` });
+        return;
+      }
+
+      // Dropped into Pool Zone
+      if (overId === 'pool-zone') {
+        setTeams(prev => prev.map(t => 
+          t.id === draggedTeam.id ? { ...t, status: 'pool' } : t
+        ));
+        toast({ title: "Team Deactivated", description: `${draggedTeam.name} moved back to pool.` });
+        return;
+      }
+      return;
+    }
 
     // Handle Persona Dragging to Teams
     if (activeData?.type === 'persona') {
@@ -1286,32 +1405,29 @@ export default function Home() {
                             </div>
                         </div>
 
-                        {/* Custom Agent Library */}
-                        <div className="bg-muted/10 p-6 rounded-2xl border border-dashed border-border/60">
-                            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
-                                <Database className="w-3.5 h-3.5" /> My Custom Agents (Drag to Teams)
+                        {/* Custom Agent Library / Active Workspace */}
+                        <div className="space-y-4">
+                            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                <Database className="w-3.5 h-3.5" /> Active Workspace
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {allPersonas.filter(p => !DEFAULT_PERSONAS.some(dp => dp.id === p.id)).map(persona => (
-                                    <PersonaCard key={persona.id} persona={persona} isDraggable />
-                                ))}
-                                {allPersonas.filter(p => !DEFAULT_PERSONAS.some(dp => dp.id === p.id)).length === 0 && (
-                                    <div className="col-span-full py-8 flex flex-col items-center justify-center text-muted-foreground opacity-60">
-                                        <p className="text-sm">You haven't created any custom agents yet.</p>
-                                    </div>
-                                )}
-                            </div>
+                            
+                            {/* Droppable Zone for Active Teams */}
+                            <DroppableWorkspace 
+                                teams={teams.filter(t => t.status === 'active')}
+                                personas={allPersonas}
+                                className="min-h-[200px]"
+                            />
                         </div>
 
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                            {teams.map(team => (
-                                <TeamSection 
-                                key={team.id} 
-                                team={team} 
+                        <div className="space-y-4">
+                            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                <Layers className="w-3.5 h-3.5" /> Available Team Pool
+                            </div>
+                            {/* Droppable Zone for Team Pool */}
+                            <DroppableTeamPool 
+                                teams={teams.filter(t => t.status === 'pool')}
                                 personas={allPersonas}
-                                onAddPersona={() => {}}
-                                />
-                            ))}
+                            />
                         </div>
                         </div>
                     </div>
@@ -1350,6 +1466,20 @@ export default function Home() {
                                 return <div className="w-64 opacity-90 rotate-3 cursor-grabbing"><PersonaCard persona={activeDragData.persona} /></div>;
                             }
                             
+                            if (activeDragData.type === 'team-card') {
+                                return (
+                                    <div className="w-[400px] opacity-90 rotate-2 cursor-grabbing bg-background rounded-2xl border-2 border-primary shadow-2xl overflow-hidden pointer-events-none">
+                                        <div className="p-6">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Users className="w-5 h-5 text-primary" />
+                                                <span className="font-bold text-lg">{activeDragData.team.name}</span>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">{activeDragData.team.description}</p>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
                             return null;
                         })()
                     ) : null}
