@@ -107,95 +107,120 @@ interface PromptCard {
   category: 'creative' | 'product' | 'technical' | 'common';
 }
 
+import analystAvatar from '@/assets/avatars/analyst.jpg';
+import pmAvatar from '@/assets/avatars/pm.jpg';
+import uxAvatar from '@/assets/avatars/ux.jpg';
+import marketingAvatar from '@/assets/avatars/marketing.jpg';
+import dataAvatar from '@/assets/avatars/data.jpg';
+
 interface Persona {
   id: string;
   role: string;
   mission: string;
   deliverables: string[];
   value: string;
-  icon: any;
+  avatar: string; // Changed from icon to avatar image
 }
 
-const SCENARIO_PERSONAS: Persona[] = [
+type PersonaGroup = {
+  id: string;
+  title: string;
+  description: string;
+  icon: any;
+  personas: Persona[];
+};
+
+const SCENARIO_GROUPS: PersonaGroup[] = [
   {
-    id: 'p-1',
-    role: 'Competitive Intelligence Analyst',
-    mission: 'Collect, organize, and preliminarily analyze competitive intelligence to build an intelligence database.',
-    deliverables: ['Competitor Profiles', 'Intel Briefs', 'Dynamic Reports'],
-    value: 'Information Advantage & Early Warning',
-    icon: Search
-  },
-  {
-    id: 'p-2',
-    role: 'Product Manager',
-    mission: 'Make product decisions based on intelligence, defining roadmaps and differentiation.',
-    deliverables: ['Competitive Analysis', 'Feature Matrix', 'Roadmap Updates'],
-    value: 'Strategic Guidance & Market Differentiation',
-    icon: Map
-  },
-  {
-    id: 'p-3',
-    role: 'UX Researcher',
-    mission: 'Evaluate competitor UX to identify design strengths, weaknesses, and opportunities.',
-    deliverables: ['UX Analysis Report', 'Journey Comparison', 'Usability Benchmarks'],
-    value: 'UX Benchmarking & Design Support',
-    icon: Lightbulb
-  },
-  {
-    id: 'p-4',
-    role: 'Product Marketing Manager',
-    mission: 'Analyze competitor market strategy, positioning, and messaging.',
-    deliverables: ['Market Positioning', 'Messaging Framework', 'Content Strategy'],
-    value: 'Market Differentiation & Clear Positioning',
-    icon: Megaphone
-  },
-  {
-    id: 'p-5',
-    role: 'Data Analyst',
-    mission: 'Collect and analyze quantitative data to provide objective competitive assessments.',
-    deliverables: ['Competitive Dashboard', 'Market Share Analysis', 'Sentiment Analysis'],
-    value: 'Objective Assessment & Data-Driven Decisions',
-    icon: BarChart
+    id: 'research-team',
+    title: 'Competitive & Commercial Research',
+    description: 'Specialized roles for deep market analysis and strategy',
+    icon: Database,
+    personas: [
+      {
+        id: 'p-1',
+        role: 'Competitive Intelligence Analyst',
+        mission: 'Collect, organize, and preliminarily analyze competitive intelligence to build an intelligence database.',
+        deliverables: ['Competitor Profiles', 'Intel Briefs', 'Dynamic Reports'],
+        value: 'Information Advantage & Early Warning',
+        avatar: analystAvatar
+      },
+      {
+        id: 'p-2',
+        role: 'Product Manager',
+        mission: 'Make product decisions based on intelligence, defining roadmaps and differentiation.',
+        deliverables: ['Competitive Analysis', 'Feature Matrix', 'Roadmap Updates'],
+        value: 'Strategic Guidance & Market Differentiation',
+        avatar: pmAvatar
+      },
+      {
+        id: 'p-3',
+        role: 'UX Researcher',
+        mission: 'Evaluate competitor UX to identify design strengths, weaknesses, and opportunities.',
+        deliverables: ['UX Analysis Report', 'Journey Comparison', 'Usability Benchmarks'],
+        value: 'UX Benchmarking & Design Support',
+        avatar: uxAvatar
+      },
+      {
+        id: 'p-4',
+        role: 'Product Marketing Manager',
+        mission: 'Analyze competitor market strategy, positioning, and messaging.',
+        deliverables: ['Market Positioning', 'Messaging Framework', 'Content Strategy'],
+        value: 'Market Differentiation & Clear Positioning',
+        avatar: marketingAvatar
+      },
+      {
+        id: 'p-5',
+        role: 'Data Analyst',
+        mission: 'Collect and analyze quantitative data to provide objective competitive assessments.',
+        deliverables: ['Competitive Dashboard', 'Market Share Analysis', 'Sentiment Analysis'],
+        value: 'Objective Assessment & Data-Driven Decisions',
+        avatar: dataAvatar
+      }
+    ]
   }
 ];
 
 function PersonaCard({ persona }: { persona: Persona }) {
-  const Icon = persona.icon;
   return (
-    <div className="p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all group flex flex-col h-full shadow-sm hover:shadow-md cursor-pointer">
-       <div className="flex items-center gap-3 mb-4">
-          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-             <Icon className="w-5 h-5" />
+    <div className="p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all group flex flex-col h-full shadow-sm hover:shadow-md cursor-pointer relative overflow-hidden">
+       {/* Avatar Header */}
+       <div className="flex flex-col items-center mb-6 text-center">
+          <div className="w-20 h-20 rounded-full bg-muted/50 mb-3 overflow-hidden border-2 border-background shadow-sm group-hover:scale-105 transition-transform duration-300 ring-2 ring-primary/10 group-hover:ring-primary/30">
+             <img src={persona.avatar} alt={persona.role} className="w-full h-full object-cover" />
           </div>
-          <div className="font-semibold text-sm leading-tight">{persona.role}</div>
+          <div className="font-bold text-sm leading-tight text-foreground px-2">{persona.role}</div>
        </div>
 
-       <div className="space-y-4 flex-1 flex flex-col">
-          <div>
+       <div className="space-y-4 flex-1 flex flex-col relative z-10">
+          <div className="bg-muted/30 p-3 rounded-lg border border-border/40">
              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
-                <Target className="w-3 h-3" /> Mission
+                <Target className="w-3 h-3 text-primary/70" /> Mission
              </div>
              <p className="text-xs text-foreground/80 leading-relaxed">{persona.mission}</p>
           </div>
 
           <div>
              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
-                <FileText className="w-3 h-3" /> Deliverables
+                <FileText className="w-3 h-3 text-indigo-500/70" /> Deliverables
              </div>
              <div className="flex flex-wrap gap-1.5">
                 {persona.deliverables.map(d => (
-                   <span key={d} className="text-[10px] px-1.5 py-0.5 bg-muted rounded-md border border-border/50 text-muted-foreground/80 font-medium">{d}</span>
+                   <span key={d} className="text-[10px] px-1.5 py-0.5 bg-background rounded-md border border-border text-muted-foreground/90 font-medium shadow-sm">{d}</span>
                 ))}
              </div>
           </div>
 
            <div className="mt-auto pt-3 border-t border-dashed border-border/50">
              <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Core Value
+                <Sparkles className="w-3 h-3 text-amber-500/70" /> Core Value
              </div>
              <p className="text-xs font-semibold text-primary/90">{persona.value}</p>
           </div>
        </div>
+       
+       {/* Decorative Gradient Blob */}
+       <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
     </div>
   );
 }
@@ -1195,25 +1220,32 @@ export default function Home() {
 
                 {/* Scenario Persona Library Section */}
                 <div className="space-y-4 pb-8">
-                   <div className="flex items-center justify-between">
-                     <div className="flex flex-col gap-1">
-                        <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground/90">
-                            <Users className="w-4 h-4 text-indigo-500" />
-                            Scenario Persona Library
-                        </h3>
-                        <p className="text-xs text-muted-foreground">Specialized roles for Competitive & Commercial Research scenarios</p>
-                     </div>
-                     <div className="bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5">
-                        <Database className="w-3 h-3" />
-                        Research Team
-                     </div>
-                   </div>
+                   {SCENARIO_GROUPS.map(group => {
+                     const GroupIcon = group.icon;
+                     return (
+                       <div key={group.id} className="space-y-4">
+                         <div className="flex items-center justify-between">
+                           <div className="flex flex-col gap-1">
+                              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground/90">
+                                  <Users className="w-4 h-4 text-indigo-500" />
+                                  Scenario Persona Library
+                              </h3>
+                              <p className="text-xs text-muted-foreground">Specialized roles for Competitive & Commercial Research scenarios</p>
+                           </div>
+                           <div className="bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5">
+                              <GroupIcon className="w-3 h-3" />
+                              {group.title}
+                           </div>
+                         </div>
 
-                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                      {SCENARIO_PERSONAS.map(persona => (
-                         <PersonaCard key={persona.id} persona={persona} />
-                      ))}
-                   </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                            {group.personas.map(persona => (
+                               <PersonaCard key={persona.id} persona={persona} />
+                            ))}
+                         </div>
+                       </div>
+                     );
+                   })}
                 </div>
              </div>
 
