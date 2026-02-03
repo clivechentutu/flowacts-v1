@@ -119,7 +119,14 @@ interface Persona {
   mission: string;
   deliverables: string[];
   value: string;
-  avatar: string; // Changed from icon to avatar image
+  avatar: string;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  description: string;
+  personaIds: string[];
 }
 
 type PersonaGroup = {
@@ -130,97 +137,157 @@ type PersonaGroup = {
   personas: Persona[];
 };
 
-const SCENARIO_GROUPS: PersonaGroup[] = [
+const DEFAULT_PERSONAS: Persona[] = [
   {
-    id: 'research-team',
-    title: 'Competitive & Commercial Research',
-    description: 'Specialized roles for deep market analysis and strategy',
-    icon: Database,
-    personas: [
-      {
-        id: 'p-1',
-        role: 'Competitive Intelligence Analyst',
-        mission: 'Collect, organize, and preliminarily analyze competitive intelligence to build an intelligence database.',
-        deliverables: ['Competitor Profiles', 'Intel Briefs', 'Dynamic Reports'],
-        value: 'Information Advantage & Early Warning',
-        avatar: analystAvatar
-      },
-      {
-        id: 'p-2',
-        role: 'Product Manager',
-        mission: 'Make product decisions based on intelligence, defining roadmaps and differentiation.',
-        deliverables: ['Competitive Analysis', 'Feature Matrix', 'Roadmap Updates'],
-        value: 'Strategic Guidance & Market Differentiation',
-        avatar: pmAvatar
-      },
-      {
-        id: 'p-3',
-        role: 'UX Researcher',
-        mission: 'Evaluate competitor UX to identify design strengths, weaknesses, and opportunities.',
-        deliverables: ['UX Analysis Report', 'Journey Comparison', 'Usability Benchmarks'],
-        value: 'UX Benchmarking & Design Support',
-        avatar: uxAvatar
-      },
-      {
-        id: 'p-4',
-        role: 'Product Marketing Manager',
-        mission: 'Analyze competitor market strategy, positioning, and messaging.',
-        deliverables: ['Market Positioning', 'Messaging Framework', 'Content Strategy'],
-        value: 'Market Differentiation & Clear Positioning',
-        avatar: marketingAvatar
-      },
-      {
-        id: 'p-5',
-        role: 'Data Analyst',
-        mission: 'Collect and analyze quantitative data to provide objective competitive assessments.',
-        deliverables: ['Competitive Dashboard', 'Market Share Analysis', 'Sentiment Analysis'],
-        value: 'Objective Assessment & Data-Driven Decisions',
-        avatar: dataAvatar
-      }
-    ]
+    id: 'p-1',
+    role: 'Competitive Intelligence Analyst',
+    mission: 'Collect, organize, and preliminarily analyze competitive intelligence to build an intelligence database.',
+    deliverables: ['Competitor Profiles', 'Intel Briefs', 'Dynamic Reports'],
+    value: 'Information Advantage & Early Warning',
+    avatar: analystAvatar
+  },
+  {
+    id: 'p-2',
+    role: 'Product Manager',
+    mission: 'Make product decisions based on intelligence, defining roadmaps and differentiation.',
+    deliverables: ['Competitive Analysis', 'Feature Matrix', 'Roadmap Updates'],
+    value: 'Strategic Guidance & Market Differentiation',
+    avatar: pmAvatar
+  },
+  {
+    id: 'p-3',
+    role: 'UX Researcher',
+    mission: 'Evaluate competitor UX to identify design strengths, weaknesses, and opportunities.',
+    deliverables: ['UX Analysis Report', 'Journey Comparison', 'Usability Benchmarks'],
+    value: 'UX Benchmarking & Design Support',
+    avatar: uxAvatar
+  },
+  {
+    id: 'p-4',
+    role: 'Product Marketing Manager',
+    mission: 'Analyze competitor market strategy, positioning, and messaging.',
+    deliverables: ['Market Positioning', 'Messaging Framework', 'Content Strategy'],
+    value: 'Market Differentiation & Clear Positioning',
+    avatar: marketingAvatar
+  },
+  {
+    id: 'p-5',
+    role: 'Data Analyst',
+    mission: 'Collect and analyze quantitative data to provide objective competitive assessments.',
+    deliverables: ['Competitive Dashboard', 'Market Share Analysis', 'Sentiment Analysis'],
+    value: 'Objective Assessment & Data-Driven Decisions',
+    avatar: dataAvatar
   }
 ];
 
-function PersonaCard({ persona }: { persona: Persona }) {
-  return (
-    <div className="p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all group flex flex-col h-full shadow-sm hover:shadow-md cursor-pointer relative overflow-hidden">
+function PersonaCard({ persona, isDraggable = false }: { persona: Persona; isDraggable?: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: persona.id,
+    data: { type: 'persona', persona }
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const content = (
+    <div className={cn(
+      "p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all group flex flex-col h-full shadow-sm hover:shadow-md relative overflow-hidden",
+      isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+    )}>
        {/* Avatar Header */}
        <div className="flex flex-col items-center mb-6 text-center">
-          <div className="w-20 h-20 rounded-full bg-muted/50 mb-3 overflow-hidden border-2 border-background shadow-sm group-hover:scale-105 transition-transform duration-300 ring-2 ring-primary/10 group-hover:ring-primary/30">
+          <div className="w-16 h-16 rounded-full bg-muted/50 mb-3 overflow-hidden border-2 border-background shadow-sm group-hover:scale-105 transition-transform duration-300 ring-2 ring-primary/10 group-hover:ring-primary/30">
              <img src={persona.avatar} alt={persona.role} className="w-full h-full object-cover" />
           </div>
-          <div className="font-bold text-sm leading-tight text-foreground px-2">{persona.role}</div>
+          <div className="font-bold text-xs leading-tight text-foreground px-2">{persona.role}</div>
        </div>
 
-       <div className="space-y-4 flex-1 flex flex-col relative z-10">
-          <div className="bg-muted/30 p-3 rounded-lg border border-border/40">
-             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
-                <Target className="w-3 h-3 text-primary/70" /> Mission
-             </div>
-             <p className="text-xs text-foreground/80 leading-relaxed">{persona.mission}</p>
+       <div className="space-y-3 flex-1 flex flex-col relative z-10">
+          <div className="bg-muted/30 p-2.5 rounded-lg border border-border/40">
+             <p className="text-[10px] text-foreground/80 leading-tight line-clamp-3">{persona.mission}</p>
           </div>
 
           <div>
-             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
-                <FileText className="w-3 h-3 text-indigo-500/70" /> Deliverables
-             </div>
-             <div className="flex flex-wrap gap-1.5">
-                {persona.deliverables.map(d => (
-                   <span key={d} className="text-[10px] px-1.5 py-0.5 bg-background rounded-md border border-border text-muted-foreground/90 font-medium shadow-sm">{d}</span>
+             <div className="flex flex-wrap gap-1">
+                {persona.deliverables.slice(0, 2).map(d => (
+                   <span key={d} className="text-[9px] px-1.5 py-0.5 bg-background rounded-md border border-border text-muted-foreground/90 font-medium shadow-sm">{d}</span>
                 ))}
              </div>
           </div>
 
-           <div className="mt-auto pt-3 border-t border-dashed border-border/50">
-             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-500/70" /> Core Value
-             </div>
-             <p className="text-xs font-semibold text-primary/90">{persona.value}</p>
+           <div className="mt-auto pt-2 border-t border-dashed border-border/50">
+             <p className="text-[10px] font-semibold text-primary/90 truncate">{persona.value}</p>
           </div>
        </div>
-       
-       {/* Decorative Gradient Blob */}
-       <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
+       <div className="absolute -top-10 -right-10 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
+    </div>
+  );
+
+  if (isDraggable) {
+    return (
+      <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+        {content}
+      </div>
+    );
+  }
+
+  return content;
+}
+
+function TeamSection({ 
+  team, 
+  personas, 
+  onAddPersona 
+}: { 
+  team: Team; 
+  personas: Persona[]; 
+  onAddPersona: () => void 
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: team.id,
+    data: { type: 'team', teamId: team.id }
+  });
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={cn(
+        "p-6 rounded-2xl border-2 border-dashed transition-all min-h-[400px] flex flex-col",
+        isOver ? "border-primary bg-primary/5 shadow-inner scale-[1.01]" : "border-border bg-muted/20"
+      )}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h4 className="font-bold text-lg flex items-center gap-2">
+            <Users className="w-5 h-5 text-primary" />
+            {team.name}
+          </h4>
+          <p className="text-sm text-muted-foreground">{team.description}</p>
+        </div>
+        <div className="bg-background px-3 py-1 rounded-full text-xs font-semibold border shadow-sm">
+          {team.personaIds.length} Members
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 content-start">
+        {team.personaIds.map(id => {
+          const persona = personas.find(p => p.id === id);
+          if (!persona) return null;
+          return <PersonaCard key={id} persona={persona} isDraggable />;
+        })}
+        
+        {team.personaIds.length === 0 && !isOver && (
+          <div className="col-span-full flex flex-col items-center justify-center h-48 text-muted-foreground opacity-50">
+            <div className="w-12 h-12 rounded-full border-2 border-dashed border-current flex items-center justify-center mb-2">
+              <Plus className="w-6 h-6" />
+            </div>
+            <p className="text-sm font-medium">Drag AI characters here</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -477,16 +544,14 @@ export default function Home() {
   const [editingCard, setEditingCard] = useState<PromptCard | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveDragId(event.active.id as string);
-  };
+  // AI Teams State
+  const [allPersonas, setAllPersonas] = useState<Persona[]>(DEFAULT_PERSONAS);
+  const [teams, setTeams] = useState<Team[]>([
+    { id: 'team-1', name: 'Strategic Research', description: 'Focused on market analysis and intelligence', personaIds: ['p-1', 'p-5'] },
+    { id: 'team-2', name: 'Product Growth', description: 'Focused on feature differentiation and UX', personaIds: ['p-2', 'p-3'] }
+  ]);
+  const [isAddingTeam, setIsAddingTeam] = useState(false);
+  const [isAddingPersona, setIsAddingPersona] = useState(false);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -494,10 +559,36 @@ export default function Home() {
 
     if (!over) return;
 
-    // Handle drag between lists
     const activeId = active.id as string;
     const overId = over.id as string;
+    const activeData = active.data.current;
+    const overData = over.data.current;
 
+    // Handle Persona Dragging to Teams
+    if (activeData?.type === 'persona') {
+      const targetTeamId = overData?.teamId || (teams.find(t => t.id === overId) ? overId : null);
+      
+      if (targetTeamId) {
+        setTeams(prevTeams => prevTeams.map(team => {
+          // Remove from old teams
+          const newIds = team.personaIds.filter(id => id !== activeId);
+          // Add to target team
+          if (team.id === targetTeamId) {
+            if (!newIds.includes(activeId)) newIds.push(activeId);
+          }
+          return { ...team, personaIds: newIds };
+        }));
+        
+        const persona = allPersonas.find(p => p.id === activeId);
+        toast({ 
+          title: "Team Updated", 
+          description: `${persona?.role} assigned to ${teams.find(t => t.id === targetTeamId)?.name}` 
+        });
+        return;
+      }
+    }
+
+    // Existing Prompt dragging logic...
     const isCommonActive = commonPrompts.some(p => p.id === activeId);
     const isRecommendedActive = recommendedPrompts.some(p => p.id === activeId);
     
@@ -1216,37 +1307,131 @@ export default function Home() {
                    </SortableContext>
                 </div>
 
-                <div className="w-full h-px bg-border/60" />
+                {/* AI Teams Workspace Section */}
+                <div className="space-y-8">
+                   <div className="flex items-center justify-between">
+                     <div className="flex flex-col gap-1">
+                        <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
+                            <Users className="w-5 h-5 text-indigo-500" />
+                            Your Elite AI Teams
+                        </h3>
+                        <p className="text-sm text-muted-foreground">Organize specialized agents into collaborative teams</p>
+                     </div>
+                     <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-2"
+                          onClick={() => setIsAddingPersona(true)}
+                        >
+                          <Plus className="w-4 h-4" /> Create Agent
+                        </Button>
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="gap-2"
+                          onClick={() => setIsAddingTeam(true)}
+                        >
+                          <Users className="w-4 h-4" /> New Team
+                        </Button>
+                     </div>
+                   </div>
 
-                {/* Scenario Persona Library Section */}
-                <div className="space-y-4 pb-8">
-                   {SCENARIO_GROUPS.map(group => {
-                     const GroupIcon = group.icon;
-                     return (
-                       <div key={group.id} className="space-y-4">
-                         <div className="flex items-center justify-between">
-                           <div className="flex flex-col gap-1">
-                              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground/90">
-                                  <Users className="w-4 h-4 text-indigo-500" />
-                                  Your Elite AI Team is Ready
-                              </h3>
-                              <p className="text-xs text-muted-foreground">Specialized roles for Competitive & Commercial Research scenarios</p>
-                           </div>
-                           <div className="bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5">
-                              <GroupIcon className="w-3 h-3" />
-                              {group.title}
-                           </div>
-                         </div>
+                   {/* Persona Source Library */}
+                   <div className="bg-muted/10 p-6 rounded-2xl border border-dashed border-border/60">
+                      <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                        <Database className="w-3.5 h-3.5" /> Agent Library (Drag to Teams)
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {allPersonas.map(persona => (
+                           <PersonaCard key={persona.id} persona={persona} isDraggable />
+                        ))}
+                      </div>
+                   </div>
 
-                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                            {group.personas.map(persona => (
-                               <PersonaCard key={persona.id} persona={persona} />
-                            ))}
-                         </div>
-                       </div>
-                     );
-                   })}
+                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      {teams.map(team => (
+                        <TeamSection 
+                          key={team.id} 
+                          team={team} 
+                          personas={allPersonas}
+                          onAddPersona={() => {}}
+                        />
+                      ))}
+                   </div>
                 </div>
+
+                {/* Team Creation Dialog */}
+                <Dialog open={isAddingTeam} onOpenChange={setIsAddingTeam}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New AI Team</DialogTitle>
+                      <DialogDescription>Create a specialized collaborative workspace.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label>Team Name</Label>
+                        <Input id="team-name" placeholder="e.g. Marketing Strike Force" />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Description</Label>
+                        <Textarea id="team-desc" placeholder="What is this team's focus?" />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsAddingTeam(false)}>Cancel</Button>
+                      <Button onClick={() => {
+                        const name = (document.getElementById('team-name') as HTMLInputElement).value;
+                        const desc = (document.getElementById('team-desc') as HTMLTextAreaElement).value;
+                        if (name) {
+                          setTeams([...teams, { id: `team-${Date.now()}`, name, description: desc, personaIds: [] }]);
+                          setIsAddingTeam(false);
+                          toast({ title: "Team Created", description: `${name} is ready for deployment.` });
+                        }
+                      }}>Create Team</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Agent Creation Dialog */}
+                <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create Custom AI Agent</DialogTitle>
+                      <DialogDescription>Define a new specialized role for your team.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label>Role Name</Label>
+                        <Input id="p-role" placeholder="e.g. Growth Hacker" />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Mission</Label>
+                        <Textarea id="p-mission" placeholder="What is this agent's primary goal?" />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsAddingPersona(false)}>Cancel</Button>
+                      <Button onClick={() => {
+                        const role = (document.getElementById('p-role') as HTMLInputElement).value;
+                        const mission = (document.getElementById('p-mission') as HTMLTextAreaElement).value;
+                        if (role) {
+                          const newPersona = {
+                            id: `p-${Date.now()}`,
+                            role,
+                            mission,
+                            deliverables: ['Custom Report', 'Strategy Brief'],
+                            value: 'Specialized Expertise',
+                            avatar: pmAvatar
+                          };
+                          setAllPersonas([...allPersonas, newPersona]);
+                          setIsAddingPersona(false);
+                          toast({ title: "Agent Created", description: `${role} has been added to your library.` });
+                        }
+                      }}>Create Agent</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
              </div>
 
              <DragOverlay>
