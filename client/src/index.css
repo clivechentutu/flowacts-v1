@@ -3,33 +3,37 @@
 
 @layer base {
   :root {
-    /* Warm Theme Base - Aligned with #faf9f6 */
-    --background: 40 20% 98%; 
+    /* Warm/Creamy Theme Base - "Milk White" optimized */
+    /* Background: Soft creamy white, comfortable for eyes */
+    --background: 40 30% 97%; 
     --foreground: 222.2 47.4% 11.2%; 
     
-    --card: 40 20% 98%;
+    /* Cards: Pure white or very subtle off-white to stand out from creamy background */
+    --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
     
-    --popover: 40 20% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
     
     --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 40 10% 96%;
+    /* Secondary/Muted: Slightly darker cream for contrast */
+    --secondary: 40 20% 94%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     
-    --muted: 40 10% 96%;
+    --muted: 40 20% 94%;
     --muted-foreground: 215.4 16.3% 46.9%;
     
-    --accent: 40 10% 96%;
+    --accent: 40 20% 94%;
     --accent-foreground: 222.2 47.4% 11.2%;
     
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 40 10% 92%;
-    --input: 40 10% 92%;
+    /* Borders: Soft warm grey/brown to blend with cream */
+    --border: 40 15% 90%;
+    --input: 40 15% 90%;
     --ring: 217 91% 60%;
     --radius: 0.75rem;
     --chart-1: 12 76% 61%;
@@ -39,10 +43,10 @@
     --chart-5: 27 87% 67%;
     
     /* Canvas specific vars for warm/soft feel */
-    --canvas-background: #faf9f6;
-    --canvas-grid: rgba(60, 60, 67, 0.08);
-    --sidebar-background: #eceae5;
-    --chat-background: #eceae5;
+    --canvas-background: #FDFBF7;
+    --canvas-grid: rgba(60, 60, 67, 0.06);
+    --sidebar-background: #F7F5F0;
+    --chat-background: #F7F5F0;
   }
 
   .dark {
