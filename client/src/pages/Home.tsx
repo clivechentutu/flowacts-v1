@@ -49,7 +49,11 @@ import {
   Pencil,
   GripVertical,
   FolderKanban,
-  Layers
+  Layers,
+  Megaphone,
+  Lightbulb,
+  Map,
+  Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +105,99 @@ interface PromptCard {
   usageCount?: number;
   lastUsed?: string;
   category: 'creative' | 'product' | 'technical' | 'common';
+}
+
+interface Persona {
+  id: string;
+  role: string;
+  mission: string;
+  deliverables: string[];
+  value: string;
+  icon: any;
+}
+
+const SCENARIO_PERSONAS: Persona[] = [
+  {
+    id: 'p-1',
+    role: 'Competitive Intelligence Analyst',
+    mission: 'Collect, organize, and preliminarily analyze competitive intelligence to build an intelligence database.',
+    deliverables: ['Competitor Profiles', 'Intel Briefs', 'Dynamic Reports'],
+    value: 'Information Advantage & Early Warning',
+    icon: Search
+  },
+  {
+    id: 'p-2',
+    role: 'Product Manager',
+    mission: 'Make product decisions based on intelligence, defining roadmaps and differentiation.',
+    deliverables: ['Competitive Analysis', 'Feature Matrix', 'Roadmap Updates'],
+    value: 'Strategic Guidance & Market Differentiation',
+    icon: Map
+  },
+  {
+    id: 'p-3',
+    role: 'UX Researcher',
+    mission: 'Evaluate competitor UX to identify design strengths, weaknesses, and opportunities.',
+    deliverables: ['UX Analysis Report', 'Journey Comparison', 'Usability Benchmarks'],
+    value: 'UX Benchmarking & Design Support',
+    icon: Lightbulb
+  },
+  {
+    id: 'p-4',
+    role: 'Product Marketing Manager',
+    mission: 'Analyze competitor market strategy, positioning, and messaging.',
+    deliverables: ['Market Positioning', 'Messaging Framework', 'Content Strategy'],
+    value: 'Market Differentiation & Clear Positioning',
+    icon: Megaphone
+  },
+  {
+    id: 'p-5',
+    role: 'Data Analyst',
+    mission: 'Collect and analyze quantitative data to provide objective competitive assessments.',
+    deliverables: ['Competitive Dashboard', 'Market Share Analysis', 'Sentiment Analysis'],
+    value: 'Objective Assessment & Data-Driven Decisions',
+    icon: BarChart
+  }
+];
+
+function PersonaCard({ persona }: { persona: Persona }) {
+  const Icon = persona.icon;
+  return (
+    <div className="p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all group flex flex-col h-full shadow-sm hover:shadow-md cursor-pointer">
+       <div className="flex items-center gap-3 mb-4">
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+             <Icon className="w-5 h-5" />
+          </div>
+          <div className="font-semibold text-sm leading-tight">{persona.role}</div>
+       </div>
+
+       <div className="space-y-4 flex-1 flex flex-col">
+          <div>
+             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
+                <Target className="w-3 h-3" /> Mission
+             </div>
+             <p className="text-xs text-foreground/80 leading-relaxed">{persona.mission}</p>
+          </div>
+
+          <div>
+             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
+                <FileText className="w-3 h-3" /> Deliverables
+             </div>
+             <div className="flex flex-wrap gap-1.5">
+                {persona.deliverables.map(d => (
+                   <span key={d} className="text-[10px] px-1.5 py-0.5 bg-muted rounded-md border border-border/50 text-muted-foreground/80 font-medium">{d}</span>
+                ))}
+             </div>
+          </div>
+
+           <div className="mt-auto pt-3 border-t border-dashed border-border/50">
+             <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Core Value
+             </div>
+             <p className="text-xs font-semibold text-primary/90">{persona.value}</p>
+          </div>
+       </div>
+    </div>
+  );
 }
 
 const INITIAL_COMMON_PROMPTS: PromptCard[] = [
@@ -1092,6 +1189,31 @@ export default function Home() {
                         )}
                      </div>
                    </SortableContext>
+                </div>
+
+                <div className="w-full h-px bg-border/60" />
+
+                {/* Scenario Persona Library Section */}
+                <div className="space-y-4 pb-8">
+                   <div className="flex items-center justify-between">
+                     <div className="flex flex-col gap-1">
+                        <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground/90">
+                            <Users className="w-4 h-4 text-indigo-500" />
+                            Scenario Persona Library
+                        </h3>
+                        <p className="text-xs text-muted-foreground">Specialized roles for Competitive & Commercial Research scenarios</p>
+                     </div>
+                     <div className="bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5">
+                        <Database className="w-3 h-3" />
+                        Research Team
+                     </div>
+                   </div>
+
+                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                      {SCENARIO_PERSONAS.map(persona => (
+                         <PersonaCard key={persona.id} persona={persona} />
+                      ))}
+                   </div>
                 </div>
              </div>
 
