@@ -37,7 +37,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'project', icon: FolderKanban, label: 'Studio' },
     { id: 'projects-list', icon: Layers, label: 'Project' },
-    { id: 'library', icon: Library, label: 'Library' },
+    { id: 'library', icon: Library, label: 'Super Team' },
   ] as const;
 
   return (
