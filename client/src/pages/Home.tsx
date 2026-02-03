@@ -544,6 +544,17 @@ export default function Home() {
   const [editingCard, setEditingCard] = useState<PromptCard | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+  };
+
   // AI Teams State
   const [allPersonas, setAllPersonas] = useState<Persona[]>(DEFAULT_PERSONAS);
   const [teams, setTeams] = useState<Team[]>([
