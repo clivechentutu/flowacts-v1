@@ -180,6 +180,40 @@ const DEFAULT_PERSONAS: Persona[] = [
   }
 ];
 
+function MiniPersonaCard({ persona, onClick }: { persona: Persona; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: persona.id,
+    data: { type: 'persona', persona }
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      {...attributes} 
+      {...listeners}
+      onClick={onClick}
+      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-grab active:cursor-grabbing group transition-colors border border-transparent hover:border-border/50"
+    >
+       <div className="w-10 h-10 rounded-full bg-muted/50 overflow-hidden border border-border shadow-sm group-hover:scale-105 transition-transform">
+          <img src={persona.avatar} alt={persona.role} className="w-full h-full object-cover" />
+       </div>
+       <div className="flex-1 min-w-0 text-left">
+          <div className="font-medium text-xs text-foreground truncate">{persona.role}</div>
+          <div className="text-[10px] text-muted-foreground truncate opacity-80 group-hover:opacity-100">
+             Official Agent
+          </div>
+       </div>
+       <Info className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary/50 transition-colors" />
+    </div>
+  );
+}
 function PersonaCard({ persona, isDraggable = false }: { persona: Persona; isDraggable?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: persona.id,
@@ -563,6 +597,7 @@ export default function Home() {
   ]);
   const [isAddingTeam, setIsAddingTeam] = useState(false);
   const [isAddingPersona, setIsAddingPersona] = useState(false);
+  const [activePersona, setActivePersona] = useState<Persona | null>(null);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -1195,197 +1230,228 @@ export default function Home() {
         );
       case 'library':
         return (
-          <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
-             <div className="flex items-center gap-2 mb-8">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Library className="w-6 h-6 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold tracking-tight">Library</h2>
-             </div>
-             
+          <div className="flex h-full w-full bg-background overflow-hidden">
              <DndContext 
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
              >
-             <div className="flex flex-col gap-10 max-w-7xl mx-auto w-full">
-                {/* User's Common Prompts */}
-                <div className="space-y-4">
-                   <div className="flex items-center justify-between">
-                     <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground/90">
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                        My Common Prompts
-                     </h3>
-                   </div>
-                   
-                   <SortableContext 
-                      items={commonPrompts.map(p => p.id)}
-                      strategy={rectSortingStrategy}
-                   >
-                     <div 
-                        id="common-prompts-container"
-                        className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 min-h-[120px] p-2 -m-2 rounded-xl transition-colors border border-transparent hover:border-dashed hover:border-border/60 hover:bg-muted/5"
-                     >
-                        {commonPrompts.map(card => (
-                           <SortablePromptCard 
-                              key={card.id} 
-                              card={card} 
-                              onEdit={handleEditCard}
-                              onDelete={handleDeleteCard}
-                           />
-                        ))}
-                        {commonPrompts.length === 0 && (
-                           <div className="col-span-full flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground/40 border-2 border-dashed border-border/40 rounded-xl bg-muted/5">
-                              <Star className="w-6 h-6 mb-2 opacity-50" />
-                              <p className="text-sm font-medium">Drag recommended prompts here to save them</p>
-                           </div>
-                        )}
-                     </div>
-                   </SortableContext>
+                {/* Main Scrollable Content */}
+                <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+                    <div className="flex items-center gap-2 mb-8">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                        <Library className="w-6 h-6 text-primary" />
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight">Library</h2>
+                    </div>
+
+                    <div className="flex flex-col gap-10 max-w-7xl mx-auto w-full">
+                        {/* User's Common Prompts */}
+                        <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground/90">
+                                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                                My Common Prompts
+                            </h3>
+                        </div>
+                        
+                        <SortableContext 
+                            items={commonPrompts.map(p => p.id)}
+                            strategy={rectSortingStrategy}
+                        >
+                            <div 
+                                id="common-prompts-container"
+                                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 min-h-[120px] p-2 -m-2 rounded-xl transition-colors border border-transparent hover:border-dashed hover:border-border/60 hover:bg-muted/5"
+                            >
+                                {commonPrompts.map(card => (
+                                <SortablePromptCard 
+                                    key={card.id} 
+                                    card={card} 
+                                    onEdit={handleEditCard}
+                                    onDelete={handleDeleteCard}
+                                />
+                                ))}
+                                {commonPrompts.length === 0 && (
+                                <div className="col-span-full flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground/40 border-2 border-dashed border-border/40 rounded-xl bg-muted/5">
+                                    <Star className="w-6 h-6 mb-2 opacity-50" />
+                                    <p className="text-sm font-medium">Drag recommended prompts here to save them</p>
+                                </div>
+                                )}
+                            </div>
+                        </SortableContext>
+                        </div>
+
+
+                        {/* AI Teams Workspace Section */}
+                        <div className="space-y-8">
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-1">
+                                <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
+                                    <Users className="w-5 h-5 text-indigo-500" />
+                                    Your Elite AI Teams
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Organize specialized agents into collaborative teams</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="gap-2"
+                                onClick={() => setIsAddingPersona(true)}
+                                >
+                                <Plus className="w-4 h-4" /> Create Agent
+                                </Button>
+                                <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="gap-2"
+                                onClick={() => setIsAddingTeam(true)}
+                                >
+                                <Users className="w-4 h-4" /> New Team
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Custom Agent Library */}
+                        <div className="bg-muted/10 p-6 rounded-2xl border border-dashed border-border/60">
+                            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                                <Database className="w-3.5 h-3.5" /> My Custom Agents (Drag to Teams)
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {allPersonas.filter(p => !DEFAULT_PERSONAS.some(dp => dp.id === p.id)).map(persona => (
+                                    <PersonaCard key={persona.id} persona={persona} isDraggable />
+                                ))}
+                                {allPersonas.filter(p => !DEFAULT_PERSONAS.some(dp => dp.id === p.id)).length === 0 && (
+                                    <div className="col-span-full py-8 flex flex-col items-center justify-center text-muted-foreground opacity-60">
+                                        <p className="text-sm">You haven't created any custom agents yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            {teams.map(team => (
+                                <TeamSection 
+                                key={team.id} 
+                                team={team} 
+                                personas={allPersonas}
+                                onAddPersona={() => {}}
+                                />
+                            ))}
+                        </div>
+                        </div>
+                    </div>
                 </div>
 
-
-                {/* AI Teams Workspace Section */}
-                <div className="space-y-8">
-                   <div className="flex items-center justify-between">
-                     <div className="flex flex-col gap-1">
-                        <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
-                            <Users className="w-5 h-5 text-indigo-500" />
-                            Your Elite AI Teams
+                {/* Right Sidebar - Official Recommendations */}
+                <div className="w-80 border-l border-border bg-card/50 flex flex-col overflow-hidden shadow-xl z-20">
+                    <div className="p-4 border-b border-border bg-background/50 backdrop-blur-sm">
+                        <h3 className="font-semibold flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                            Official Agents
                         </h3>
-                        <p className="text-sm text-muted-foreground">Organize specialized agents into collaborative teams</p>
-                     </div>
-                     <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="gap-2"
-                          onClick={() => setIsAddingPersona(true)}
-                        >
-                          <Plus className="w-4 h-4" /> Create Agent
-                        </Button>
-                        <Button 
-                          variant="default" 
-                          size="sm" 
-                          className="gap-2"
-                          onClick={() => setIsAddingTeam(true)}
-                        >
-                          <Users className="w-4 h-4" /> New Team
-                        </Button>
-                     </div>
-                   </div>
-
-                   {/* Persona Source Library */}
-                   <div className="bg-muted/10 p-6 rounded-2xl border border-dashed border-border/60">
-                      <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
-                        <Database className="w-3.5 h-3.5" /> Agent Library (Drag to Teams)
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                        {allPersonas.map(persona => (
-                           <PersonaCard key={persona.id} persona={persona} isDraggable />
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Drag to your team to recruit
+                        </p>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                        {DEFAULT_PERSONAS.map(persona => (
+                            <MiniPersonaCard 
+                                key={persona.id} 
+                                persona={persona} 
+                                onClick={() => setActivePersona(persona)}
+                            />
                         ))}
-                      </div>
-                   </div>
-
-                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                      {teams.map(team => (
-                        <TeamSection 
-                          key={team.id} 
-                          team={team} 
-                          personas={allPersonas}
-                          onAddPersona={() => {}}
-                        />
-                      ))}
-                   </div>
+                    </div>
                 </div>
 
-                {/* Team Creation Dialog */}
-                <Dialog open={isAddingTeam} onOpenChange={setIsAddingTeam}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create New AI Team</DialogTitle>
-                      <DialogDescription>Create a specialized collaborative workspace.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label>Team Name</Label>
-                        <Input id="team-name" placeholder="e.g. Marketing Strike Force" />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>Description</Label>
-                        <Textarea id="team-desc" placeholder="What is this team's focus?" />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsAddingTeam(false)}>Cancel</Button>
-                      <Button onClick={() => {
-                        const name = (document.getElementById('team-name') as HTMLInputElement).value;
-                        const desc = (document.getElementById('team-desc') as HTMLTextAreaElement).value;
-                        if (name) {
-                          setTeams([...teams, { id: `team-${Date.now()}`, name, description: desc, personaIds: [] }]);
-                          setIsAddingTeam(false);
-                          toast({ title: "Team Created", description: `${name} is ready for deployment.` });
-                        }
-                      }}>Create Team</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
-                {/* Agent Creation Dialog */}
-                <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Create Custom AI Agent</DialogTitle>
-                      <DialogDescription>Define a new specialized role for your team.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label>Role Name</Label>
-                        <Input id="p-role" placeholder="e.g. Growth Hacker" />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>Mission</Label>
-                        <Textarea id="p-mission" placeholder="What is this agent's primary goal?" />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsAddingPersona(false)}>Cancel</Button>
-                      <Button onClick={() => {
-                        const role = (document.getElementById('p-role') as HTMLInputElement).value;
-                        const mission = (document.getElementById('p-mission') as HTMLTextAreaElement).value;
-                        if (role) {
-                          const newPersona = {
-                            id: `p-${Date.now()}`,
-                            role,
-                            mission,
-                            deliverables: ['Custom Report', 'Strategy Brief'],
-                            value: 'Specialized Expertise',
-                            avatar: pmAvatar
-                          };
-                          setAllPersonas([...allPersonas, newPersona]);
-                          setIsAddingPersona(false);
-                          toast({ title: "Agent Created", description: `${role} has been added to your library.` });
-                        }
-                      }}>Create Agent</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-             </div>
-
-             <DragOverlay>
-                {activeDragId ? (
-                  <SortablePromptCard 
-                    card={
-                      [...commonPrompts, ...recommendedPrompts].find(p => p.id === activeDragId) || commonPrompts[0]
-                    }
-                    isOverlay
-                  />
-                ) : null}
-             </DragOverlay>
+                <DragOverlay>
+                    {activeDragId ? (
+                        (() => {
+                            const promptCard = [...commonPrompts, ...recommendedPrompts].find(p => p.id === activeDragId);
+                            if (promptCard) return <SortablePromptCard card={promptCard} isOverlay />;
+                            
+                            const persona = allPersonas.find(p => p.id === activeDragId) || DEFAULT_PERSONAS.find(p => p.id === activeDragId);
+                            if (persona) return <div className="w-64 opacity-90 rotate-3 cursor-grabbing"><PersonaCard persona={persona} /></div>;
+                            
+                            return null;
+                        })()
+                    ) : null}
+                </DragOverlay>
              </DndContext>
 
-             {/* Edit Dialog */}
+             {/* Modals */}
+             <Dialog open={isAddingTeam} onOpenChange={setIsAddingTeam}>
+                <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create New AI Team</DialogTitle>
+                    <DialogDescription>Create a specialized collaborative workspace.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                    <Label>Team Name</Label>
+                    <Input id="team-name" placeholder="e.g. Marketing Strike Force" />
+                    </div>
+                    <div className="grid gap-2">
+                    <Label>Description</Label>
+                    <Textarea id="team-desc" placeholder="What is this team's focus?" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddingTeam(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                    const name = (document.getElementById('team-name') as HTMLInputElement).value;
+                    const desc = (document.getElementById('team-desc') as HTMLTextAreaElement).value;
+                    if (name) {
+                        setTeams([...teams, { id: `team-${Date.now()}`, name, description: desc, personaIds: [] }]);
+                        setIsAddingTeam(false);
+                        toast({ title: "Team Created", description: `${name} is ready for deployment.` });
+                    }
+                    }}>Create Team</Button>
+                </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
+                <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create Custom AI Agent</DialogTitle>
+                    <DialogDescription>Define a new specialized role for your team.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                    <Label>Role Name</Label>
+                    <Input id="p-role" placeholder="e.g. Growth Hacker" />
+                    </div>
+                    <div className="grid gap-2">
+                    <Label>Mission</Label>
+                    <Textarea id="p-mission" placeholder="What is this agent's primary goal?" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddingPersona(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                    const role = (document.getElementById('p-role') as HTMLInputElement).value;
+                    const mission = (document.getElementById('p-mission') as HTMLTextAreaElement).value;
+                    if (role) {
+                        const newPersona = {
+                        id: `p-${Date.now()}`,
+                        role,
+                        mission,
+                        deliverables: ['Custom Report', 'Strategy Brief'],
+                        value: 'Specialized Expertise',
+                        avatar: pmAvatar
+                        };
+                        setAllPersonas([...allPersonas, newPersona]);
+                        setIsAddingPersona(false);
+                        toast({ title: "Agent Created", description: `${role} has been added to your library.` });
+                    }
+                    }}>Create Agent</Button>
+                </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
              <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
                <DialogContent>
                  <DialogHeader>
@@ -1419,6 +1485,53 @@ export default function Home() {
                    <Button onClick={() => saveEditedCard(editingCard?.title || '', editingCard?.description || '')}>Save Changes</Button>
                  </DialogFooter>
                </DialogContent>
+             </Dialog>
+
+             {/* Persona Details Popover/Dialog */}
+             <Dialog open={!!activePersona} onOpenChange={(open) => !open && setActivePersona(null)}>
+                <DialogContent className="max-w-md">
+                   {activePersona && (
+                      <div className="flex flex-col items-center text-center -mt-4">
+                         <div className="w-24 h-24 rounded-full bg-muted overflow-hidden border-4 border-background shadow-xl mb-4 relative z-10">
+                            <img src={activePersona.avatar} alt={activePersona.role} className="w-full h-full object-cover" />
+                         </div>
+                         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-primary/10 to-transparent rounded-t-lg -z-0" />
+                         
+                         <h3 className="text-xl font-bold mb-1">{activePersona.role}</h3>
+                         <div className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary mb-6">
+                            Official Agent
+                         </div>
+
+                         <div className="w-full space-y-4 text-left">
+                            <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                                    <Target className="w-3.5 h-3.5" /> Mission
+                                </h4>
+                                <p className="text-sm leading-relaxed">{activePersona.mission}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                                        <Sparkles className="w-3.5 h-3.5" /> Value
+                                    </h4>
+                                    <p className="text-xs font-medium">{activePersona.value}</p>
+                                </div>
+                                <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                                        <FileText className="w-3.5 h-3.5" /> Output
+                                    </h4>
+                                    <div className="flex flex-wrap gap-1">
+                                        {activePersona.deliverables.slice(0, 2).map(d => (
+                                            <span key={d} className="text-[10px] bg-background px-1.5 py-0.5 rounded border border-border/50">{d}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                         </div>
+                      </div>
+                   )}
+                </DialogContent>
              </Dialog>
           </div>
         );
