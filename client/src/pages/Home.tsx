@@ -1228,7 +1228,7 @@ export default function Home() {
                            <div className="flex flex-col gap-1">
                               <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground/90">
                                   <Users className="w-4 h-4 text-indigo-500" />
-                                  Scenario Persona Library
+                                  Your Elite AI Team is Ready
                               </h3>
                               <p className="text-xs text-muted-foreground">Specialized roles for Competitive & Commercial Research scenarios</p>
                            </div>
