@@ -1248,42 +1248,6 @@ export default function Home() {
                     </div>
 
                     <div className="flex flex-col gap-10 max-w-7xl mx-auto w-full">
-                        {/* User's Common Prompts */}
-                        <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground/90">
-                                <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                                My Common Prompts
-                            </h3>
-                        </div>
-                        
-                        <SortableContext 
-                            items={commonPrompts.map(p => p.id)}
-                            strategy={rectSortingStrategy}
-                        >
-                            <div 
-                                id="common-prompts-container"
-                                className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 min-h-[120px] p-2 -m-2 rounded-xl transition-colors border border-transparent hover:border-dashed hover:border-border/60 hover:bg-muted/5"
-                            >
-                                {commonPrompts.map(card => (
-                                <SortablePromptCard 
-                                    key={card.id} 
-                                    card={card} 
-                                    onEdit={handleEditCard}
-                                    onDelete={handleDeleteCard}
-                                />
-                                ))}
-                                {commonPrompts.length === 0 && (
-                                <div className="col-span-full flex flex-col items-center justify-center h-full min-h-[120px] text-muted-foreground/40 border-2 border-dashed border-border/40 rounded-xl bg-muted/5">
-                                    <Star className="w-6 h-6 mb-2 opacity-50" />
-                                    <p className="text-sm font-medium">Drag recommended prompts here to save them</p>
-                                </div>
-                                )}
-                            </div>
-                        </SortableContext>
-                        </div>
-
-
                         {/* AI Teams Workspace Section */}
                         <div className="space-y-8">
                         <div className="flex items-center justify-between">
