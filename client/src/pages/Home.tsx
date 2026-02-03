@@ -70,7 +70,8 @@ import {
   DragOverlay,
   DragStartEvent,
   DragEndEvent,
-  useDroppable
+  useDroppable,
+  useDraggable
 } from '@dnd-kit/core';
 import {
   arrayMove,
