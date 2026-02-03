@@ -53,7 +53,8 @@ import {
   Megaphone,
   Lightbulb,
   Map,
-  Database
+  Database,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
