@@ -215,9 +215,9 @@ function MiniPersonaCard({ persona, onClick }: { persona: Persona; onClick: () =
     </div>
   );
 }
-function PersonaCard({ persona, isDraggable = false }: { persona: Persona; isDraggable?: boolean }) {
+function PersonaCard({ persona, isDraggable = false, dragId }: { persona: Persona; isDraggable?: boolean; dragId?: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: persona.id,
+    id: dragId || persona.id,
     data: { type: 'persona', persona }
   });
 
@@ -311,7 +311,7 @@ function TeamSection({
         {team.personaIds.map(id => {
           const persona = personas.find(p => p.id === id);
           if (!persona) return null;
-          return <PersonaCard key={id} persona={persona} isDraggable />;
+          return <PersonaCard key={`${team.id}-${id}`} dragId={`${team.id}::${id}`} persona={persona} isDraggable />;
         })}
         
         {team.personaIds.length === 0 && !isOver && (
@@ -619,21 +619,22 @@ export default function Home() {
 
     // Handle Persona Dragging to Teams
     if (activeData?.type === 'persona') {
+      const activePersonaId = activeData.persona.id;
       const targetTeamId = overData?.teamId || (teams.find(t => t.id === overId) ? overId : null);
       
       if (targetTeamId) {
         setTeams(prevTeams => prevTeams.map(team => {
           // If it's the target team, add the persona if not already present
           if (team.id === targetTeamId) {
-            if (!team.personaIds.includes(activeId)) {
-              return { ...team, personaIds: [...team.personaIds, activeId] };
+            if (!team.personaIds.includes(activePersonaId)) {
+              return { ...team, personaIds: [...team.personaIds, activePersonaId] };
             }
           }
           // Do not remove from other teams (allow multi-team membership)
           return team;
         }));
         
-        const persona = allPersonas.find(p => p.id === activeId);
+        const persona = allPersonas.find(p => p.id === activePersonaId);
         toast({ 
           title: "Team Updated", 
           description: `${persona?.role} added to ${teams.find(t => t.id === targetTeamId)?.name}` 
@@ -1339,13 +1340,15 @@ export default function Home() {
                 </div>
 
                 <DragOverlay>
-                    {activeDragId ? (
+                    {activeDragId && activeDragData ? (
                         (() => {
-                            const promptCard = [...commonPrompts, ...recommendedPrompts].find(p => p.id === activeDragId);
-                            if (promptCard) return <SortablePromptCard card={promptCard} isOverlay />;
+                            if (activeDragData.card) {
+                                return <SortablePromptCard card={activeDragData.card} isOverlay />;
+                            }
                             
-                            const persona = allPersonas.find(p => p.id === activeDragId) || DEFAULT_PERSONAS.find(p => p.id === activeDragId);
-                            if (persona) return <div className="w-64 opacity-90 rotate-3 cursor-grabbing"><PersonaCard persona={persona} /></div>;
+                            if (activeDragData.persona) {
+                                return <div className="w-64 opacity-90 rotate-3 cursor-grabbing"><PersonaCard persona={activeDragData.persona} /></div>;
+                            }
                             
                             return null;
                         })()
