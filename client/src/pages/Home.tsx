@@ -621,19 +621,20 @@ export default function Home() {
       
       if (targetTeamId) {
         setTeams(prevTeams => prevTeams.map(team => {
-          // Remove from old teams
-          const newIds = team.personaIds.filter(id => id !== activeId);
-          // Add to target team
+          // If it's the target team, add the persona if not already present
           if (team.id === targetTeamId) {
-            if (!newIds.includes(activeId)) newIds.push(activeId);
+            if (!team.personaIds.includes(activeId)) {
+              return { ...team, personaIds: [...team.personaIds, activeId] };
+            }
           }
-          return { ...team, personaIds: newIds };
+          // Do not remove from other teams (allow multi-team membership)
+          return team;
         }));
         
         const persona = allPersonas.find(p => p.id === activeId);
         toast({ 
           title: "Team Updated", 
-          description: `${persona?.role} assigned to ${teams.find(t => t.id === targetTeamId)?.name}` 
+          description: `${persona?.role} added to ${teams.find(t => t.id === targetTeamId)?.name}` 
         });
         return;
       }
