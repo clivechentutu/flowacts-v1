@@ -182,14 +182,13 @@ const DEFAULT_PERSONAS: Persona[] = [
 ];
 
 function MiniPersonaCard({ persona, onClick }: { persona: Persona; onClick: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: persona.id,
     data: { type: 'persona', persona }
   });
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
     opacity: isDragging ? 0.5 : 1,
   };
 
@@ -580,7 +579,11 @@ export default function Home() {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
