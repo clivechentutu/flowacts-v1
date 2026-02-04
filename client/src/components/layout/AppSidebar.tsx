@@ -1,4 +1,4 @@
-import { Home, Layers, Settings, Sun, Moon, FolderKanban, Library, HelpCircle } from "lucide-react";
+import { Home, Layers, Settings, Sun, Moon, FolderKanban, Users, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { SettingsModal } from "../settings/SettingsModal";
@@ -37,7 +37,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'project', icon: FolderKanban, label: 'Studio' },
     { id: 'projects-list', icon: Layers, label: 'Project' },
-    { id: 'library', icon: Library, label: 'Super Team' },
+    { id: 'library', icon: Users, label: 'Super Team' },
   ] as const;
 
   return (
