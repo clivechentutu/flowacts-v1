@@ -7,7 +7,7 @@ import { MediaPreviewModal } from "./MediaPreviewModal";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop, Share2, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CreditCard, Sparkle, Users } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop, Share2, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CreditCard, Sparkle, Users, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -27,6 +27,11 @@ type TeamMember = {
 };
 
 type TeamTab = 'ai' | 'human';
+
+type TeamMemberAddDraft = {
+  name: string;
+  role: string;
+};
 
 // Configuration for layout
 const CARD_WIDTH = 360;
@@ -187,7 +192,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
 
   const { toast } = useToast();
 
-  const participatingAiTeamMembers: TeamMember[] = useMemo(() => {
+  const initialAiTeamMembers: TeamMember[] = useMemo(() => {
     // Mock data for prototype: Super Team agents participating in this canvas/project
     return [
       { id: 'p-1', name: 'Competitive Intelligence Analyst', role: 'CI Analyst', avatar: 'https://api.dicebear.com/7.x/thumbs/svg?seed=CI' },
@@ -197,7 +202,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
     ];
   }, []);
 
-  const participatingHumanTeamMembers: TeamMember[] = useMemo(() => {
+  const initialHumanTeamMembers: TeamMember[] = useMemo(() => {
     // Mock data for prototype: invited human collaborators
     return [
       { id: 'h-1', name: 'Alice Chen', role: 'Design Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice' },
@@ -206,8 +211,14 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
     ];
   }, []);
 
+  const [participatingAiTeamMembers, setParticipatingAiTeamMembers] = useState<TeamMember[]>(initialAiTeamMembers);
+  const [participatingHumanTeamMembers, setParticipatingHumanTeamMembers] = useState<TeamMember[]>(initialHumanTeamMembers);
+
   const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
   const [teamMenuTab, setTeamMenuTab] = useState<TeamTab>('ai');
+
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [addMemberDraft, setAddMemberDraft] = useState<TeamMemberAddDraft>({ name: '', role: '' });
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -823,33 +834,124 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                         AI agents & invited collaborators
                       </div>
 
-                      <div className="mt-2 flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1" data-testid="tabs-team-menu">
+                      <div className="mt-2 flex items-center gap-1" data-testid="tabs-team-menu">
+                        <div className="flex flex-1 items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTeamMenuTab('ai');
+                              setIsAddMemberOpen(false);
+                            }}
+                            className={cn(
+                              "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
+                              teamMenuTab === 'ai' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                            data-testid="tab-team-ai"
+                          >
+                            AI team
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTeamMenuTab('human');
+                              setIsAddMemberOpen(false);
+                            }}
+                            className={cn(
+                              "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
+                              teamMenuTab === 'human' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                            data-testid="tab-team-human"
+                          >
+                            Human team
+                          </button>
+                        </div>
+
                         <button
                           type="button"
-                          onClick={() => setTeamMenuTab('ai')}
+                          onClick={() => {
+                            setIsAddMemberOpen((v) => !v);
+                            setAddMemberDraft({ name: '', role: '' });
+                          }}
                           className={cn(
-                            "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
-                            teamMenuTab === 'ai' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            "h-8 w-8 rounded-lg border border-border/60 bg-background/70 hover:bg-background shadow-sm inline-flex items-center justify-center transition-colors",
+                            isAddMemberOpen ? "ring-1 ring-primary/30" : ""
                           )}
-                          data-testid="tab-team-ai"
+                          title={teamMenuTab === 'ai' ? 'Add AI member' : 'Invite human collaborator'}
+                          data-testid={teamMenuTab === 'ai' ? 'button-add-ai-member' : 'button-add-human-member'}
                         >
-                          AI team
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setTeamMenuTab('human')}
-                          className={cn(
-                            "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
-                            teamMenuTab === 'human' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                          )}
-                          data-testid="tab-team-human"
-                        >
-                          Human team
+                          <Plus className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
                     <div className="p-2">
+                      {isAddMemberOpen && (
+                        <div className="mb-2 rounded-lg border border-border/60 bg-muted/20 p-2" data-testid="panel-add-member">
+                          <div className="grid grid-cols-1 gap-2">
+                            <input
+                              value={addMemberDraft.name}
+                              onChange={(e) => setAddMemberDraft((d) => ({ ...d, name: e.target.value }))}
+                              placeholder={teamMenuTab === 'ai' ? 'AI role name (e.g., Pricing Analyst)' : 'Collaborator name'}
+                              className="h-8 w-full rounded-md border border-border bg-background/80 px-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                              data-testid={teamMenuTab === 'ai' ? 'input-add-ai-name' : 'input-add-human-name'}
+                            />
+                            <input
+                              value={addMemberDraft.role}
+                              onChange={(e) => setAddMemberDraft((d) => ({ ...d, role: e.target.value }))}
+                              placeholder={teamMenuTab === 'ai' ? 'Short role label (e.g., CI)' : 'Role (e.g., PM, Design)'}
+                              className="h-8 w-full rounded-md border border-border bg-background/80 px-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
+                              data-testid={teamMenuTab === 'ai' ? 'input-add-ai-role' : 'input-add-human-role'}
+                            />
+                          </div>
+
+                          <div className="mt-2 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setIsAddMemberOpen(false)}
+                              className="h-8 px-2 rounded-md text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                              data-testid="button-add-member-cancel"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const name = addMemberDraft.name.trim();
+                                const role = addMemberDraft.role.trim();
+                                if (!name) return;
+
+                                const idPrefix = teamMenuTab === 'ai' ? 'p' : 'h';
+                                const newId = `${idPrefix}-${Date.now()}`;
+                                const avatarSeed = encodeURIComponent(name);
+                                const avatar = teamMenuTab === 'ai'
+                                  ? `https://api.dicebear.com/7.x/thumbs/svg?seed=${avatarSeed}`
+                                  : `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
+
+                                const newMember: TeamMember = {
+                                  id: newId,
+                                  name,
+                                  role: role || (teamMenuTab === 'ai' ? 'AI' : 'Collaborator'),
+                                  avatar,
+                                };
+
+                                if (teamMenuTab === 'ai') {
+                                  setParticipatingAiTeamMembers((prev) => [newMember, ...prev]);
+                                } else {
+                                  setParticipatingHumanTeamMembers((prev) => [newMember, ...prev]);
+                                }
+
+                                setIsAddMemberOpen(false);
+                                setAddMemberDraft({ name: '', role: '' });
+                              }}
+                              className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+                              data-testid={teamMenuTab === 'ai' ? 'button-add-ai-confirm' : 'button-add-human-confirm'}
+                            >
+                              {teamMenuTab === 'ai' ? 'Add' : 'Invite'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="flex flex-wrap gap-2" data-testid="list-team-members">
                         {(teamMenuTab === 'ai' ? participatingAiTeamMembers : participatingHumanTeamMembers).map((m) => (
                           <div
