@@ -822,11 +822,23 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                 </button>
 
                 {isTeamMenuOpen && (
-                  <div
-                    className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-background/95 backdrop-blur shadow-xl overflow-hidden"
-                    data-testid="menu-canvas-team"
-                  >
-                    <div className="px-3 py-2 border-b border-border/60">
+                  <>
+                    <button
+                      type="button"
+                      className="fixed inset-0 z-40 cursor-default"
+                      onClick={() => {
+                        setIsTeamMenuOpen(false);
+                        setIsAddMemberOpen(false);
+                      }}
+                      data-testid="overlay-team-menu-dismiss"
+                      aria-label="Dismiss team menu"
+                    />
+
+                    <div
+                      className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-background/95 backdrop-blur shadow-xl overflow-hidden z-50"
+                      data-testid="menu-canvas-team"
+                    >
+                        <div className="px-3 py-2 border-b border-border/60">
                       <div className="text-xs font-semibold text-foreground" data-testid="text-team-menu-title">
                         Participating Team
                       </div>
@@ -1000,6 +1012,7 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                       </div>
                     </div>
                   </div>
+                  </>
                 )}
               </div>
 
