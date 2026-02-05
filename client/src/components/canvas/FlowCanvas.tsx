@@ -7,7 +7,7 @@ import { MediaPreviewModal } from "./MediaPreviewModal";
 import { TaskSidebar } from "./TaskSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { TransformWrapper, TransformComponent, useControls, ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
-import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop, Share2, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CreditCard, Sparkle } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Send, Sparkles, Upload, Crop, Share2, Copy, ExternalLink, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CreditCard, Sparkle, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -18,6 +18,13 @@ import html2canvas from "html2canvas";
 interface FlowCanvasProps {
   events: StoryEvent[];
 }
+
+type TeamMember = {
+  id: string;
+  name: string;
+  avatar: string;
+  role?: string;
+};
 
 // Configuration for layout
 const CARD_WIDTH = 360;
@@ -177,6 +184,19 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
   const [selectionBox, setSelectionBox] = useState<{startX: number, startY: number, currentX: number, currentY: number} | null>(null);
 
   const { toast } = useToast();
+
+  const participatingTeamMembers: TeamMember[] = useMemo(() => {
+    // Mock data for prototype: members participating in this canvas/project
+    // (Later this would come from the Super Team selection state.)
+    return [
+      { id: 'p-1', name: 'Competitive Intelligence Analyst', role: 'CI Analyst', avatar: 'https://api.dicebear.com/7.x/thumbs/svg?seed=CI' },
+      { id: 'p-2', name: 'Product Manager', role: 'PM', avatar: 'https://api.dicebear.com/7.x/thumbs/svg?seed=PM' },
+      { id: 'p-3', name: 'UX Researcher', role: 'UX', avatar: 'https://api.dicebear.com/7.x/thumbs/svg?seed=UX' },
+      { id: 'p-4', name: 'Product Marketing Manager', role: 'PMM', avatar: 'https://api.dicebear.com/7.x/thumbs/svg?seed=PMM' },
+    ];
+  }, []);
+
+  const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -768,6 +788,60 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                 />
             )}
             <div className="absolute top-6 right-6 z-50 flex items-center gap-2 screenshot-exclude">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsTeamMenuOpen((v) => !v)}
+                  className="h-9 w-9 rounded-lg shadow-md border border-border bg-background/85 hover:bg-background/95 backdrop-blur flex items-center justify-center transition-colors"
+                  data-testid="button-canvas-team"
+                  title="Participating team"
+                >
+                  <Users className="w-4 h-4" />
+                </button>
+
+                {isTeamMenuOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-background/95 backdrop-blur shadow-xl overflow-hidden"
+                    data-testid="menu-canvas-team"
+                  >
+                    <div className="px-3 py-2 border-b border-border/60">
+                      <div className="text-xs font-semibold text-foreground" data-testid="text-team-menu-title">
+                        Participating Super Team
+                      </div>
+                      <div className="text-[11px] text-muted-foreground" data-testid="text-team-menu-subtitle">
+                        Agents contributing to this canvas
+                      </div>
+                    </div>
+
+                    <div className="p-2">
+                      <div className="flex flex-wrap gap-2" data-testid="list-team-members">
+                        {participatingTeamMembers.map((m) => (
+                          <div
+                            key={m.id}
+                            className="flex items-center gap-2 rounded-lg border border-border/60 bg-card px-2 py-1.5"
+                            data-testid={`chip-team-member-${m.id}`}
+                            title={m.name}
+                          >
+                            <img
+                              src={m.avatar}
+                              alt={m.name}
+                              className="h-6 w-6 rounded-full border border-border/60"
+                              data-testid={`img-team-avatar-${m.id}`}
+                            />
+                            <div className="min-w-0">
+                              <div className="text-xs font-medium text-foreground truncate" data-testid={`text-team-name-${m.id}`}>{m.name}</div>
+                              {m.role && (
+                                <div className="text-[10px] text-muted-foreground" data-testid={`text-team-role-${m.id}`}>{m.role}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <Button
                 type="button"
                 variant="secondary"
