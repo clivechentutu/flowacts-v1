@@ -836,51 +836,74 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
 
                       <div className="mt-2 flex items-center gap-1" data-testid="tabs-team-menu">
                         <div className="flex flex-1 items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setTeamMenuTab('ai');
-                              setIsAddMemberOpen(false);
-                            }}
-                            className={cn(
-                              "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
-                              teamMenuTab === 'ai' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                            )}
-                            data-testid="tab-team-ai"
-                          >
-                            AI team
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setTeamMenuTab('human');
-                              setIsAddMemberOpen(false);
-                            }}
-                            className={cn(
-                              "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
-                              teamMenuTab === 'human' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                            )}
-                            data-testid="tab-team-human"
-                          >
-                            Human team
-                          </button>
-                        </div>
+                          <div className="relative flex-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTeamMenuTab('ai');
+                                setIsAddMemberOpen(false);
+                              }}
+                              className={cn(
+                                "w-full rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
+                                teamMenuTab === 'ai' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                              )}
+                              data-testid="tab-team-ai"
+                            >
+                              AI team
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTeamMenuTab('ai');
+                                setIsAddMemberOpen(true);
+                                setAddMemberDraft({ name: '', role: '' });
+                              }}
+                              className={cn(
+                                "absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md border border-border/60 bg-background/70 hover:bg-background shadow-sm inline-flex items-center justify-center transition-colors",
+                                teamMenuTab === 'ai' && isAddMemberOpen ? "ring-1 ring-primary/30" : ""
+                              )}
+                              title="Add AI member"
+                              data-testid="button-add-ai-member"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAddMemberOpen((v) => !v);
-                            setAddMemberDraft({ name: '', role: '' });
-                          }}
-                          className={cn(
-                            "h-8 w-8 rounded-lg border border-border/60 bg-background/70 hover:bg-background shadow-sm inline-flex items-center justify-center transition-colors",
-                            isAddMemberOpen ? "ring-1 ring-primary/30" : ""
-                          )}
-                          title={teamMenuTab === 'ai' ? 'Add AI member' : 'Invite human collaborator'}
-                          data-testid={teamMenuTab === 'ai' ? 'button-add-ai-member' : 'button-add-human-member'}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+                          <div className="relative flex-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTeamMenuTab('human');
+                                setIsAddMemberOpen(false);
+                              }}
+                              className={cn(
+                                "w-full rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
+                                teamMenuTab === 'human' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                              )}
+                              data-testid="tab-team-human"
+                            >
+                              Human team
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTeamMenuTab('human');
+                                setIsAddMemberOpen(true);
+                                setAddMemberDraft({ name: '', role: '' });
+                              }}
+                              className={cn(
+                                "absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md border border-border/60 bg-background/70 hover:bg-background shadow-sm inline-flex items-center justify-center transition-colors",
+                                teamMenuTab === 'human' && isAddMemberOpen ? "ring-1 ring-primary/30" : ""
+                              )}
+                              title="Invite human collaborator"
+                              data-testid="button-add-human-member"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
