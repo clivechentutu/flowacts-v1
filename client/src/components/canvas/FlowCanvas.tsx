@@ -26,6 +26,8 @@ type TeamMember = {
   role?: string;
 };
 
+type TeamTab = 'ai' | 'human';
+
 // Configuration for layout
 const CARD_WIDTH = 360;
 const CARD_HEIGHT = 500;
@@ -185,9 +187,8 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
 
   const { toast } = useToast();
 
-  const participatingTeamMembers: TeamMember[] = useMemo(() => {
-    // Mock data for prototype: members participating in this canvas/project
-    // (Later this would come from the Super Team selection state.)
+  const participatingAiTeamMembers: TeamMember[] = useMemo(() => {
+    // Mock data for prototype: Super Team agents participating in this canvas/project
     return [
       { id: 'p-1', name: 'Competitive Intelligence Analyst', role: 'CI Analyst', avatar: 'https://api.dicebear.com/7.x/thumbs/svg?seed=CI' },
       { id: 'p-2', name: 'Product Manager', role: 'PM', avatar: 'https://api.dicebear.com/7.x/thumbs/svg?seed=PM' },
@@ -196,7 +197,17 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
     ];
   }, []);
 
+  const participatingHumanTeamMembers: TeamMember[] = useMemo(() => {
+    // Mock data for prototype: invited human collaborators
+    return [
+      { id: 'h-1', name: 'Alice Chen', role: 'Design Lead', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alice' },
+      { id: 'h-2', name: 'Bo Zhang', role: 'PM', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bo' },
+      { id: 'h-3', name: 'Chris Li', role: 'Research', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Chris' },
+    ];
+  }, []);
+
   const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
+  const [teamMenuTab, setTeamMenuTab] = useState<TeamTab>('ai');
 
   const handleShare = async () => {
     const shareUrl = window.location.href;
@@ -806,32 +817,57 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                   >
                     <div className="px-3 py-2 border-b border-border/60">
                       <div className="text-xs font-semibold text-foreground" data-testid="text-team-menu-title">
-                        Participating Super Team
+                        Participating Team
                       </div>
                       <div className="text-[11px] text-muted-foreground" data-testid="text-team-menu-subtitle">
-                        Agents contributing to this canvas
+                        AI agents & invited collaborators
+                      </div>
+
+                      <div className="mt-2 flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1" data-testid="tabs-team-menu">
+                        <button
+                          type="button"
+                          onClick={() => setTeamMenuTab('ai')}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
+                            teamMenuTab === 'ai' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                          )}
+                          data-testid="tab-team-ai"
+                        >
+                          AI team
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTeamMenuTab('human')}
+                          className={cn(
+                            "flex-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
+                            teamMenuTab === 'human' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                          )}
+                          data-testid="tab-team-human"
+                        >
+                          Human team
+                        </button>
                       </div>
                     </div>
 
                     <div className="p-2">
                       <div className="flex flex-wrap gap-2" data-testid="list-team-members">
-                        {participatingTeamMembers.map((m) => (
+                        {(teamMenuTab === 'ai' ? participatingAiTeamMembers : participatingHumanTeamMembers).map((m) => (
                           <div
                             key={m.id}
                             className="flex items-center gap-2 rounded-lg border border-border/60 bg-card px-2 py-1.5"
-                            data-testid={`chip-team-member-${m.id}`}
+                            data-testid={`chip-team-member-${teamMenuTab}-${m.id}`}
                             title={m.name}
                           >
                             <img
                               src={m.avatar}
                               alt={m.name}
                               className="h-6 w-6 rounded-full border border-border/60"
-                              data-testid={`img-team-avatar-${m.id}`}
+                              data-testid={`img-team-avatar-${teamMenuTab}-${m.id}`}
                             />
                             <div className="min-w-0">
-                              <div className="text-xs font-medium text-foreground truncate" data-testid={`text-team-name-${m.id}`}>{m.name}</div>
+                              <div className="text-xs font-medium text-foreground truncate" data-testid={`text-team-name-${teamMenuTab}-${m.id}`}>{m.name}</div>
                               {m.role && (
-                                <div className="text-[10px] text-muted-foreground" data-testid={`text-team-role-${m.id}`}>{m.role}</div>
+                                <div className="text-[10px] text-muted-foreground" data-testid={`text-team-role-${teamMenuTab}-${m.id}`}>{m.role}</div>
                               )}
                             </div>
                           </div>
