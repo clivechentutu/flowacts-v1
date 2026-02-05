@@ -1,0 +1,188 @@
+# Home Page Input Section - Localized Optimization (Revised)
+
+## Design Principle
+
+**Keep it universal, inspire with examples**
+
+The input area should feel like "you can ask anything", not "you can only do these 3 things".
+
+---
+
+## Optimization Approach
+
+### What to Keep (from existing design)
+- The natural language input box as the primary interaction
+- The overall layout and styling
+- The connection to Studio page
+
+### What to Optimize
+- Placeholder text: more universal, less restrictive
+- Example prompts: show diversity, not limit functionality
+- Visual hints: subtle guidance without constraining
+
+---
+
+## Implementation Details
+
+### 1. Input Box Placeholder Optimization
+
+**Current (if too specific):**
+```
+"Analyze competitor.com's onboarding flow..."
+```
+
+**Optimized (universal):**
+```
+Option A: "Tell me what you want to explore..."
+Option B: "Enter a URL or describe your task..."
+Option C: "What would you like to understand today?"
+```
+
+**Code Change:**
+```jsx
+<input
+  type="text"
+  placeholder="Enter a URL or describe what you'd like to explore..."
+  className="..." // keep existing styles
+/>
+```
+
+### 2. Example Prompts (Rotating/Diverse)
+
+Instead of fixed scenario buttons, show **rotating example prompts** that demonstrate the product's versatility:
+
+**Implementation Option A: Rotating Placeholder**
+```jsx
+const examplePrompts = [
+  "Analyze how Notion handles user onboarding",
+  "Compare the checkout flows of Amazon vs Shopify",
+  "What's the pricing strategy of Figma?",
+  "Walk through the signup process of Linear",
+  "How does Stripe present their API documentation?",
+  "Explore the mobile experience of Airbnb",
+  "Review the landing page of a competitor",
+  "Understand how users navigate this e-commerce site",
+];
+
+// Rotate placeholder every 3 seconds
+const [currentExample, setCurrentExample] = useState(0);
+useEffect(() => {
+  const interval = setInterval(() => {
+    setCurrentExample((prev) => (prev + 1) % examplePrompts.length);
+  }, 3000);
+  return () => clearInterval(interval);
+}, []);
+
+<input
+  placeholder={examplePrompts[currentExample]}
+  // ...
+/>
+```
+
+**Implementation Option B: "Try asking" Section**
+```jsx
+<div className="mt-4 text-center">
+  <p className="text-sm text-muted-foreground mb-2">Try asking:</p>
+  <div className="flex flex-wrap justify-center gap-2 text-sm">
+    <span className="text-muted-foreground/70 italic">"Walk me through Notion's signup"</span>
+    <span className="text-muted-foreground/50">•</span>
+    <span className="text-muted-foreground/70 italic">"Compare these two pricing pages"</span>
+    <span className="text-muted-foreground/50">•</span>
+    <span className="text-muted-foreground/70 italic">"What's the UX like on this site?"</span>
+  </div>
+</div>
+```
+
+### 3. Quick Action Tags (If Keeping)
+
+If you want to keep quick action tags, make them **task-type based** rather than **scenario-specific**:
+
+**❌ Too Specific (Avoid):**
+```
+[🔍 Analyze competitor onboarding]
+[💰 Compare pricing pages]
+[🎯 Audit user experience]
+```
+
+**✅ More Universal:**
+```
+[🌐 Browse & capture]
+[📊 Compare & analyze]
+[🔍 Deep dive]
+```
+
+Or even simpler, just show as text hints:
+```jsx
+<p className="text-xs text-muted-foreground mt-3">
+  You can ask me to browse websites, compare experiences, analyze flows, or explore any digital product.
+</p>
+```
+
+---
+
+## Recommended Changes Summary
+
+| Element | Current | Recommended Change |
+|---------|---------|-------------------|
+| **Placeholder** | May be scenario-specific | Universal: "Enter a URL or describe what you'd like to explore..." |
+| **Quick tags** | Fixed scenario buttons | Either remove, or use rotating examples |
+| **Hint text** | May not exist | Add subtle text: "Browse, compare, analyze any website or product" |
+
+---
+
+## Code Example (Minimal Change)
+
+If the current input section looks like this:
+```jsx
+<div className="input-section">
+  <input placeholder="..." />
+  <button>Start</button>
+</div>
+```
+
+Optimize to:
+```jsx
+<div className="input-section">
+  {/* Main input - keep existing styles */}
+  <div className="relative">
+    <input
+      placeholder="Enter a URL or describe what you'd like to explore..."
+      className="..." // keep existing
+    />
+    <button className="...">Start</button>
+  </div>
+
+  {/* Add subtle hint */}
+  <p className="text-xs text-muted-foreground text-center mt-3">
+    Browse websites, compare experiences, analyze user flows, and more
+  </p>
+
+  {/* Optional: rotating examples */}
+  <div className="text-center mt-2">
+    <span className="text-xs text-muted-foreground/60 italic">
+      Try: "{currentExample}"
+    </span>
+  </div>
+</div>
+```
+
+---
+
+## Key Principle
+
+**The input box should feel like a conversation starter, not a feature selector.**
+
+Users should think:
+- ✅ "I can ask this AI team to help me understand anything"
+- ❌ "This tool only does competitor analysis"
+
+---
+
+## Future Extensibility
+
+This universal design allows easy expansion to new scenarios:
+- Today: Competitive research, UX analysis
+- Tomorrow: Content audit, technical documentation review
+- Future: Any web-based research task
+
+The input interface doesn't need to change when new capabilities are added.

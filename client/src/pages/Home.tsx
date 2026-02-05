@@ -1115,10 +1115,15 @@ export default function Home() {
                     ref={inputRef}
                     value={homeInput}
                     onChange={handleInputChange}
-                    placeholder="Ask anything... 'Analyze the signup flow for competitor.com'" 
+                    placeholder="Enter a URL or describe what you'd like to explore..."
                     className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none p-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium shadow-none ring-0 selection:bg-primary/20"
+                    data-testid="input-home-primary"
                   />
-                  
+
+                  <div className="px-6 pb-1.5 text-xs text-muted-foreground/80" data-testid="text-home-input-hint">
+                    Browse websites, compare experiences, analyze user flows, and more.
+                  </div>
+
                   <div className="flex justify-between items-center p-4 pt-0 border-t-0 bg-transparent">
                      <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Attach">
@@ -1509,7 +1514,7 @@ export default function Home() {
                     const name = (document.getElementById('team-name') as HTMLInputElement).value;
                     const desc = (document.getElementById('team-desc') as HTMLTextAreaElement).value;
                     if (name) {
-                        setTeams([...teams, { id: `team-${Date.now()}`, name, description: desc, personaIds: [] }]);
+                        setTeams([...teams, { id: `team-${Date.now()}`, name, description: desc, personaIds: [], status: 'pool' }]);
                         setIsAddingTeam(false);
                         toast({ title: "Team Created", description: `${name} is ready for deployment.` });
                     }
