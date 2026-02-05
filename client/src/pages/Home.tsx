@@ -1067,11 +1067,11 @@ export default function Home() {
                     <Sparkles className="w-5 h-5 text-primary mr-2" />
                     <span className="text-sm font-medium text-primary">AI-Powered Analysis Agent</span>
                 </div>
-                <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl font-heading">
-                  What can I help you build?
+                <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl font-heading" data-testid="text-home-slogan">
+                  Your AI team. Complex tasks. Clear canvas.
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                  Describe your task, analyze a competitor, or simulate a user journey to get started.
+                <p className="text-lg text-muted-foreground max-w-xl mx-auto" data-testid="text-home-slogan-subtitle">
+                  Start with a URL or a question — we’ll turn it into a structured workspace.
                 </p>
               </div>
 
@@ -1122,6 +1122,52 @@ export default function Home() {
 
                   <div className="px-6 pb-1.5 text-xs text-muted-foreground/80" data-testid="text-home-input-hint">
                     Browse websites, compare experiences, analyze user flows, and more.
+                  </div>
+
+                  <div className="px-6 pb-4" data-testid="section-home-quickstart">
+                    <div className="flex flex-wrap justify-center gap-2" data-testid="list-home-quickstart">
+                      {[
+                        {
+                          icon: "🔍",
+                          label: "Onboarding Analysis",
+                          prompt: "Walk through the signup and onboarding flow of [competitor.com], identify UX strengths and friction points.",
+                        },
+                        {
+                          icon: "💰",
+                          label: "Pricing Comparison",
+                          prompt: "Compare the pricing pages of [company A] and [company B], analyze their pricing strategies and positioning.",
+                        },
+                        {
+                          icon: "🎯",
+                          label: "UX Audit",
+                          prompt: "Audit the user experience of [website.com], focusing on navigation, clarity, and conversion paths.",
+                        },
+                        {
+                          icon: "📊",
+                          label: "Feature Comparison",
+                          prompt: "Compare the feature sets of [product A] and [product B], create a visual comparison.",
+                        },
+                        {
+                          icon: "📱",
+                          label: "Mobile UX",
+                          prompt: "Explore the mobile experience of [website.com], test responsiveness and mobile interactions.",
+                        },
+                      ].map((s) => (
+                        <button
+                          key={s.label}
+                          type="button"
+                          onClick={() => {
+                            setHomeInput(s.prompt);
+                            requestAnimationFrame(() => inputRef.current?.focus());
+                          }}
+                          className="px-4 py-2 rounded-full bg-muted hover:bg-muted/80 text-sm transition-colors flex items-center gap-2 border border-border/50"
+                          data-testid={`chip-home-quickstart-${s.label.replace(/\s+/g, '-').toLowerCase()}`}
+                        >
+                          <span aria-hidden="true" data-testid={`icon-home-quickstart-${s.label.replace(/\s+/g, '-').toLowerCase()}`}>{s.icon}</span>
+                          <span className="text-xs font-semibold text-foreground/90" data-testid={`text-home-quickstart-${s.label.replace(/\s+/g, '-').toLowerCase()}`}>{s.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="flex justify-between items-center p-4 pt-0 border-t-0 bg-transparent">

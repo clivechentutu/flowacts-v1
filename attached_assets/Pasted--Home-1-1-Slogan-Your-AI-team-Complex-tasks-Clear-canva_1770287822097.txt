@@ -1,0 +1,188 @@
+# Home页面最终优化方案（确定版）
+
+## 一、确定的设计方案
+
+### 1.1 Slogan
+```
+Your AI team. Complex tasks. Clear canvas.
+```
+
+### 1.2 输入区域
+- **输入框**：保持现有样式
+- **输入按钮**：保持原样
+- **Quick Start任务场景**：在输入框下方，以标签/chips形式展示（类似OiiOii）
+
+---
+
+## 二、页面布局
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  [Logo] Upliftly                         [Login] [Try Free] │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│           Your AI team. Complex tasks. Clear canvas.        │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ [现有输入框样式]                            [按钮]  │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  [🔍 Onboarding Analysis] [💰 Pricing Comparison]          │
+│  [🎯 UX Audit] [📊 Feature Comparison] [📱 Mobile UX]      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 三、Quick Start任务场景（标签/Chips形式）
+
+### 3.1 标签内容
+
+| 图标 | 标签文案 | 点击后填充的Prompt |
+|------|----------|-------------------|
+| 🔍 | Onboarding Analysis | "Walk through the signup and onboarding flow of [competitor.com], identify UX strengths and friction points." |
+| 💰 | Pricing Comparison | "Compare the pricing pages of [company A] and [company B], analyze their pricing strategies and positioning." |
+| 🎯 | UX Audit | "Audit the user experience of [website.com], focusing on navigation, clarity, and conversion paths." |
+| 📊 | Feature Comparison | "Compare the feature sets of [product A] and [product B], create a visual comparison." |
+| 📱 | Mobile UX | "Explore the mobile experience of [website.com], test responsiveness and mobile interactions." |
+
+### 3.2 标签样式
+
+```jsx
+// 标签组件
+<button
+  onClick={() => setInputValue(prompt)}
+  className="px-4 py-2 rounded-full bg-muted hover:bg-muted/80 text-sm transition-colors flex items-center gap-2 border border-border/50"
+>
+  <span>{icon}</span>
+  <span>{label}</span>
+</button>
+```
+
+**样式说明：**
+- 圆角：`rounded-full`（药丸形状）
+- 背景：`bg-muted`
+- 悬停：`hover:bg-muted/80`
+- 边框：`border border-border/50`（微妙边框）
+- 内边距：`px-4 py-2`
+- 字体：`text-sm`
+
+---
+
+## 四、Replit实现代码
+
+### 4.1 任务场景数据
+
+```jsx
+const quickStartScenarios = [
+  {
+    icon: "🔍",
+    label: "Onboarding Analysis",
+    prompt: "Walk through the signup and onboarding flow of [competitor.com], identify UX strengths and friction points."
+  },
+  {
+    icon: "💰",
+    label: "Pricing Comparison",
+    prompt: "Compare the pricing pages of [company A] and [company B], analyze their pricing strategies and positioning."
+  },
+  {
+    icon: "🎯",
+    label: "UX Audit",
+    prompt: "Audit the user experience of [website.com], focusing on navigation, clarity, and conversion paths."
+  },
+  {
+    icon: "📊",
+    label: "Feature Comparison",
+    prompt: "Compare the feature sets of [product A] and [product B], create a visual comparison."
+  },
+  {
+    icon: "📱",
+    label: "Mobile UX",
+    prompt: "Explore the mobile experience of [website.com], test responsiveness and mobile interactions."
+  }
+];
+```
+
+### 4.2 Quick Start区域组件
+
+```jsx
+function QuickStartSection({ onSelect }) {
+  return (
+    <div className="flex flex-wrap justify-center gap-2 mt-4">
+      {quickStartScenarios.map((scenario, index) => (
+        <button
+          key={index}
+          onClick={() => onSelect(scenario.prompt)}
+          className="px-4 py-2 rounded-full bg-muted hover:bg-muted/80 text-sm transition-colors flex items-center gap-2 border border-border/50"
+        >
+          <span>{scenario.icon}</span>
+          <span>{scenario.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+### 4.3 集成到现有输入区域
+
+```jsx
+// 在现有输入框下方添加Quick Start
+<div className="input-section">
+  {/* 保持现有输入框和按钮 */}
+  <div className="existing-input-wrapper">
+    <input ... /> {/* 保持现有样式 */}
+    <button>...</button> {/* 保持现有按钮 */}
+  </div>
+
+  {/* 新增：Quick Start任务场景 */}
+  <QuickStartSection onSelect={(prompt) => setInputValue(prompt)} />
+</div>
+```
+
+---
+
+## 五、交互逻辑
+
+```
+用户进入Home页面
+        ↓
+看到Slogan → 理解产品定位
+        ↓
+看到输入框 → 可以直接输入任务
+        ↓
+看到Quick Start标签 → 了解可以做什么任务
+        ↓
+方式A：直接输入 → 点击按钮
+方式B：点击标签 → 输入框填充Prompt → 可修改 → 点击按钮
+        ↓
+进入Studio，AI团队开始工作
+```
+
+---
+
+## 六、实施要点
+
+### 6.1 保持不变的部分
+- 输入框样式
+- 输入按钮样式和位置
+- 整体页面布局
+
+### 6.2 新增的部分
+- Slogan更新为"Your AI team. Complex tasks. Clear canvas."
+- 输入框下方添加Quick Start标签区域
+- 点击标签填充输入框的交互
+
+### 6.3 实施检查清单
+- [ ] 更新Slogan
+- [ ] 在输入框下方添加Quick Start标签
+- [ ] 实现点击标签填充输入框
+- [ ] 测试响应式布局（标签换行）
+- [ ] 测试深色/浅色主题
+
+---
+
+*文档确定时间：2026-02-05*
+*Slogan：Your AI team. Complex tasks. Clear canvas.*
+*Quick Start形式：标签/Chips（类似OiiOii）*
