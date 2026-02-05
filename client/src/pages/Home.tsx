@@ -1120,10 +1120,6 @@ export default function Home() {
                     data-testid="input-home-primary"
                   />
 
-                  <div className="px-6 pb-1.5 text-xs text-muted-foreground/80" data-testid="text-home-input-hint">
-                    Browse websites, compare experiences, analyze user flows, and more.
-                  </div>
-
                   <div className="flex justify-between items-center p-4 pt-0 border-t-0 bg-transparent">
                      <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Attach">
