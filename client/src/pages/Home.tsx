@@ -99,7 +99,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { PageTabNav, PageTab } from "@/components/canvas/PageTabNav";
+import { PageBottomNav } from "@/components/canvas/PageBottomNav";
+import { PageTab } from "@/components/canvas/PageTabNav";
+import { ProjectHeader, ProjectInfo } from "@/components/canvas/ProjectHeader";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PromptCard {
@@ -769,6 +771,58 @@ const generatePageTitle = (text: string, count: number): string => {
     return title;
 };
 
+const generateProjectName = (text: string): string => {
+    // Extract target + goal
+    const lower = text.toLowerCase();
+    let name = "Untitled Project";
+    
+    // Attempt to find a target (domain or brand)
+    const words = text.split(' ');
+    let target = "";
+    
+    // Look for domains or capitalized words (heuristic)
+    const domainMatch = text.match(/([a-zA-Z0-9-]+\.(com|io|net|so|org))/);
+    if (domainMatch) {
+        target = domainMatch[1].split('.')[0];
+        target = target.charAt(0).toUpperCase() + target.slice(1);
+    } else {
+        // Look for brands (often capitalized in prompt, but we have lower here... wait)
+        // Let's use the original text for brand detection if possible, but `text` arg is sufficient
+        const potentialBrand = words.find(w => w[0] === w[0].toUpperCase() && w.length > 3 && !['Analyze', 'Check', 'Audit', 'Compare', 'The', 'How'].includes(w));
+        if (potentialBrand) target = potentialBrand;
+    }
+
+    if (!target) {
+        // Fallback target extraction
+        if (lower.includes('notion')) target = 'Notion';
+        else if (lower.includes('slack')) target = 'Slack';
+        else if (lower.includes('linear')) target = 'Linear';
+        else if (lower.includes('stripe')) target = 'Stripe';
+        else if (lower.includes('google')) target = 'Google';
+        else if (lower.includes('competitor')) target = 'Competitor';
+    }
+
+    // Extract Goal
+    let goal = "Analysis";
+    if (lower.includes('signup')) goal = "Signup Analysis";
+    else if (lower.includes('pricing')) goal = "Pricing Review";
+    else if (lower.includes('mobile')) goal = "Mobile UX";
+    else if (lower.includes('onboarding')) goal = "Onboarding";
+    else if (lower.includes('audit')) goal = "Audit";
+    else if (lower.includes('compare')) goal = "Comparison";
+
+    if (target) {
+        name = `${target} ${goal}`;
+    } else {
+        // Just use first few words
+        const cleanWords = words.filter(w => w.length > 3).slice(0, 3);
+        if (cleanWords.length > 0) name = cleanWords.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    if (name.length > 28) name = name.slice(0, 27) + '…';
+    return name;
+}
+
 export default function Home() {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'home' | 'project' | 'library' | 'projects-list'>('home');
@@ -784,6 +838,11 @@ export default function Home() {
   // Replaced simple pages string array with PageTab objects
   const [pages, setPages] = useState<PageTab[]>(DEMO_PAGES);
   const [activePageId, setActivePageId] = useState(DEMO_PAGES[0].id);
+  const [projectInfo, setProjectInfo] = useState<ProjectInfo>({
+      id: 'proj-1',
+      icon: '🕵️',
+      name: 'Notion Signup Analysis'
+  });
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [projectListSearch, setProjectListSearch] = useState("");
@@ -1096,6 +1155,12 @@ export default function Home() {
     const title = generatePageTitle(message, pages.length);
     const icon = getPageIcon(message);
     
+    // Update project name if it's the first real interaction or if generic
+    if (projectInfo.name === 'Untitled Project' || projectInfo.name === 'Notion Signup Analysis') {
+        const newProjectName = generateProjectName(message);
+        setProjectInfo(prev => ({ ...prev, name: newProjectName }));
+    }
+
     // Create a new page tab for this task
     const newPageId = `p-${Date.now()}`;
     const newPage: PageTab = {
@@ -1169,6 +1234,10 @@ export default function Home() {
 
   const handleRenameTab = (id: string, newTitle: string) => {
       setPages(pages.map(p => p.id === id ? { ...p, title: newTitle } : p));
+  };
+
+  const handleRenameProject = (newName: string) => {
+      setProjectInfo(prev => ({ ...prev, name: newName }));
   };
 
 
@@ -2018,18 +2087,29 @@ export default function Home() {
             
             {/* Page Management - Only visible in Canvas mode */}
             {viewMode === 'canvas' && (
-                <div className="absolute top-0 left-0 right-0 z-40 bg-background/50 backdrop-blur-sm">
-                    <PageTabNav 
-                        pages={pages}
-                        activePageId={activePageId}
-                        onSwitch={setActivePageId}
-                        onAdd={handleAddPage}
-                        onRenameTab={handleRenameTab}
-                    />
+                <div className="absolute top-0 left-0 right-0 z-40 bg-transparent pointer-events-none">
+                     {/* We inject the Project Header into the Shell's header area via portal or absolute positioning if feasible. 
+                         However, Shell structure might be rigid. 
+                         Looking at the Shell usage, it has a 'nav' prop which is the sidebar.
+                         It seems the top header is part of Shell?
+                         Actually, let's look at where we are rendering. 
+                         We are inside renderContent(), inside activeTab === 'project'.
+                         
+                         If we want this "Project Name" to be in the "Canvas Header", we might need to place it 
+                         where the tabs [Canvas] [Files] are usually located if they exist, or just at the top left of this container.
+                         
+                         Let's put it absolutely at top-left of the content area for now, assuming standard layout.
+                     */}
+                     <div className="absolute top-4 left-4 pointer-events-auto bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 shadow-sm z-50">
+                        <ProjectHeader 
+                            project={projectInfo}
+                            onRename={handleRenameProject}
+                        />
+                     </div>
                 </div>
             )}
             
-            <div className="relative w-full h-full pt-[48px]">
+            <div className="relative w-full h-full pt-0">
                 {/* Canvas is ALWAYS rendered underneath */}
                 <FlowCanvas 
                     events={activePageId === 'p1' ? events : []} 
@@ -2037,6 +2117,17 @@ export default function Home() {
                     onFileDrop={(files) => setUploadedFiles(files)} 
                     onFileDelete={(id) => setUploadedFiles(prev => prev.filter(f => f.id !== id))}
                 />
+
+                {/* Bottom Page Nav */}
+                <div className="absolute bottom-0 left-0 right-0 z-40">
+                    <PageBottomNav 
+                        pages={pages}
+                        activePageId={activePageId}
+                        onSwitch={setActivePageId}
+                        onAdd={handleAddPage}
+                        onRenameTab={handleRenameTab}
+                    />
+                </div>
 
                 {/* Files Overlay Panel - Absolute positioned, not replacing canvas */}
                 {viewMode === 'files' && (

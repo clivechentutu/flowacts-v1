@@ -1,0 +1,485 @@
+# PageTabNav — Replit Instruction v2 (Revised Hierarchy)
+
+> **Key Change from v1:** Page tabs should NOT be at the top-left.
+> The top-left is reserved for **Project Name**. Page navigation stays at the **bottom** of Canvas, upgraded with semantic labels.
+> Do NOT change anything else in Canvas or Chat.
+
+---
+
+## Information Architecture
+
+```
+Project (top-level)
+  └── Page 1: Signup Flow
+  └── Page 2: Pricing Compare
+  └── Page 3: Features Audit
+```
+
+**The user must always see which Project they are in (top) and which Page they are on (bottom).**
+
+---
+
+## Part A: Project Name (Top-Left Corner)
+
+### What to Change
+
+**Find:** The current top-left area of the Canvas panel (where "Page 1" or page tabs currently appear).
+
+**Replace with:** A **Project Name** display — AI-generated from the first chat message, user-editable.
+
+### Project Name Generation Rules
+
+The Project Name is extracted from the user's **first chat message** in a session. It describes the overall analysis goal.
+
+**Format:** `[Target] + [Goal]` — max **28 characters**
+
+| User's First Chat Message | Generated Project Name |
+|--------------------------|----------------------|
+| "Analyze the signup flow of notion.so" | `Notion Signup Analysis` |
+| "Compare Notion pricing with Slack" | `Notion vs Slack Pricing` |
+| "Help me audit competitor onboarding" | `Competitor Onboarding` |
+| "Check mobile UX of stripe.com" | `Stripe Mobile UX` |
+
+### Rules
+
+1. **Extract the target** — what site/product is being analyzed
+2. **Extract the goal** — what kind of analysis (audit, compare, check)
+3. **Combine as `[Target] [Goal]`** — 2-4 words
+4. **Max 28 characters** — truncate with ellipsis if longer
+5. **Title Case**
+6. **Fallback:** `Untitled Project`
+
+### Project Name Visual Design
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ 🕵️ Notion Signup Analysis              [Canvas] [Files] │
+│    ↑ icon    ↑ project name (editable)                   │
+└──────────────────────────────────────────────────────────┘
+```
+
+| Property | Value |
+|----------|-------|
+| Icon | 🕵️ (fixed — represents the Scout agent starting the project) |
+| Font | `text-sm font-semibold text-foreground` |
+| Max chars | 28 |
+| Overflow | `truncate` (ellipsis) |
+| Edit trigger | **Double-click** to enter inline edit mode |
+| Edit confirm | **Enter** to save, **Escape** to cancel |
+| Hover hint | Show subtle pencil icon `✏️` on hover |
+| Position | Left side of the Canvas header bar, before [Canvas][Files] tabs |
+
+### Project Name Data Model
+
+```ts
+interface ProjectInfo {
+  id: string;
+  icon: string;           // "🕵️" default
+  name: string;           // max 28 chars, AI-generated
+  isEditing: boolean;     // inline edit state
+}
+```
+
+---
+
+## Part B: Page Navigation (Bottom of Canvas)
+
+### What to Change
+
+**Keep** the page navigation at the **bottom** of the Canvas area (same position as the original `Page 1 < >`), but upgrade it with semantic labels.
+
+### New Bottom Page Nav Design
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│                  Canvas Content Area                     │
+│                                                          │
+├──────────────────────────────────────────────────────────┤
+│  ←  🔍 Signup Flow (3/5)  →                        [+]  │
+│      ↑icon  ↑title        ↑progress     ↑add page       │
+└──────────────────────────────────────────────────────────┘
+```
+
+### Layout Anatomy
+
+The bottom nav bar is a **single row** with these elements:
+
+1. **Left arrow `←`** — go to previous page (disabled/hidden if on first page)
+2. **Current page indicator:** `icon + title + (completedSteps/totalSteps)`
+3. **Right arrow `→`** — go to next page (disabled/hidden if on last page)
+4. **[+] button** — add new page (right-aligned)
+
+### Why This Design
+
+- Keeps the familiar `< Page >` navigation pattern from the original
+- Adds semantic meaning (icon + title instead of "Page 1")
+- Shows progress inline
+- Users immediately understand: "I'm on page X of Y, and this page is about [topic]"
+- The Project name at the top provides the overall context
+
+### Page Title Generation Rules
+
+Same rules as v1 — each page title is auto-generated from the user's chat input when a new task begins.
+
+**Format:** `[Object] + [Action]` — max **18 characters**
+
+| User Chat Input | Generated Page Title |
+|----------------|---------------------|
+| "Analyze the signup flow of notion.so" | `Signup Flow` |
+| "Compare Notion pricing with Slack" | `Pricing Compare` |
+| "Check mobile responsiveness" | `Mobile Check` |
+| "Audit the checkout process" | `Checkout Audit` |
+
+**Rules:**
+1. Extract the core object — what is being analyzed
+2. Extract the action type — what kind of analysis
+3. Combine as `[Object] [Action]` — 2-3 words max
+4. Strip the target site name (already shown in Project Name)
+5. Title Case
+6. Fallback: `Task 1`, `Task 2`, etc.
+
+### User Can Edit Page Title
+
+- **Double-click** on the page title in the bottom nav to edit
+- Press **Enter** to confirm, **Escape** to cancel
+- Max 18 characters
+- Show pencil icon on hover
+
+### Page Icon Rules
+
+| Keywords in user input | Icon |
+|----------------------|------|
+| analyze, audit, check, review, inspect | 🔍 |
+| compare, vs, versus, difference, benchmark | ⚖️ |
+| pricing, price, cost, plan, subscription | 💰 |
+| signup, register, onboard, login, auth | 📝 |
+| mobile, responsive, phone, tablet | 📱 |
+| landing, homepage, hero, above the fold | 🏠 |
+| *default / no match* | 📋 |
+
+### Bottom Nav Visual Design
+
+| Property | Value |
+|----------|-------|
+| Height | `40px` |
+| Background | `bg-background/80 backdrop-blur-sm` |
+| Border | `border-t border-border` |
+| Position | Bottom of Canvas panel, fixed |
+| Arrow buttons | `w-8 h-8 rounded hover:bg-muted text-muted-foreground` |
+| Arrow disabled | `opacity-30 cursor-not-allowed` |
+| Title text | `text-sm font-medium text-foreground` |
+| Progress text | `text-xs text-muted-foreground ml-1` |
+| [+] button | `w-8 h-8 rounded hover:bg-muted text-muted-foreground` right-aligned |
+
+### Page Counter (Optional Visual Cue)
+
+When there are multiple pages, show a subtle page indicator below the title:
+
+```
+←  🔍 Signup Flow (3/5)  →
+         ● ○ ○                 ← page dots (if 2-6 pages)
+```
+
+- If 2-6 pages: show dots (filled = current page)
+- If 7+ pages: show text `"2 of 8"` instead of dots
+- If only 1 page: hide dots entirely
+
+---
+
+## Part C: Data Model
+
+```ts
+interface PageTab {
+  id: string;
+  icon: string;           // emoji, auto-assigned
+  title: string;          // max 18 chars, AI-generated
+  completedSteps: number; // for progress display
+  totalSteps: number;     // for progress display
+  isActive: boolean;      // currently selected
+  status: "idle" | "running" | "completed";
+}
+```
+
+---
+
+## Part D: Reference Implementation
+
+### ProjectHeader Component
+
+```jsx
+function ProjectHeader({ project, onRename }) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editValue, setEditValue] = React.useState(project.name);
+
+  const handleConfirm = () => {
+    if (editValue.trim()) {
+      onRename(editValue.trim().slice(0, 28));
+    }
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2">
+      <span className="text-base">{project.icon}</span>
+      {isEditing ? (
+        <input
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value.slice(0, 28))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleConfirm();
+            if (e.key === "Escape") setIsEditing(false);
+          }}
+          onBlur={handleConfirm}
+          autoFocus
+          className="bg-transparent border-b border-primary
+            outline-none text-sm font-semibold text-foreground"
+          maxLength={28}
+        />
+      ) : (
+        <span
+          className="text-sm font-semibold text-foreground
+            truncate cursor-pointer group relative"
+          onDoubleClick={() => {
+            setIsEditing(true);
+            setEditValue(project.name);
+          }}
+        >
+          {project.name}
+          <span className="opacity-0 group-hover:opacity-100
+            ml-1 text-muted-foreground text-xs transition-opacity">
+            ✏️
+          </span>
+        </span>
+      )}
+    </div>
+  );
+}
+```
+
+### PageBottomNav Component
+
+```jsx
+function PageBottomNav({
+  pages,
+  activePageId,
+  onPrev,
+  onNext,
+  onAdd,
+  onRenameTab
+}) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editValue, setEditValue] = React.useState("");
+
+  const currentIndex = pages.findIndex((p) => p.id === activePageId);
+  const currentPage = pages[currentIndex];
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < pages.length - 1;
+
+  const handleConfirm = () => {
+    if (editValue.trim()) {
+      onRenameTab(currentPage.id, editValue.trim().slice(0, 18));
+    }
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="flex items-center justify-between px-3 py-2
+      border-t border-border bg-background/80 backdrop-blur-sm">
+      {/* Left: navigation arrows + current page */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onPrev}
+          disabled={!hasPrev}
+          className={`w-8 h-8 flex items-center justify-center
+            rounded hover:bg-muted text-muted-foreground
+            ${!hasPrev ? "opacity-30 cursor-not-allowed" : ""}`}
+        >
+          ←
+        </button>
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-base">{currentPage.icon}</span>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) =>
+                setEditValue(e.target.value.slice(0, 18))
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirm();
+                if (e.key === "Escape") setIsEditing(false);
+              }}
+              onBlur={handleConfirm}
+              autoFocus
+              className="bg-transparent border-b border-primary
+                outline-none text-sm font-medium text-foreground"
+              maxLength={18}
+            />
+          ) : (
+            <span
+              className="text-sm font-medium text-foreground
+                cursor-pointer group relative"
+              onDoubleClick={() => {
+                setIsEditing(true);
+                setEditValue(currentPage.title);
+              }}
+            >
+              {currentPage.title}
+              <span className="opacity-0 group-hover:opacity-100
+                ml-1 text-muted-foreground text-xs
+                transition-opacity">
+                ✏️
+              </span>
+            </span>
+          )}
+          {currentPage.totalSteps > 0 && (
+            <span className="text-xs text-muted-foreground">
+              ({currentPage.completedSteps}/{currentPage.totalSteps})
+            </span>
+          )}
+        </div>
+
+        <button
+          onClick={onNext}
+          disabled={!hasNext}
+          className={`w-8 h-8 flex items-center justify-center
+            rounded hover:bg-muted text-muted-foreground
+            ${!hasNext ? "opacity-30 cursor-not-allowed" : ""}`}
+        >
+          →
+        </button>
+      </div>
+
+      {/* Page dots (if 2-6 pages) */}
+      {pages.length > 1 && pages.length <= 6 && (
+        <div className="flex gap-1">
+          {pages.map((page, i) => (
+            <span
+              key={page.id}
+              className={`w-1.5 h-1.5 rounded-full ${
+                i === currentIndex ? "bg-primary" : "bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+      {pages.length > 6 && (
+        <span className="text-xs text-muted-foreground">
+          {currentIndex + 1} of {pages.length}
+        </span>
+      )}
+
+      {/* Right: add page button */}
+      <button
+        onClick={onAdd}
+        className="w-8 h-8 flex items-center justify-center
+          rounded hover:bg-muted text-muted-foreground"
+        title="New task"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+```
+
+---
+
+## Part E: Mock Data for Demo
+
+```js
+const DEMO_PROJECT = {
+  id: "proj1",
+  icon: "🕵️",
+  name: "Notion Signup Analysis"
+};
+
+const DEMO_PAGES = [
+  {
+    id: "p1",
+    icon: "🔍",
+    title: "Signup Flow",
+    completedSteps: 4,
+    totalSteps: 5,
+    status: "completed"
+  },
+  {
+    id: "p2",
+    icon: "⚖️",
+    title: "Pricing Compare",
+    completedSteps: 2,
+    totalSteps: 5,
+    status: "running"
+  },
+  {
+    id: "p3",
+    icon: "📋",
+    title: "Features Audit",
+    completedSteps: 0,
+    totalSteps: 0,
+    status: "idle"
+  }
+];
+```
+
+---
+
+## Part F: What NOT to Do
+
+- Do NOT put page tabs at the top-left — that area is for Project Name
+- Do NOT remove the existing page switching logic — just upgrade the UI
+- Do NOT change the Canvas content area
+- Do NOT change the Chat panel
+- Do NOT change the [Canvas][Files] toggle tabs
+- Do NOT add any new card types or connectors in this step
+- Do NOT make pages draggable/reorderable
+
+---
+
+## Part G: Acceptance Criteria
+
+After implementation:
+
+1. ✅ **Top-left** shows Project Name with 🕵️ icon ("Notion Signup Analysis")
+2. ✅ Double-click Project Name to edit inline (max 28 chars)
+3. ✅ **Bottom of Canvas** shows page nav: `← 🔍 Signup Flow (3/5) →`
+4. ✅ Left/right arrows navigate between pages
+5. ✅ Double-click page title to edit inline (max 18 chars)
+6. ✅ Page dots show below nav when 2-6 pages exist
+7. ✅ [+] button at the right creates a new page
+8. ✅ Original "Page 1 < >" is replaced with semantic version
+9. ✅ Dark theme styling consistent with the rest of the app
+10. ✅ Clear visual hierarchy: Project (top) → Page (bottom)
+
+---
+
+## Visual Summary: Before vs After
+
+### Before (current)
+```
+┌─ Signup Flow | Pricing Compare | Task 4 | ... [+] ──────┐
+│                                                          │
+│                  Canvas Content                          │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+### After (this instruction)
+```
+┌─ 🕵️ Notion Signup Analysis              [Canvas][Files] ─┐
+│                                                           │
+│                  Canvas Content                           │
+│                                                           │
+├───────────────────────────────────────────────────────────┤
+│  ←  🔍 Signup Flow (4/5)  →       ● ○ ○            [+]  │
+└───────────────────────────────────────────────────────────┘
+```
+
+---
+
+*Document updated: 2026-02-06 — v2 with corrected hierarchy*
+*Scope: Project Name (top) + Page Nav (bottom) — single focused optimization*
+*Next step: After this works well, proceed to ScreenshotCard optimization*
