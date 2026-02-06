@@ -7,18 +7,34 @@ import ecommerceProductPage from '@assets/generated_images/ecommerce_product_pag
 
 export type EventType = 'action' | 'insight' | 'alert' | 'user' | 'ai' | 'file';
 
+export type AgentRole = 'scout' | 'capturer' | 'analyst' | 'comparator' | 'reporter';
+
+export interface ThoughtStep {
+  label: string;
+  status: 'pending' | 'active' | 'done';
+}
+
+export interface ThoughtProcess {
+  steps: ThoughtStep[];
+}
+
 export interface StoryEvent {
   id: string;
   type: EventType;
+  role?: 'user' | 'ai'; // Explicit role for chat messages
+  agentRole?: AgentRole;
   title?: string;
   content: string; // Text content or Image URL
-  thinking?: string; // AI internal thought process
-  actions?: string[]; // List of actions taken by AI
+  thinking?: string; // Legacy simple string thinking
+  thoughtProcess?: ThoughtProcess; // New structured thinking
+  actions?: string[]; // Legacy List of actions taken by AI
+  phase?: string; // For phase dividers
   image?: string; // For action cards
   timestamp: string;
   metadata?: Record<string, string>;
   parentId?: string; // For branching logic
   fileType?: string; // For file cards
+  canvasLinkId?: string;
 }
 
 export interface Scenario {
@@ -56,41 +72,77 @@ export const SCENARIOS: Scenario[] = [
     thumbnail: '/thumbnails/dashboard.jpg',
     events: [
       {
-        id: 'evt-1',
-        type: 'user',
-        content: 'Analyze the new user signup and onboarding flow for competitor.com.',
+        id: "m1",
+        type: "ai",
+        role: "ai",
+        agentRole: "scout",
+        content: "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
         timestamp: '10:00 AM'
       },
       {
-        id: 'evt-2',
-        type: 'ai',
-        thinking: 'I need to start a fresh session to accurately simulate a new user experience. I will use a clean browser context.',
-        actions: ['Initializing virtual browser...', 'Clearing local storage & cookies'],
-        content: 'Understood. Simulating a new user signing up for competitor.com...',
-        timestamp: '10:00 AM'
+        id: "m2",
+        type: "user",
+        role: "user",
+        content: "Analyze the new user signup and onboarding flow for competitor.com.",
+        timestamp: '10:01 AM'
       },
       {
-        id: 'evt-3',
-        type: 'action',
-        title: '1. Visited Homepage',
-        content: 'Navigated to https://competitor.com',
-        image: modernSaasHomepage,
-        timestamp: '10:01 AM',
-        metadata: { 'Load Time': '0.8s', 'Status': '200 OK' }
+        id: "m3",
+        type: "ai",
+        role: "ai",
+        agentRole: "scout",
+        content: "Understood. Simulating a new user signing up for competitor.com...",
+        phase: "Browsing competitor.com",
+        thoughtProcess: {
+          steps: [
+            { label: "Preparing to visit competitor.com...", status: "done" },
+            { label: "Simulating a first-time visitor", status: "done" },
+          ],
+        },
+        timestamp: '10:01 AM'
       },
       {
-        id: 'evt-4',
-        type: 'user',
-        content: 'Okay, find their pricing and then sign up for the free trial.',
+        id: "m4",
+        type: "ai",
+        role: "ai",
+        agentRole: "scout",
+        content: "Landed on the homepage. I can see a navigation bar with Pricing, Features, and Sign Up links.",
+        phase: "Browsing competitor.com",
         timestamp: '10:02 AM'
       },
       {
-        id: 'evt-5',
-        type: 'ai',
-        thinking: 'Users usually look for pricing in the top navigation bar or footer. I will scan the homepage for these patterns.',
-        actions: ['Scanning header menu...', 'Detected "Pricing" link', 'Navigating to /pricing'],
-        content: 'Searching for pricing... Found it. Now proceeding to sign up...',
-        timestamp: '10:02 AM'
+        id: "m5",
+        type: "user",
+        role: "user",
+        content: "Okay, find their pricing and then sign up for the free trial.",
+        phase: "Browsing competitor.com",
+        timestamp: '10:03 AM'
+      },
+      {
+        id: "m6",
+        type: "ai",
+        role: "ai",
+        agentRole: "scout",
+        content: "Searching for pricing... Found it. Heading to the pricing page.",
+        phase: "Analyzing Pricing",
+        thoughtProcess: {
+          steps: [
+            { label: "Looking through the navigation...", status: "done" },
+            { label: "Found the pricing page", status: "done" },
+            { label: "Heading to pricing...", status: "done" },
+          ],
+        },
+        timestamp: '10:03 AM'
+      },
+      {
+        id: "m7",
+        type: "ai",
+        role: "ai",
+        agentRole: "analyst",
+        content: "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\nThe free trial requires a credit card — this is a potential friction point for new users.",
+        phase: "Analyzing Pricing",
+        canvasLinkId: "card-pricing",
+        timestamp: '10:04 AM'
       },
       {
         id: 'evt-6',
@@ -103,176 +155,21 @@ export const SCENARIOS: Scenario[] = [
         parentId: 'evt-3'
       },
       {
-        id: 'evt-8',
-        type: 'action',
-        title: '3. Started Signup Process',
-        content: 'Clicked "Start Free Trial"',
-        image: saasSignupForm,
-        timestamp: '10:03 AM',
-        parentId: 'evt-6'
-      },
-      {
-        id: 'evt-9',
-        type: 'user',
-        content: 'What happens if I enter a weak password?',
-        timestamp: '10:04 AM'
-      },
-      {
-        id: 'evt-10',
-        type: 'ai',
-        thinking: 'I need to test the password strength validation logic. I will try a common weak password to trigger the validation error.',
-        actions: ['Typing "123456" into password field', 'Checking for validation messages'],
-        content: 'Good question. Testing with a weak password... The system provided an inline validation error.',
-        timestamp: '10:04 AM'
-      },
-      {
-        id: 'evt-12',
-        type: 'user',
-        content: 'Okay, use a strong password and complete the onboarding.',
+        id: "m8",
+        type: "ai",
+        role: "ai",
+        agentRole: "scout",
+        content: "Now proceeding to sign up for the free trial...",
+        phase: "Signing Up",
+        thoughtProcess: {
+          steps: [
+            { label: "Clicking 'Start Free Trial'...", status: "done" },
+            { label: "Filling in registration form...", status: "active" },
+            { label: "Checking for friction points", status: "pending" },
+          ],
+        },
         timestamp: '10:05 AM'
       },
-      {
-        id: 'evt-13',
-        type: 'action',
-        title: '4. Dashboard Loaded',
-        content: 'Signup successful. Redirected to main dashboard.',
-        image: saasDashboard,
-        timestamp: '10:05 AM',
-        metadata: { 'Redirect': '302 Found', 'TTFB': '1.2s' },
-        parentId: 'evt-8'
-      },
-      // BRANCHING SCENARIO EVENTS
-      {
-        id: 'evt-branch-1',
-        type: 'user',
-        content: 'Wait, go back to pricing. What if I click the Enterprise Contact button instead?',
-        timestamp: '10:06 AM'
-      },
-      {
-        id: 'evt-branch-2',
-        type: 'ai',
-        content: 'Checking the Enterprise flow...',
-        timestamp: '10:06 AM'
-      },
-      {
-        id: 'evt-branch-3',
-        type: 'action',
-        title: '3b. Enterprise Contact',
-        content: 'Clicked "Contact Sales". Loaded HubSpot form.',
-        image: modernSaasHomepage, // Reusing generic image for demo
-        timestamp: '10:07 AM',
-        metadata: { 'Form Fields': '7', 'Type': 'HubSpot Embed' },
-        parentId: 'evt-6' // BRANCHES FROM PRICING (evt-6)
-      },
-      {
-        id: 'evt-branch-4',
-        type: 'user',
-        content: 'Fill out the form with test data: "John Doe", "Acme Corp", "john@acme.com".',
-        timestamp: '10:08 AM'
-      },
-      {
-        id: 'evt-branch-5',
-        type: 'ai',
-        content: 'Filling form... Submitting...',
-        timestamp: '10:08 AM'
-      },
-      {
-        id: 'evt-branch-6',
-        type: 'action',
-        title: '3c. Form Submitted',
-        content: 'Success message displayed. "Thanks for contacting us!"',
-        image: saasSignupForm, // Reusing generic
-        timestamp: '10:09 AM',
-        metadata: { 'Response': '200 OK', 'Lead ID': '12345' },
-        parentId: 'evt-branch-3'
-      },
-      {
-        id: 'evt-branch-7',
-        type: 'user',
-        content: 'Did I get a confirmation email?',
-        timestamp: '10:10 AM'
-      },
-      {
-        id: 'evt-branch-8',
-        type: 'ai',
-        content: 'Checking inbox... Yes, email received.',
-        timestamp: '10:10 AM'
-      },
-      {
-        id: 'evt-branch-9',
-        type: 'action',
-        title: '3d. Email Received',
-        content: 'Subject: "Welcome to Enterprise Sales". Contains calendar link.',
-        image: saasDashboard, // Reusing generic
-        timestamp: '10:11 AM',
-        metadata: { 'Sender': 'sales@competitor.com', 'DKIM': 'Pass' },
-        parentId: 'evt-branch-6'
-      },
-      // EXTENDED MAIN FLOW
-      {
-        id: 'evt-14',
-        type: 'user',
-        content: 'Now let\'s explore the settings and setup a profile.',
-        timestamp: '10:12 AM'
-      },
-      {
-        id: 'evt-15',
-        type: 'ai',
-        content: 'Navigating to settings page...',
-        timestamp: '10:12 AM'
-      },
-      {
-        id: 'evt-16',
-        type: 'action',
-        title: '5. Profile Settings',
-        content: 'Opened settings page. "Profile" tab active.',
-        image: saasDashboard,
-        timestamp: '10:12 AM',
-        metadata: { 'Page': '/settings/profile', 'Load': '0.5s' },
-        parentId: 'evt-13' // Chains from Dashboard Loaded
-      },
-      {
-        id: 'evt-17',
-        type: 'user',
-        content: 'Upload a profile picture.',
-        timestamp: '10:13 AM'
-      },
-      {
-        id: 'evt-18',
-        type: 'action',
-        title: '6. Avatar Uploaded',
-        content: 'File "avatar.jpg" uploaded successfully.',
-        image: saasDashboard,
-        timestamp: '10:13 AM',
-        metadata: { 'Size': '240KB', 'Type': 'image/jpeg' },
-        parentId: 'evt-16'
-      },
-      {
-        id: 'evt-19',
-        type: 'user',
-        content: 'Invite a team member: "jane@acme.com".',
-        timestamp: '10:14 AM'
-      },
-      {
-        id: 'evt-20',
-        type: 'action',
-        title: '7. Team Invitation',
-        content: 'Invitation email sent to jane@acme.com',
-        image: saasDashboard,
-        timestamp: '10:14 AM',
-        metadata: { 'Role': 'Editor', 'Status': 'Pending' },
-        parentId: 'evt-18'
-      },
-      {
-         id: 'evt-21',
-         type: 'action',
-         title: '8. Session Ended',
-         content: 'User logged out.',
-         image: modernSaasHomepage,
-         timestamp: '10:15 AM',
-         metadata: { 'Duration': '15m 20s' },
-         parentId: 'evt-20'
-      }
     ]
   },
   {

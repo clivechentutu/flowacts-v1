@@ -1,0 +1,366 @@
+# AI Chat Conversation Experience Upgrade — Replit Instruction
+
+> Upgrade the AI Chat conversation flow: add Agent role labels, simplify Thought Process text, improve the greeting message, and add phase dividers between task stages. This is a **demo-level UI change** — update the mock data and rendering, no backend changes needed.
+
+---
+
+## Current State
+
+The AI Chat panel currently shows:
+- A generic AI avatar for all messages (no Agent role distinction)
+- "Thought Process" sections with technical language ("Initializing virtual browser...", "Clearing local storage & cookies")
+- A generic greeting: "Hello! I'm ready to help you analyze your user experience. What shall we test today?"
+- A flat linear conversation with no phase/stage separation
+
+---
+
+## What to Change
+
+Four changes in one pass, all within the Chat panel:
+
+1. **Agent role labels** on AI messages
+2. **Thought Process** text simplification + label rename
+3. **Greeting message** update
+4. **Phase divider lines** between task stages
+
+---
+
+## Change 1: Agent Role Labels
+
+### Before
+```
+🤖 Understood. Simulating a new user signing up for competitor.com...
+```
+
+### After
+```
+🕵️ Scout
+Understood. Simulating a new user signing up for competitor.com...
+```
+
+### Rules
+
+Each AI message should display an Agent role label above the message text:
+
+| Agent | Icon | Color | When to show |
+|-------|------|-------|-------------|
+| Scout | 🕵️ | `text-blue-400` | Browsing, navigating, visiting URLs |
+| Capturer | 📸 | `text-purple-400` | Taking screenshots, capturing flows |
+| Analyst | 📊 | `text-orange-400` | Analyzing data, finding insights |
+| Comparator | ⚖️ | `text-green-400` | Comparing products, benchmarking |
+| Reporter | 📝 | `text-pink-400` | Generating reports, summarizing |
+
+### Agent Label Component
+
+```jsx
+function AgentLabel({ role }) {
+  const agents = {
+    scout:      { icon: "🕵️", name: "Scout",      color: "text-blue-400" },
+    capturer:   { icon: "📸", name: "Capturer",   color: "text-purple-400" },
+    analyst:    { icon: "📊", name: "Analyst",    color: "text-orange-400" },
+    comparator: { icon: "⚖️", name: "Comparator", color: "text-green-400" },
+    reporter:   { icon: "📝", name: "Reporter",   color: "text-pink-400" },
+  };
+  const agent = agents[role] || agents.scout;
+
+  return (
+    <div className={`flex items-center gap-1.5 mb-1 ${agent.color}`}>
+      <span className="text-sm">{agent.icon}</span>
+      <span className="text-xs font-semibold">{agent.name}</span>
+    </div>
+  );
+}
+```
+
+### Data Model Update
+
+Add `agentRole` field to AI messages:
+
+```ts
+interface ChatMessage {
+  id: string;
+  role: "user" | "ai";
+  agentRole?: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  content: string;
+  thoughtProcess?: ThoughtProcess;
+  phase?: string;           // for phase dividers
+  canvasLinkId?: string;    // for future Chat-Canvas linking
+}
+```
+
+---
+
+## Change 2: Thought Process Simplification
+
+### Before
+```
+ⓘ Thought Process ∨
+┌─────────────────────────────────────────────┐
+│ I need to start a fresh session to          │
+│ accurately simulate a new user experience.  │
+│ I will use a clean browser context.         │
+│                                             │
+│ ● Initializing virtual browser...           │
+│ ● Clearing local storage & cookies          │
+└─────────────────────────────────────────────┘
+```
+
+### After
+```
+What's happening ∨
+┌─────────────────────────────────────────────┐
+│ • Preparing to visit competitor.com...      │
+│ • Simulating a first-time visitor           │
+└─────────────────────────────────────────────┘
+```
+
+### Changes
+1. **Rename label**: `"Thought Process"` → `"What's happening"`
+2. **Remove the italic paragraph** (the "I need to start a fresh session..." text) — delete entirely
+3. **Rewrite step items** to user-friendly language:
+
+| Old (technical) | New (user-friendly) |
+|---|---|
+| Initializing virtual browser... | Preparing to visit competitor.com... |
+| Clearing local storage & cookies | Simulating a first-time visitor |
+| Scanning header menu... | Looking through the navigation... |
+| Detected "Pricing" link | Found the pricing page |
+| Navigating to /pricing | Heading to pricing... |
+
+### ThoughtProcess Component Update
+
+```jsx
+function ThoughtProcess({ steps, isExpanded, onToggle }) {
+  return (
+    <div className="mt-2 mb-3">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-1.5 text-xs
+          text-muted-foreground hover:text-foreground
+          transition-colors"
+      >
+        <span className="text-muted-foreground/60">
+          {isExpanded ? "▾" : "▸"}
+        </span>
+        <span>What's happening</span>
+      </button>
+
+      {isExpanded && (
+        <div className="mt-2 ml-3 pl-3 border-l-2
+          border-border/50 space-y-1.5">
+          {steps.map((step, i) => (
+            <div key={i} className="flex items-center gap-2
+              text-xs text-muted-foreground">
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                step.status === "done"
+                  ? "bg-green-400"
+                  : step.status === "active"
+                  ? "bg-blue-400 animate-pulse"
+                  : "bg-muted-foreground/30"
+              }`} />
+              <span>{step.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## Change 3: Greeting Message Update
+
+### Before
+```
+🤖 Hello! I'm ready to help you analyze your user experience.
+   What shall we test today?
+```
+
+### After
+```
+🕵️ Scout
+Your UX analysis team is ready.
+Paste a URL or describe a user flow to get started.
+```
+
+Just update the greeting text in the mock data. The greeting should come from Scout (the first Agent users interact with).
+
+---
+
+## Change 4: Phase Divider Lines
+
+### What to Add
+
+Between different task stages, insert a thin horizontal divider with a phase label:
+
+```
+──── Browsing competitor.com ────────────
+
+🕵️ Scout
+Visiting competitor.com as a first-time user...
+
+──── Analyzing Pricing ─────────────────
+
+🕵️ Scout
+Heading to the pricing page...
+
+📊 Analyst
+Found 3 pricing tiers...
+```
+
+### PhaseDivider Component
+
+```jsx
+function PhaseDivider({ label }) {
+  return (
+    <div className="flex items-center gap-3 my-4 px-2">
+      <div className="flex-1 h-px bg-border/50" />
+      <span className="text-[10px] font-medium text-muted-foreground/60
+        uppercase tracking-wider whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-border/50" />
+    </div>
+  );
+}
+```
+
+### When to Show
+
+Phase dividers appear when the `phase` field changes between consecutive messages:
+
+```jsx
+// In the message list renderer:
+{messages.map((msg, i) => {
+  const prevMsg = messages[i - 1];
+  const showDivider = msg.phase && msg.phase !== prevMsg?.phase;
+
+  return (
+    <React.Fragment key={msg.id}>
+      {showDivider && <PhaseDivider label={msg.phase} />}
+      <ChatMessageBubble message={msg} />
+    </React.Fragment>
+  );
+})}
+```
+
+---
+
+## Updated Mock Data
+
+Replace the current demo conversation with:
+
+```js
+const DEMO_MESSAGES = [
+  {
+    id: "m1",
+    role: "ai",
+    agentRole: "scout",
+    content: "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
+    phase: null,
+  },
+  {
+    id: "m2",
+    role: "user",
+    content: "Analyze the new user signup and onboarding flow for competitor.com.",
+    phase: null,
+  },
+  {
+    id: "m3",
+    role: "ai",
+    agentRole: "scout",
+    content: "Understood. Simulating a new user signing up for competitor.com...",
+    phase: "Browsing competitor.com",
+    thoughtProcess: {
+      steps: [
+        { label: "Preparing to visit competitor.com...", status: "done" },
+        { label: "Simulating a first-time visitor", status: "done" },
+      ],
+    },
+  },
+  {
+    id: "m4",
+    role: "ai",
+    agentRole: "scout",
+    content: "Landed on the homepage. I can see a navigation bar with Pricing, Features, and Sign Up links.",
+    phase: "Browsing competitor.com",
+  },
+  {
+    id: "m5",
+    role: "user",
+    content: "Okay, find their pricing and then sign up for the free trial.",
+    phase: "Browsing competitor.com",
+  },
+  {
+    id: "m6",
+    role: "ai",
+    agentRole: "scout",
+    content: "Searching for pricing... Found it. Heading to the pricing page.",
+    phase: "Analyzing Pricing",
+    thoughtProcess: {
+      steps: [
+        { label: "Looking through the navigation...", status: "done" },
+        { label: "Found the pricing page", status: "done" },
+        { label: "Heading to pricing...", status: "done" },
+      ],
+    },
+  },
+  {
+    id: "m7",
+    role: "ai",
+    agentRole: "analyst",
+    content: "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\nThe free trial requires a credit card — this is a potential friction point for new users.",
+    phase: "Analyzing Pricing",
+    canvasLinkId: "card-pricing",
+  },
+  {
+    id: "m8",
+    role: "ai",
+    agentRole: "scout",
+    content: "Now proceeding to sign up for the free trial...",
+    phase: "Signing Up",
+    thoughtProcess: {
+      steps: [
+        { label: "Clicking 'Start Free Trial'...", status: "done" },
+        { label: "Filling in registration form...", status: "active" },
+        { label: "Checking for friction points", status: "pending" },
+      ],
+    },
+  },
+];
+```
+
+---
+
+## What NOT to Do
+
+- Do NOT change the Chat input box or toolbar (that's a separate task)
+- Do NOT change the Chat header/title bar (that's a separate task)
+- Do NOT change the Canvas panel
+- Do NOT change the overall Chat layout or positioning
+- Do NOT add real AI functionality — this is mock data only
+- Do NOT remove the expand/collapse behavior of Thought Process
+
+---
+
+## Acceptance Criteria
+
+1. ✅ Each AI message shows an Agent label (`🕵️ Scout`, `📊 Analyst`, etc.) above the message text
+2. ✅ Agent labels use the correct color per role
+3. ✅ "Thought Process" is renamed to "What's happening"
+4. ✅ Thought Process steps use user-friendly language (no "virtual browser", "local storage", etc.)
+5. ✅ The italic explanation paragraph inside Thought Process is removed
+6. ✅ Greeting message reads: "Your UX analysis team is ready. Paste a URL or describe a user flow to get started."
+7. ✅ Phase divider lines appear between different task stages
+8. ✅ Phase dividers are visually subtle (thin line + small uppercase label)
+9. ✅ Dark theme styling consistent with the rest of the app
+10. ✅ Conversation still scrolls and behaves normally
+
+---
+
+*Document: 26-AIChat对话体验优化-Replit指令.md*
+*Scope: Agent role labels + Thought Process simplification + Greeting + Phase dividers*
+*Depends on: Current AI Chat panel implementation*
+*Next step: Doc 27 (Input box context guidance)*

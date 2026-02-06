@@ -1,9 +1,10 @@
-import { StoryEvent } from "@/lib/mock-data";
+import { StoryEvent, ThoughtProcess } from "@/lib/mock-data";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import TextareaAutosize from "react-textarea-autosize";
+import React from "react";
 import { 
   Send, 
   Sparkles, 
@@ -18,8 +19,7 @@ import {
   AtSign,
   ChevronDown,
   ChevronRight,
-  CheckCircle2,
-  Loader2
+  CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -30,42 +30,108 @@ interface ChatPanelProps {
   persona: string;
 }
 
-function AIMessageContent({ msg }: { msg: StoryEvent }) {
-  const [isThinkingOpen, setIsThinkingOpen] = useState(true);
+// Phase Divider Component
+function PhaseDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 my-4 px-2">
+      <div className="flex-1 h-px bg-border/50" />
+      <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-border/50" />
+    </div>
+  );
+}
 
+// Agent Label Component
+function AgentLabel({ role }: { role: string }) {
+  const agents: Record<string, { icon: string; name: string; color: string }> = {
+    scout:      { icon: "🕵️", name: "Scout",      color: "text-blue-400" },
+    capturer:   { icon: "📸", name: "Capturer",   color: "text-purple-400" },
+    analyst:    { icon: "📊", name: "Analyst",    color: "text-orange-400" },
+    comparator: { icon: "⚖️", name: "Comparator", color: "text-green-400" },
+    reporter:   { icon: "📝", name: "Reporter",   color: "text-pink-400" },
+  };
+  const agent = agents[role] || agents.scout;
+
+  return (
+    <div className={`flex items-center gap-1.5 mb-1 ${agent.color}`}>
+      <span className="text-sm">{agent.icon}</span>
+      <span className="text-xs font-semibold">{agent.name}</span>
+    </div>
+  );
+}
+
+// Thought Process Component (Simplified)
+function ThoughtProcessView({ steps }: { steps: NonNullable<ThoughtProcess['steps']> }) {
+    const [isExpanded, setIsExpanded] = useState(true);
+
+    return (
+        <div className="mt-2 mb-3">
+            <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+                <span className="text-muted-foreground/60">
+                    {isExpanded ? "▾" : "▸"}
+                </span>
+                <span>What's happening</span>
+            </button>
+
+            {isExpanded && (
+                <div className="mt-2 ml-3 pl-3 border-l-2 border-border/50 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                    {steps.map((step, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className={cn(
+                                "w-1.5 h-1.5 rounded-full shrink-0",
+                                step.status === "done" ? "bg-green-400" :
+                                step.status === "active" ? "bg-blue-400 animate-pulse" :
+                                "bg-muted-foreground/30"
+                            )} />
+                            <span>{step.label}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+function AIMessageContent({ msg }: { msg: StoryEvent }) {
   if (msg.type !== 'ai') return <>{msg.content}</>;
 
-  const hasThinking = !!msg.thinking;
-  const hasActions = !!msg.actions && msg.actions.length > 0;
-
-  if (!hasThinking && !hasActions) return <>{msg.content}</>;
+  const hasLegacyThinking = !!msg.thinking;
+  const hasLegacyActions = !!msg.actions && msg.actions.length > 0;
+  const hasNewThoughtProcess = !!msg.thoughtProcess;
 
   return (
     <div className="flex flex-col w-full min-w-0">
-      {/* Thinking Section */}
-      {hasThinking && (
+      {/* Agent Role Label */}
+      {msg.agentRole && <AgentLabel role={msg.agentRole} />}
+
+      {/* New Structured Thought Process */}
+      {hasNewThoughtProcess && msg.thoughtProcess && (
+          <ThoughtProcessView steps={msg.thoughtProcess.steps} />
+      )}
+
+      {/* Legacy Thinking Section (Fallback) */}
+      {hasLegacyThinking && !hasNewThoughtProcess && (
          <div className="mb-3">
-             <button 
-                onClick={() => setIsThinkingOpen(!isThinkingOpen)}
-                className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 hover:text-primary/70 transition-colors select-none mb-2 bg-muted/50 px-2 py-1 rounded-md w-fit"
-             >
+             <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 mb-2 bg-muted/50 px-2 py-1 rounded-md w-fit">
                 <Brain className="w-3 h-3" />
-                <span>Thought Process</span>
-                {isThinkingOpen ? <ChevronDown className="w-3 h-3 opacity-50" /> : <ChevronRight className="w-3 h-3 opacity-50" />}
-             </button>
-             
-             {isThinkingOpen && (
-                <div className="pl-3 border-l-2 border-primary/20 ml-1 mb-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <p className="text-xs text-muted-foreground/80 italic leading-relaxed">
-                        {msg.thinking}
-                    </p>
-                </div>
-             )}
+                <span>Legacy Thought Process</span>
+             </div>
+             <div className="pl-3 border-l-2 border-primary/20 ml-1 mb-3">
+                 <p className="text-xs text-muted-foreground/80 italic leading-relaxed">
+                     {msg.thinking}
+                 </p>
+             </div>
          </div>
       )}
       
-      {/* Actions Section */}
-      {hasActions && (
+      {/* Legacy Actions Section (Fallback) */}
+      {hasLegacyActions && !hasNewThoughtProcess && (
          <div className="space-y-1.5 mb-3">
              {msg.actions?.map((action, idx) => (
                  <div key={idx} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/20 px-2.5 py-1.5 rounded-md border border-border/40">
@@ -79,7 +145,7 @@ function AIMessageContent({ msg }: { msg: StoryEvent }) {
       )}
       
       {/* Final Response */}
-      <div className="text-sm leading-relaxed text-foreground">
+      <div className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
           {msg.content}
       </div>
     </div>
@@ -149,44 +215,43 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
       {/* Messages */}
       <ScrollArea className="flex-1 p-6">
         <div className="space-y-6">
-          <div className="flex gap-3">
-             <Avatar className="h-8 w-8 rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0">
-                <AvatarFallback><Sparkles className="w-4 h-4" /></AvatarFallback>
-             </Avatar>
-             <div className="bg-muted p-4 rounded-2xl rounded-tl-none text-sm text-foreground/90 leading-relaxed max-w-[90%]">
-                Hello! I'm ready to help you analyze your user experience. What shall we test today?
-             </div>
-          </div>
+          {events.filter(e => ['user', 'ai'].includes(e.type)).map((msg, i, arr) => {
+            const prevMsg = i > 0 ? arr[i-1] : null;
+            const showDivider = msg.phase && msg.phase !== prevMsg?.phase;
 
-          {events.filter(e => ['user', 'ai'].includes(e.type)).map((msg) => (
-            <div 
-              key={msg.id} 
-              className={cn(
-                "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
-                msg.type === 'user' ? "flex-row-reverse" : "flex-row"
-              )}
-            >
-              <Avatar className={cn(
-                "h-8 w-8 rounded-lg border shrink-0",
-                msg.type === 'user' ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary border-primary/20"
-              )}>
-                {msg.type === 'user' ? (
-                   <AvatarFallback className="bg-primary text-primary-foreground"><User className="w-4 h-4" /></AvatarFallback>
-                ) : (
-                   <AvatarFallback><Sparkles className="w-4 h-4" /></AvatarFallback>
-                )}
-              </Avatar>
-              
-              <div className={cn(
-                "p-4 rounded-2xl text-sm leading-relaxed max-w-[90%] shadow-sm overflow-hidden",
-                msg.type === 'user' 
-                  ? "bg-primary text-primary-foreground rounded-tr-none" 
-                  : "bg-card border border-border rounded-tl-none"
-              )}>
-                <AIMessageContent msg={msg} />
-              </div>
-            </div>
-          ))}
+            return (
+                <React.Fragment key={msg.id}>
+                    {showDivider && <PhaseDivider label={msg.phase!} />}
+                    
+                    <div 
+                      className={cn(
+                        "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
+                        msg.type === 'user' ? "flex-row-reverse" : "flex-row"
+                      )}
+                    >
+                      <Avatar className={cn(
+                        "h-8 w-8 rounded-lg border shrink-0",
+                        msg.type === 'user' ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary border-primary/20"
+                      )}>
+                        {msg.type === 'user' ? (
+                           <AvatarFallback className="bg-primary text-primary-foreground"><User className="w-4 h-4" /></AvatarFallback>
+                        ) : (
+                           <AvatarFallback><Sparkles className="w-4 h-4" /></AvatarFallback>
+                        )}
+                      </Avatar>
+                      
+                      <div className={cn(
+                        "p-4 rounded-2xl text-sm leading-relaxed max-w-[90%] shadow-sm overflow-hidden",
+                        msg.type === 'user' 
+                          ? "bg-primary text-primary-foreground rounded-tr-none" 
+                          : "bg-card border border-border rounded-tl-none"
+                      )}>
+                        <AIMessageContent msg={msg} />
+                      </div>
+                    </div>
+                </React.Fragment>
+            );
+          })}
           
         </div>
       </ScrollArea>
