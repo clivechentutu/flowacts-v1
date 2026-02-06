@@ -683,8 +683,9 @@ function RoleMention({ role }: { role: string }) {
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="inline-flex items-center justify-center -ml-2 first:ml-0 transition-all hover:scale-110 hover:z-10 relative cursor-default">
-            <div className="w-6 h-6 rounded-full ring-2 ring-background overflow-hidden bg-muted">
+          <div className="inline-flex items-center justify-center mr-1.5 transition-all hover:scale-105 relative cursor-default">
+            <span className="text-primary/70 mr-0.5 text-lg font-light leading-none">@</span>
+            <div className="w-6 h-6 rounded-full ring-1 ring-border/50 overflow-hidden bg-muted shadow-sm">
               <img src={roleData.avatar} alt={roleData.name} className="w-full h-full object-cover" />
             </div>
           </div>
@@ -1172,7 +1173,6 @@ export default function Home() {
                   {/* AI Roles Display Area - Positioned absolutely to appear inline */}
                   {activeRoles.length > 0 && (
                      <div className="absolute top-6 left-6 flex items-center pointer-events-none z-10 animate-in fade-in duration-300 select-none">
-                        <span className="text-muted-foreground/60 mr-1.5 text-sm font-medium">@</span>
                         <div className="flex items-center pointer-events-auto">
                             {activeRoles.map(role => <RoleMention key={role} role={role} />)}
                         </div>
@@ -1184,7 +1184,7 @@ export default function Home() {
                     value={homeInput}
                     onChange={handleInputChange}
                     placeholder={activeRoles.length > 0 ? "" : "Enter a URL or describe what you'd like to explore..."}
-                    style={{ textIndent: activeRoles.length > 0 ? `${(activeRoles.length * 18) + 24}px` : '0px' }}
+                    style={{ textIndent: activeRoles.length > 0 ? `${(activeRoles.length * 44) + 24}px` : '0px' }}
                     className={cn(
                         "w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none px-6 py-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium shadow-none ring-0 selection:bg-primary/20",
                     )}
