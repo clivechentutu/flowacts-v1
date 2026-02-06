@@ -177,6 +177,115 @@ export const SCENARIOS: Scenario[] = [
           },
           timestamp: '10:05 AM'
         },
+        // Restoring Canvas Action Events
+        {
+          id: 'evt-3',
+          type: 'action',
+          title: '1. Visited Homepage',
+          content: 'Navigated to https://competitor.com',
+          image: modernSaasHomepage,
+          timestamp: '10:01 AM',
+          metadata: { 'Load Time': '0.8s', 'Status': '200 OK' }
+        },
+        {
+          id: 'evt-6',
+          type: 'action',
+          title: '2. Analyzed Pricing',
+          content: 'Identified 3 tiers. "Pro" plan is highlighted.',
+          image: saasPricingPage,
+          timestamp: '10:02 AM',
+          metadata: { 'Elements': '3 Cards', 'CTA': 'Start Free Trial' },
+          parentId: 'evt-3'
+        },
+        {
+          id: 'evt-8',
+          type: 'action',
+          title: '3. Started Signup Process',
+          content: 'Clicked "Start Free Trial"',
+          image: saasSignupForm,
+          timestamp: '10:03 AM',
+          parentId: 'evt-6'
+        },
+        {
+          id: 'evt-13',
+          type: 'action',
+          title: '4. Dashboard Loaded',
+          content: 'Signup successful. Redirected to main dashboard.',
+          image: saasDashboard,
+          timestamp: '10:05 AM',
+          metadata: { 'Redirect': '302 Found', 'TTFB': '1.2s' },
+          parentId: 'evt-8'
+        },
+        {
+          id: 'evt-branch-3',
+          type: 'action',
+          title: '3b. Enterprise Contact',
+          content: 'Clicked "Contact Sales". Loaded HubSpot form.',
+          image: modernSaasHomepage,
+          timestamp: '10:07 AM',
+          metadata: { 'Form Fields': '7', 'Type': 'HubSpot Embed' },
+          parentId: 'evt-6'
+        },
+        {
+          id: 'evt-branch-6',
+          type: 'action',
+          title: '3c. Form Submitted',
+          content: 'Success message displayed. "Thanks for contacting us!"',
+          image: saasSignupForm,
+          timestamp: '10:09 AM',
+          metadata: { 'Response': '200 OK', 'Lead ID': '12345' },
+          parentId: 'evt-branch-3'
+        },
+        {
+          id: 'evt-branch-9',
+          type: 'action',
+          title: '3d. Email Received',
+          content: 'Subject: "Welcome to Enterprise Sales". Contains calendar link.',
+          image: saasDashboard,
+          timestamp: '10:11 AM',
+          metadata: { 'Sender': 'sales@competitor.com', 'DKIM': 'Pass' },
+          parentId: 'evt-branch-6'
+        },
+        {
+          id: 'evt-16',
+          type: 'action',
+          title: '5. Profile Settings',
+          content: 'Opened settings page. "Profile" tab active.',
+          image: saasDashboard,
+          timestamp: '10:12 AM',
+          metadata: { 'Page': '/settings/profile', 'Load': '0.5s' },
+          parentId: 'evt-13'
+        },
+        {
+          id: 'evt-18',
+          type: 'action',
+          title: '6. Avatar Uploaded',
+          content: 'File "avatar.jpg" uploaded successfully.',
+          image: saasDashboard,
+          timestamp: '10:13 AM',
+          metadata: { 'Size': '240KB', 'Type': 'image/jpeg' },
+          parentId: 'evt-16'
+        },
+        {
+          id: 'evt-20',
+          type: 'action',
+          title: '7. Team Invitation',
+          content: 'Invitation email sent to jane@acme.com',
+          image: saasDashboard,
+          timestamp: '10:14 AM',
+          metadata: { 'Role': 'Editor', 'Status': 'Pending' },
+          parentId: 'evt-18'
+        },
+        {
+           id: 'evt-21',
+           type: 'action',
+           title: '8. Session Ended',
+           content: 'User logged out.',
+           image: modernSaasHomepage,
+           timestamp: '10:15 AM',
+           metadata: { 'Duration': '15m 20s' },
+           parentId: 'evt-20'
+        }
     ]
   },
   {
