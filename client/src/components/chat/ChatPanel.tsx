@@ -98,17 +98,86 @@ function ThoughtProcessView({ steps }: { steps: NonNullable<ThoughtProcess['step
 }
 
 
-function AIMessageContent({ msg }: { msg: StoryEvent }) {
+// Message Actions Component
+function MessageActions({ messageId, role }: { messageId: string, role: 'user' | 'ai' }) {
+  const actions = role === "ai"
+    ? [
+        { icon: "📋", label: "Copy", tooltip: "Copy message" },
+        { icon: "📌", label: "Pin", tooltip: "Pin to Canvas" },
+        { icon: "🔄", label: "Retry", tooltip: "Retry this step" },
+      ]
+    : [
+        { icon: "📋", label: "Copy", tooltip: "Copy message" },
+        { icon: "✏️", label: "Edit", tooltip: "Edit message" },
+      ];
+
+  return (
+    <div className={`absolute top-1 ${
+      role === "ai" ? "right-2" : "left-2"
+    } flex items-center gap-0.5 bg-background/90 backdrop-blur-sm
+      border border-border/50 rounded-lg px-1 py-0.5 shadow-sm animate-in fade-in duration-200`}
+    >
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          title={action.tooltip}
+          onClick={() => console.log(action.label, messageId)}
+          className="w-7 h-7 flex items-center justify-center
+            rounded hover:bg-muted text-muted-foreground
+            hover:text-foreground transition-colors text-xs"
+        >
+          {action.icon}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// User Message Component
+function UserMessage({ message }: { message: StoryEvent }) {
+  const [showActions, setShowActions] = useState(false);
+
+  return (
+    <div
+      className="group relative flex justify-end px-4 py-2"
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      <div className="max-w-[80%] rounded-2xl px-4 py-2.5
+        bg-primary/15 text-sm text-foreground leading-relaxed">
+        {message.content}
+      </div>
+
+      {/* Hover action buttons */}
+      {showActions && (
+        <MessageActions messageId={message.id} role="user" />
+      )}
+    </div>
+  );
+}
+
+function AIMessage({ msg }: { msg: StoryEvent }) {
   if (msg.type !== 'ai') return <>{msg.content}</>;
+  
+  const [showActions, setShowActions] = useState(false);
 
   const hasLegacyThinking = !!msg.thinking;
   const hasLegacyActions = !!msg.actions && msg.actions.length > 0;
   const hasNewThoughtProcess = !!msg.thoughtProcess;
 
   return (
-    <div className="flex flex-col w-full min-w-0">
+    <div 
+      className="group relative px-4 py-2 hover:bg-muted/20 transition-colors rounded-lg flex flex-col w-full min-w-0"
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
       {/* Agent Role Label */}
       {msg.agentRole && <AgentLabel role={msg.agentRole} />}
+
+      {/* Message text — NO bubble, NO background */}
+      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap mb-2">
+        {msg.content}
+      </div>
 
       {/* New Structured Thought Process */}
       {hasNewThoughtProcess && msg.thoughtProcess && (
@@ -143,13 +212,19 @@ function AIMessageContent({ msg }: { msg: StoryEvent }) {
              ))}
          </div>
       )}
-      
-      {/* Final Response */}
-      <div className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-          {msg.content}
-      </div>
+
+      {/* Hover action buttons */}
+      {showActions && (
+        <MessageActions messageId={msg.id} role="ai" />
+      )}
     </div>
   );
+}
+
+function AIMessageContent({ msg }: { msg: StoryEvent }) {
+  // This wrapper is now mostly redundant but kept for compatibility if needed elsewhere, 
+  // though we will use AIMessage directly in the list.
+  return <AIMessage msg={msg} />;
 }
 
 // Suggestion Chips Component
@@ -295,32 +370,11 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
                 <React.Fragment key={msg.id}>
                     {showDivider && <PhaseDivider label={msg.phase!} />}
                     
-                    <div 
-                      className={cn(
-                        "flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300",
-                        msg.type === 'user' ? "flex-row-reverse" : "flex-row"
-                      )}
-                    >
-                      <Avatar className={cn(
-                        "h-8 w-8 rounded-lg border shrink-0",
-                        msg.type === 'user' ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary border-primary/20"
-                      )}>
-                        {msg.type === 'user' ? (
-                           <AvatarFallback className="bg-primary text-primary-foreground"><User className="w-4 h-4" /></AvatarFallback>
-                        ) : (
-                           <AvatarFallback><Sparkles className="w-4 h-4" /></AvatarFallback>
-                        )}
-                      </Avatar>
-                      
-                      <div className={cn(
-                        "p-4 rounded-2xl text-sm leading-relaxed max-w-[90%] shadow-sm overflow-hidden",
-                        msg.type === 'user' 
-                          ? "bg-primary text-primary-foreground rounded-tr-none" 
-                          : "bg-card border border-border rounded-tl-none"
-                      )}>
-                        <AIMessageContent msg={msg} />
-                      </div>
-                    </div>
+                    {msg.type === 'user' ? (
+                        <UserMessage message={msg} />
+                    ) : (
+                        <AIMessage msg={msg} />
+                    )}
                 </React.Fragment>
             );
           })}
