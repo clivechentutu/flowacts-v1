@@ -18,6 +18,13 @@ export interface ThoughtProcess {
   steps: ThoughtStep[];
 }
 
+export interface TaskPlanStep {
+  id: string;
+  label: string;
+  status: "done" | "active" | "pending";
+  agentRole: AgentRole;
+}
+
 export interface StoryEvent {
   id: string;
   type: EventType;
@@ -25,9 +32,10 @@ export interface StoryEvent {
   agentRole?: AgentRole;
   title?: string;
   content: string; // Text content or Image URL
-  messageLevel?: "insight" | "progress" | "process";
+  messageLevel?: "insight" | "progress" | "process" | "plan";
   thinking?: string; // Legacy simple string thinking
   thoughtProcess?: ThoughtProcess; // New structured thinking
+  taskPlan?: TaskPlanStep[]; // For messageLevel="plan"
   actions?: string[]; // Legacy List of actions taken by AI
   phase?: string; // For phase dividers
   image?: string; // For action cards
@@ -91,6 +99,23 @@ export const SCENARIOS: Scenario[] = [
           content:
             "Analyze the new user signup and onboarding flow for competitor.com.",
           phase: undefined,
+          timestamp: '10:01 AM'
+        },
+        {
+          id: "m2-plan",
+          type: "ai",
+          role: "ai",
+          agentRole: "scout",
+          content: "I've created a plan to analyze the onboarding flow.",
+          messageLevel: "plan",
+          phase: "Planning",
+          taskPlan: [
+            { id: "tp1", label: "Browse competitor.com homepage", status: "done", agentRole: "scout" },
+            { id: "tp2", label: "Navigate to Pricing & Sign Up", status: "done", agentRole: "scout" },
+            { id: "tp3", label: "Analyze Pricing Strategy", status: "done", agentRole: "analyst" },
+            { id: "tp4", label: "Complete Signup Process", status: "active", agentRole: "scout" },
+            { id: "tp5", label: "Generate UX Audit Report", status: "pending", agentRole: "reporter" }
+          ],
           timestamp: '10:01 AM'
         },
         {

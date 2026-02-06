@@ -1,0 +1,683 @@
+# AI Chat Message Layering & Conversation Experience — Replit Instruction (v2)
+
+> **This replaces the original Doc 26.** Upgrade the AI Chat to use a 3-tier message hierarchy with an auto-execution task plan. The core interaction model: user sends ONE complex request → Agent auto-decomposes into a task plan → Agent executes all steps automatically → user intervenes only when needed.
+
+---
+
+## Interaction Model (IMPORTANT — read first)
+
+Upliftly is a **task-execution Agent**, NOT a multi-turn chatbot. The conversation flow is:
+
+```
+1. User sends a complex request
+   "Analyze the new user signup and onboarding flow for competitor.com"
+
+2. Agent acknowledges + shows a Task Plan (auto-decomposed todo list)
+   ┌ Task Plan ──────────────────────┐
+   │ 1. ✓ Browse competitor.com      │
+   │ 2. ● Analyze pricing page       │
+   │ 3. ○ Test signup flow            │
+   │ 4. ○ Generate analysis report    │
+   └─────────────────────────────────┘
+
+3. Agent auto-executes ALL steps sequentially (no user input needed)
+   Step 1 → Step 2 → Step 3 → Step 4
+
+4. User may intervene mid-flow (optional, not required)
+   "Skip pricing, focus on the signup form"
+
+5. After completion, suggestion chips guide next actions
+   [Compare with another competitor] [Generate report] [Dig deeper]
+```
+
+**Key difference from a chatbot:** The user does NOT need to send a message after each step. The Agent runs autonomously until the task is complete or the user interrupts.
+
+---
+
+## Message Level System
+
+Every AI message has a `messageLevel` field:
+
+| Level | Name | When to Use | Visual Treatment |
+|-------|------|-------------|-----------------|
+| `"insight"` | L1 Insight | Analysis conclusions, findings, comparisons, reports | Full card with colored left border |
+| `"progress"` | L2 Progress | Key milestones: "reached pricing page", "screenshot taken" | Single compact line, no card |
+| `"process"` | L3 Process | Browsing steps, navigation, form filling, technical operations | Collapsed by default, expandable |
+| `"plan"` | Task Plan | Auto-decomposed task list shown after user request | Checklist card with live status |
+
+---
+
+## Data Model
+
+```ts
+interface TaskPlanStep {
+  id: string;
+  label: string;
+  status: "done" | "active" | "pending";
+  agentRole: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "ai";
+  agentRole?: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  content: string;
+  messageLevel?: "insight" | "progress" | "process" | "plan";
+  thoughtProcess?: {
+    steps: Array<{ label: string; status: "done" | "active" | "pending" }>;
+  };
+  taskPlan?: TaskPlanStep[];  // only for messageLevel "plan"
+  phase?: string;
+  canvasLinkId?: string;
+  canvasCardTitle?: string;
+}
+```
+
+---
+
+## Component 1: AgentLabel (unchanged)
+
+```jsx
+function AgentLabel({ role }) {
+  const agents = {
+    scout:      { icon: "🕵️", name: "Scout",      color: "text-blue-400" },
+    capturer:   { icon: "📸", name: "Capturer",   color: "text-purple-400" },
+    analyst:    { icon: "📊", name: "Analyst",    color: "text-orange-400" },
+    comparator: { icon: "⚖️", name: "Comparator", color: "text-green-400" },
+    reporter:   { icon: "📝", name: "Reporter",   color: "text-pink-400" },
+  };
+  const agent = agents[role] || agents.scout;
+  return (
+    <div className={`flex items-center gap-1.5 ${agent.color}`}>
+      <span className="text-sm">{agent.icon}</span>
+      <span className="text-xs font-semibold">{agent.name}</span>
+    </div>
+  );
+}
+```
+
+---
+
+## Component 2: PhaseDivider (unchanged)
+
+```jsx
+function PhaseDivider({ label }) {
+  return (
+    <div className="flex items-center gap-3 my-4 px-2">
+      <div className="flex-1 h-px bg-border/50" />
+      <span className="text-[10px] font-medium text-muted-foreground/60
+        uppercase tracking-wider whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-border/50" />
+    </div>
+  );
+}
+```
+
+---
+
+## Component 3: TaskPlanCard (NEW — shows auto-decomposed todo list)
+
+This is the task plan that Agent shows after understanding the user's request. It updates live as steps are executed.
+
+```jsx
+function TaskPlanCard({ message }) {
+  const steps = message.taskPlan || [];
+  const doneCount = steps.filter((s) => s.status === "done").length;
+  const activeStep = steps.find((s) => s.status === "active");
+
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  return (
+    <div className="px-4 py-3 my-2 rounded-lg bg-muted/10
+      border border-border/30">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-xs font-semibold text-foreground/80
+          uppercase tracking-wide">
+          Task Plan
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {doneCount}/{steps.length} completed
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1 rounded-full bg-muted/30 mb-3 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary/60 transition-all
+            duration-500 ease-out"
+          style={{ width: `${(doneCount / steps.length) * 100}%` }}
+        />
+      </div>
+
+      {/* Step list */}
+      <div className="space-y-1.5">
+        {steps.map((step) => (
+          <div key={step.id}
+            className={`flex items-center gap-2.5 text-xs py-0.5 ${
+              step.status === "active"
+                ? "text-foreground"
+                : step.status === "done"
+                ? "text-muted-foreground/50"
+                : "text-muted-foreground/40"
+            }`}>
+            {/* Status indicator */}
+            <span className="w-4 text-center shrink-0">
+              {step.status === "done" && "✓"}
+              {step.status === "active" && (
+                <span className="inline-block w-1.5 h-1.5 rounded-full
+                  bg-blue-400 animate-pulse" />
+              )}
+              {step.status === "pending" && "○"}
+            </span>
+            {/* Agent icon */}
+            <span className="shrink-0">
+              {agentIcons[step.agentRole] || "🤖"}
+            </span>
+            {/* Step label */}
+            <span className={
+              step.status === "done"
+                ? "line-through decoration-muted-foreground/30"
+                : ""
+            }>
+              {step.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+**Key visual traits:**
+- Bordered card (not colored left border — distinct from L1 insight)
+- Progress bar at top showing overall completion
+- Each step shows: status icon (✓/●/○) + Agent emoji + label
+- Done steps are muted + strikethrough
+- Active step is highlighted with pulsing dot
+- Updates live as Agent progresses through steps
+
+---
+
+## Component 4: InsightMessage (L1 — full card)
+
+The **most important** message type. Used for analysis results, findings, comparisons.
+
+```jsx
+function InsightMessage({ message }) {
+  const agentColors = {
+    scout: "border-blue-400/50",
+    capturer: "border-purple-400/50",
+    analyst: "border-orange-400/50",
+    comparator: "border-green-400/50",
+    reporter: "border-pink-400/50",
+  };
+  const borderColor = agentColors[message.agentRole] || "border-border";
+
+  return (
+    <div className={`relative px-4 py-3 my-2 rounded-lg bg-muted/10
+      border-l-2 ${borderColor}`}>
+      {message.agentRole && <AgentLabel role={message.agentRole} />}
+      <div className="text-sm text-foreground leading-relaxed mt-1.5">
+        {message.content}
+      </div>
+      {message.canvasLinkId && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs
+          text-primary/70 hover:text-primary cursor-pointer
+          transition-colors">
+          <span>📌</span>
+          <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Key visual traits:**
+- Colored left border matching Agent role
+- Subtle background `bg-muted/10`
+- Full content displayed, never collapsed
+- Canvas link shown if applicable
+- NO blue bubble background
+
+---
+
+## Component 5: ProgressMessage (L2 — compact single line)
+
+Milestones like "reached the pricing page", "screenshot captured".
+
+```jsx
+function ProgressMessage({ message }) {
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+  const icon = agentIcons[message.agentRole] || "🤖";
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-1.5 my-0.5">
+      <span className="text-xs">{icon}</span>
+      <span className="text-xs text-muted-foreground">
+        {message.content}
+      </span>
+    </div>
+  );
+}
+```
+
+**Key visual traits:**
+- Single line, no card/bubble/background
+- Small text (`text-xs`), muted color
+- Agent icon inline (no full label)
+- Minimal vertical spacing
+
+---
+
+## Component 6: ProcessMessage (L3 — collapsed by default)
+
+Browsing steps, navigation details, form filling. Collapsed by default.
+
+```jsx
+function ProcessMessage({ messages }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const agent = messages[0];
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+  const icon = agentIcons[agent.agentRole] || "🤖";
+  const agentName = agent.agentRole
+    ? agent.agentRole.charAt(0).toUpperCase() + agent.agentRole.slice(1)
+    : "AI";
+
+  const hasActiveStep = messages.some(
+    (m) => m.thoughtProcess?.steps?.some((s) => s.status === "active")
+  );
+  const allSteps = messages.flatMap(
+    (m) => m.thoughtProcess?.steps || []
+  );
+  const expanded = isExpanded || hasActiveStep;
+  const doneSteps = allSteps.filter((s) => s.status === "done").length;
+
+  return (
+    <div className="px-4 py-1 my-0.5">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-xs
+          text-muted-foreground/60 hover:text-muted-foreground
+          transition-colors w-full text-left"
+      >
+        <span>{expanded ? "▾" : "▸"}</span>
+        <span>{icon}</span>
+        <span>{agentName}</span>
+        <span className="text-muted-foreground/40">·</span>
+        <span>
+          {hasActiveStep
+            ? "working..."
+            : `${doneSteps} step${doneSteps !== 1 ? "s" : ""} completed`}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="mt-1.5 ml-6 pl-3 border-l border-border/30
+          space-y-1">
+          {allSteps.map((step, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs
+              text-muted-foreground/60">
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                step.status === "done"
+                  ? "bg-green-400/60"
+                  : step.status === "active"
+                  ? "bg-blue-400 animate-pulse"
+                  : "bg-muted-foreground/20"
+              }`} />
+              <span>{step.label}</span>
+            </div>
+          ))}
+          {messages.map((m, i) => (
+            <div key={i} className="text-xs text-muted-foreground/50
+              mt-1 italic">
+              {m.content}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Key visual traits:**
+- Collapsed = single line: `▸ Agent · N steps completed`
+- Expanded = step list + original message text in muted italic
+- Auto-expands when steps are `"active"` (in progress)
+- Auto-collapses when all steps are `"done"`
+
+---
+
+## Component 7: Message List Renderer
+
+Main renderer that routes each message to the correct component.
+
+```jsx
+function ChatMessageList({ messages }) {
+  const rendered = [];
+  let i = 0;
+
+  while (i < messages.length) {
+    const msg = messages[i];
+    const prevMsg = i > 0 ? messages[i - 1] : null;
+
+    // Phase divider
+    if (msg.phase && msg.phase !== prevMsg?.phase) {
+      rendered.push(
+        <PhaseDivider key={`phase-${i}`} label={msg.phase} />
+      );
+    }
+
+    // User message
+    if (msg.role === "user") {
+      rendered.push(
+        <div key={msg.id} className="flex justify-end px-4 py-2">
+          <div className="max-w-[80%] rounded-2xl px-4 py-2.5
+            bg-primary/15 text-sm text-foreground leading-relaxed">
+            {msg.content}
+          </div>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // AI message — route by messageLevel
+    const level = msg.messageLevel || getDefaultLevel(msg);
+
+    if (level === "plan") {
+      rendered.push(
+        <TaskPlanCard key={msg.id} message={msg} />
+      );
+      i++;
+    } else if (level === "insight") {
+      rendered.push(
+        <InsightMessage key={msg.id} message={msg} />
+      );
+      i++;
+    } else if (level === "progress") {
+      rendered.push(
+        <ProgressMessage key={msg.id} message={msg} />
+      );
+      i++;
+    } else {
+      // level === "process" — group consecutive L3 from same agent
+      const group = [msg];
+      while (
+        i + 1 < messages.length &&
+        messages[i + 1].role === "ai" &&
+        (messages[i + 1].messageLevel ||
+          getDefaultLevel(messages[i + 1])) === "process" &&
+        messages[i + 1].agentRole === msg.agentRole &&
+        messages[i + 1].phase === msg.phase
+      ) {
+        i++;
+        group.push(messages[i]);
+      }
+      rendered.push(
+        <ProcessMessage key={`proc-${msg.id}`} messages={group} />
+      );
+      i++;
+    }
+  }
+
+  return <div className="flex flex-col gap-0.5">{rendered}</div>;
+}
+
+function getDefaultLevel(msg) {
+  if (msg.taskPlan) return "plan";
+  if (msg.canvasLinkId) return "insight";
+  if (["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
+    return "insight";
+  }
+  if (msg.thoughtProcess) return "process";
+  return "progress";
+}
+```
+
+---
+
+## Updated Mock Data
+
+This mock data reflects the correct interaction model: **one user request → Agent auto-executes everything**.
+
+```js
+const DEMO_MESSAGES = [
+  // ── Greeting ──
+  {
+    id: "m1",
+    role: "ai",
+    agentRole: "scout",
+    content:
+      "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
+    messageLevel: "insight",
+    phase: null,
+  },
+
+  // ── User sends ONE complex request ──
+  {
+    id: "m2",
+    role: "user",
+    content:
+      "Analyze the new user signup and onboarding flow for competitor.com.",
+    phase: null,
+  },
+
+  // ── Agent acknowledges + shows Task Plan ──
+  {
+    id: "m3",
+    role: "ai",
+    agentRole: "scout",
+    content: "Got it. I'll analyze competitor.com's signup and onboarding experience. Here's my plan:",
+    messageLevel: "plan",
+    phase: null,
+    taskPlan: [
+      { id: "t1", label: "Browse competitor.com homepage", status: "done", agentRole: "scout" },
+      { id: "t2", label: "Analyze pricing page", status: "done", agentRole: "analyst" },
+      { id: "t3", label: "Test signup flow", status: "active", agentRole: "scout" },
+      { id: "t4", label: "Evaluate onboarding experience", status: "pending", agentRole: "analyst" },
+      { id: "t5", label: "Generate analysis report", status: "pending", agentRole: "reporter" },
+    ],
+  },
+
+  // ── Phase 1: Browsing (auto-executed) ──
+  // L3 process — collapsed
+  {
+    id: "m4",
+    role: "ai",
+    agentRole: "scout",
+    content: "Visiting competitor.com as a first-time user...",
+    messageLevel: "process",
+    phase: "Browsing competitor.com",
+    thoughtProcess: {
+      steps: [
+        { label: "Preparing to visit competitor.com...", status: "done" },
+        { label: "Simulating a first-time visitor", status: "done" },
+        { label: "Scanning homepage layout", status: "done" },
+      ],
+    },
+  },
+  // L2 progress — compact milestone
+  {
+    id: "m5",
+    role: "ai",
+    agentRole: "scout",
+    content:
+      "Landed on homepage. Found navigation: Pricing, Features, Sign Up, Blog.",
+    messageLevel: "progress",
+    phase: "Browsing competitor.com",
+  },
+
+  // ── Phase 2: Pricing Analysis (auto-executed, no user prompt needed) ──
+  // L3 process — collapsed
+  {
+    id: "m6",
+    role: "ai",
+    agentRole: "scout",
+    content: "Navigating to pricing page...",
+    messageLevel: "process",
+    phase: "Analyzing Pricing",
+    thoughtProcess: {
+      steps: [
+        { label: "Looking through the navigation...", status: "done" },
+        { label: "Found the pricing page", status: "done" },
+        { label: "Heading to pricing...", status: "done" },
+      ],
+    },
+  },
+  // L1 insight — PROMINENT (this is what users care about)
+  {
+    id: "m7",
+    role: "ai",
+    agentRole: "analyst",
+    content:
+      "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\n\nThe free trial requires a credit card — this is a potential friction point for new users.",
+    messageLevel: "insight",
+    phase: "Analyzing Pricing",
+    canvasLinkId: "card-pricing",
+    canvasCardTitle: "Pricing Analysis",
+  },
+
+  // ── Phase 3: Signup Flow (currently executing) ──
+  // L3 process — auto-expanded because has active step
+  {
+    id: "m8",
+    role: "ai",
+    agentRole: "scout",
+    content: "Testing the signup flow...",
+    messageLevel: "process",
+    phase: "Testing Signup Flow",
+    thoughtProcess: {
+      steps: [
+        { label: "Clicking 'Start Free Trial'...", status: "done" },
+        { label: "Filling in registration form...", status: "active" },
+        { label: "Checking for friction points", status: "pending" },
+      ],
+    },
+  },
+];
+```
+
+**Key differences from previous mock data:**
+1. **No mid-flow user message** — the user sends ONE request, Agent does everything
+2. **Task Plan card** (m3) — shows the decomposed todo list with live progress
+3. **Continuous auto-execution** — phases flow automatically: Browse → Analyze → Signup
+4. **Only 1 user message** in the entire flow (the initial request)
+
+---
+
+## Expected Visual Result
+
+```
+┌──────────────────────────────────────────┐
+│ Competitor Onboarding Analysis           │
+│ Last edited 2m ago              🕐  📋  │
+├──────────────────────────────────────────┤
+│                                          │
+│  🕵️ Scout                               │
+│  │ Your UX analysis team is ready.      │  ← L1 greeting
+│  │ Paste a URL or describe a user flow  │
+│  │ to get started.                      │
+│                                          │
+│         [Analyze the new user signup     │
+│          and onboarding flow for         │  ← User's ONE request
+│          competitor.com.]                │
+│                                          │
+│  ┌ Task Plan ─────────────── 2/5 ──┐    │
+│  │ ━━━━━━━━━━━━━━━━━━━━░░░░░ 40%  │    │  ← Task Plan card
+│  │                                  │    │     (live updating)
+│  │  ✓ 🕵️ Browse competitor.com     │    │
+│  │  ✓ 📊 Analyze pricing page      │    │
+│  │  ● 🕵️ Test signup flow          │    │
+│  │  ○ 📊 Evaluate onboarding       │    │
+│  │  ○ 📝 Generate analysis report  │    │
+│  └──────────────────────────────────┘    │
+│                                          │
+│  ──── BROWSING COMPETITOR.COM ────      │  ← Phase divider
+│                                          │
+│  ▸ 🕵️ Scout · 3 steps completed        │  ← L3 collapsed
+│                                          │
+│  🕵️ Landed on homepage. Found nav:      │  ← L2 compact line
+│     Pricing, Features, Sign Up, Blog.    │
+│                                          │
+│  ──── ANALYZING PRICING ────            │  ← Phase divider
+│                                          │
+│  ▸ 🕵️ Scout · 3 steps completed        │  ← L3 collapsed
+│                                          │
+│  📊 Analyst                              │
+│  │ Found 3 pricing tiers: Free, Pro     │  ← L1 insight
+│  │ ($29/mo), and Enterprise.            │     (PROMINENT)
+│  │                                      │
+│  │ The free trial requires a credit     │
+│  │ card — potential friction point      │
+│  │ for new users.                       │
+│  │                                      │
+│  │ 📌 → Pricing Analysis               │
+│                                          │
+│  ──── TESTING SIGNUP FLOW ────          │  ← Phase divider
+│                                          │
+│  ▾ 🕵️ Scout · working...               │  ← L3 auto-expanded
+│    • Clicking 'Start Free Trial'...  ✓  │     (has active step)
+│    • Filling in registration form... ●  │
+│    • Checking for friction points    ○  │
+│                                          │
+├──────────────────────────────────────────┤
+│ [Focus on pricing] [Skip to signup]      │  ← Suggestion chips
+│ [Take a screenshot here]                 │     (context-aware)
+│                                          │
+│ Ask a follow-up or redirect...           │  ← Dynamic placeholder
+│ 📎  @  ⚡  ⓘ            🌐  ➤          │
+└──────────────────────────────────────────┘
+```
+
+---
+
+## What NOT to Do
+
+- Do NOT insert user messages between auto-executed steps — the Agent runs autonomously
+- Do NOT show all AI messages as equal-weight cards — use the tier system
+- Do NOT keep the blue bubble background on AI messages
+- Do NOT change the Canvas panel
+- Do NOT add real AI functionality — this is mock data only
+
+---
+
+## Acceptance Criteria
+
+1. ✅ Task Plan card displays after user's request, showing decomposed steps with live status
+2. ✅ Task Plan has a progress bar and step count (e.g., "2/5 completed")
+3. ✅ Task Plan steps show Agent emoji + label + status (✓/●/○)
+4. ✅ L1 (insight) messages display as full cards with colored left border
+5. ✅ L2 (progress) messages display as compact single lines
+6. ✅ L3 (process) messages are collapsed by default
+7. ✅ L3 messages auto-expand when they have active (in-progress) steps
+8. ✅ Consecutive L3 messages from same agent are grouped
+9. ✅ Phase divider lines appear between different task stages
+10. ✅ **No user messages appear between auto-executed steps** — only 1 user message in the demo
+11. ✅ AI messages do NOT have blue bubble backgrounds
+12. ✅ User messages remain right-aligned with subtle background (`bg-primary/15`)
+13. ✅ The Analyst "pricing tiers" message is visually prominent (L1)
+14. ✅ Dark theme styling consistent with the rest of the app
+15. ✅ Conversation scrolls and behaves normally
+
+---
+
+*Document: 26-AIChat对话体验优化-Replit指令-v2.md*
+*Scope: Message 3-tier hierarchy + Task Plan + Agent labels + Phase dividers + Auto-execution model*
+*Replaces: Original Doc 26 and Doc 26-v1*
+*Related: Doc 31 (analysis rationale), Doc 28 (layout simplification — partially merged)*
+*Next step: Doc 27 (Input box context guidance)*

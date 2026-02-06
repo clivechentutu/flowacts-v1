@@ -62,6 +62,75 @@ function AgentLabel({ role }: { role: string }) {
   );
 }
 
+// Task Plan Component (NEW)
+function TaskPlanCard({ message }: { message: StoryEvent }) {
+  const steps = message.taskPlan || [];
+  const doneCount = steps.filter((s) => s.status === "done").length;
+  // const activeStep = steps.find((s) => s.status === "active"); // Unused
+
+  const agentIcons: Record<string, string> = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  return (
+    <div className="px-4 py-3 my-2 rounded-lg bg-muted/10 border border-border/30">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
+          Task Plan
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {doneCount}/{steps.length} completed
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1 rounded-full bg-muted/30 mb-3 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary/60 transition-all duration-500 ease-out"
+          style={{ width: `${(doneCount / steps.length) * 100}%` }}
+        />
+      </div>
+
+      {/* Step list */}
+      <div className="space-y-1.5">
+        {steps.map((step) => (
+          <div key={step.id}
+            className={`flex items-center gap-2.5 text-xs py-0.5 ${
+              step.status === "active"
+                ? "text-foreground"
+                : step.status === "done"
+                ? "text-muted-foreground/50"
+                : "text-muted-foreground/40"
+            }`}>
+            {/* Status indicator */}
+            <span className="w-4 text-center shrink-0">
+              {step.status === "done" && "✓"}
+              {step.status === "active" && (
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+              )}
+              {step.status === "pending" && "○"}
+            </span>
+            {/* Agent icon */}
+            <span className="shrink-0">
+              {agentIcons[step.agentRole || ''] || "🤖"}
+            </span>
+            {/* Step label */}
+            <span className={
+              step.status === "done"
+                ? "line-through decoration-muted-foreground/30"
+                : ""
+            }>
+              {step.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Insight Message Component (L1)
 function InsightMessage({ message }: { message: StoryEvent }) {
   const agentColors: Record<string, string> = {
@@ -181,80 +250,86 @@ function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
   );
 }
 
-// Default level helper
-function getDefaultLevel(msg: StoryEvent) {
-  if (msg.canvasLinkId) return "insight";
-  if (msg.agentRole && ["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
-    return "insight";
-  }
-  if (msg.thoughtProcess) return "process";
-  return "progress";
-}
-
-// Main List Renderer
-function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
-    const rendered = [];
-    let i = 0;
-  
-    while (i < messages.length) {
-      const msg = messages[i];
-      const prevMsg = i > 0 ? messages[i - 1] : null;
-  
-      // Phase divider
-      if (msg.phase && msg.phase !== prevMsg?.phase) {
-        rendered.push(
-          <PhaseDivider key={`phase-${i}`} label={msg.phase} />
-        );
-      }
-  
-      // User message
-      if (msg.role === "user") {
-        rendered.push(
-          <div key={msg.id} className="flex justify-end px-4 py-2">
-            <div className="max-w-[80%] rounded-2xl px-4 py-2.5 bg-primary/15 text-sm text-foreground leading-relaxed">
-              {msg.content}
-            </div>
-          </div>
-        );
-        i++;
-        continue;
-      }
-  
-      // AI message — route by messageLevel
-      const level = msg.messageLevel || getDefaultLevel(msg);
-  
-      if (level === "insight") {
-        rendered.push(
-          <InsightMessage key={msg.id} message={msg} />
-        );
-        i++;
-      } else if (level === "progress") {
-        rendered.push(
-          <ProgressMessage key={msg.id} message={msg} />
-        );
-        i++;
-      } else {
-        // level === "process" — group consecutive L3 from same agent
-        const group = [msg];
-        while (
-          i + 1 < messages.length &&
-          messages[i + 1].role === "ai" &&
-          (messages[i + 1].messageLevel || getDefaultLevel(messages[i + 1])) === "process" &&
-          messages[i + 1].agentRole === msg.agentRole &&
-          messages[i + 1].phase === msg.phase
-        ) {
-          i++;
-          group.push(messages[i + 1]);
-        }
-        rendered.push(
-          <ProcessMessage key={`proc-${msg.id}`} messages={group} />
-        );
-        i += group.length;
-      }
+  // Default level helper
+  function getDefaultLevel(msg: StoryEvent) {
+    if (msg.taskPlan) return "plan";
+    if (msg.canvasLinkId) return "insight";
+    if (msg.agentRole && ["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
+      return "insight";
     }
+    if (msg.thoughtProcess) return "process";
+    return "progress";
+  }
   
-    return <div className="flex flex-col gap-0.5">{rendered}</div>;
-}
+  // Main List Renderer
+  function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
+      const rendered = [];
+      let i = 0;
+    
+      while (i < messages.length) {
+        const msg = messages[i];
+        const prevMsg = i > 0 ? messages[i - 1] : null;
+    
+        // Phase divider
+        if (msg.phase && msg.phase !== prevMsg?.phase) {
+          rendered.push(
+            <PhaseDivider key={`phase-${i}`} label={msg.phase} />
+          );
+        }
+    
+        // User message
+        if (msg.role === "user") {
+          rendered.push(
+            <div key={msg.id} className="flex justify-end px-4 py-2">
+              <div className="max-w-[80%] rounded-2xl px-4 py-2.5 bg-primary/15 text-sm text-foreground leading-relaxed">
+                {msg.content}
+              </div>
+            </div>
+          );
+          i++;
+          continue;
+        }
+    
+        // AI message — route by messageLevel
+        const level = msg.messageLevel || getDefaultLevel(msg);
+    
+        if (level === "plan") {
+            rendered.push(
+              <TaskPlanCard key={msg.id} message={msg} />
+            );
+            i++;
+        } else if (level === "insight") {
+          rendered.push(
+            <InsightMessage key={msg.id} message={msg} />
+          );
+          i++;
+        } else if (level === "progress") {
+          rendered.push(
+            <ProgressMessage key={msg.id} message={msg} />
+          );
+          i++;
+        } else {
+          // level === "process" — group consecutive L3 from same agent
+          const group = [msg];
+          while (
+            i + 1 < messages.length &&
+            messages[i + 1].role === "ai" &&
+            (messages[i + 1].messageLevel || getDefaultLevel(messages[i + 1])) === "process" &&
+            messages[i + 1].agentRole === msg.agentRole &&
+            messages[i + 1].phase === msg.phase
+          ) {
+            i++;
+            group.push(messages[i + 1]);
+          }
+          rendered.push(
+            <ProcessMessage key={`proc-${msg.id}`} messages={group} />
+          );
+          i += group.length;
+        }
+      }
+    
+      return <div className="flex flex-col gap-0.5">{rendered}</div>;
+  }
 
 // Suggestion Chips Component
 function SuggestionChips({ chips, onSelect }: { chips: string[], onSelect: (chip: string) => void }) {
