@@ -62,7 +62,42 @@ function AgentLabel({ role }: { role: string }) {
   );
 }
 
-// Task Plan Component (NEW)
+// Message Actions Component
+function MessageActions({ messageId, role }: { messageId: string, role: 'user' | 'ai' }) {
+  const actions = role === "ai"
+    ? [
+        { icon: "📋", label: "Copy", tooltip: "Copy message" },
+        { icon: "📌", label: "Pin", tooltip: "Pin to Canvas" },
+        { icon: "🔄", label: "Retry", tooltip: "Retry this step" },
+      ]
+    : [
+        { icon: "📋", label: "Copy", tooltip: "Copy message" },
+        { icon: "✏️", label: "Edit", tooltip: "Edit message" },
+      ];
+
+  return (
+    <div className={`absolute top-1 ${
+      role === "ai" ? "right-2" : "left-2"
+    } flex items-center gap-0.5 bg-background/90 backdrop-blur-sm
+      border border-border/50 rounded-lg px-1 py-0.5 shadow-sm animate-in fade-in duration-200`}
+    >
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          title={action.tooltip}
+          onClick={() => console.log(action.label, messageId)}
+          className="w-7 h-7 flex items-center justify-center
+            rounded hover:bg-muted text-muted-foreground
+            hover:text-foreground transition-colors text-xs"
+        >
+          {action.icon}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// TaskPlan Component (NEW)
 function TaskPlanCard({ message }: { message: StoryEvent }) {
   const steps = message.taskPlan || [];
   const doneCount = steps.filter((s) => s.status === "done").length;
