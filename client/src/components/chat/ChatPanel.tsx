@@ -62,169 +62,198 @@ function AgentLabel({ role }: { role: string }) {
   );
 }
 
-// Thought Process Component (Simplified)
-function ThoughtProcessView({ steps }: { steps: NonNullable<ThoughtProcess['steps']> }) {
-    const [isExpanded, setIsExpanded] = useState(true);
-
-    return (
-        <div className="mt-2 mb-3">
-            <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-                <span className="text-muted-foreground/60">
-                    {isExpanded ? "▾" : "▸"}
-                </span>
-                <span>What's happening</span>
-            </button>
-
-            {isExpanded && (
-                <div className="mt-2 ml-3 pl-3 border-l-2 border-border/50 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
-                    {steps.map((step, i) => (
-                        <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span className={cn(
-                                "w-1.5 h-1.5 rounded-full shrink-0",
-                                step.status === "done" ? "bg-green-400" :
-                                step.status === "active" ? "bg-blue-400 animate-pulse" :
-                                "bg-muted-foreground/30"
-                            )} />
-                            <span>{step.label}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
-
-// Message Actions Component
-function MessageActions({ messageId, role }: { messageId: string, role: 'user' | 'ai' }) {
-  const actions = role === "ai"
-    ? [
-        { icon: "📋", label: "Copy", tooltip: "Copy message" },
-        { icon: "📌", label: "Pin", tooltip: "Pin to Canvas" },
-        { icon: "🔄", label: "Retry", tooltip: "Retry this step" },
-      ]
-    : [
-        { icon: "📋", label: "Copy", tooltip: "Copy message" },
-        { icon: "✏️", label: "Edit", tooltip: "Edit message" },
-      ];
+// Insight Message Component (L1)
+function InsightMessage({ message }: { message: StoryEvent }) {
+  const agentColors: Record<string, string> = {
+    scout: "border-blue-400/50",
+    capturer: "border-purple-400/50",
+    analyst: "border-orange-400/50",
+    comparator: "border-green-400/50",
+    reporter: "border-pink-400/50",
+  };
+  const borderColor = agentColors[message.agentRole || ''] || "border-border";
 
   return (
-    <div className={`absolute top-1 ${
-      role === "ai" ? "right-2" : "left-2"
-    } flex items-center gap-0.5 bg-background/90 backdrop-blur-sm
-      border border-border/50 rounded-lg px-1 py-0.5 shadow-sm animate-in fade-in duration-200`}
-    >
-      {actions.map((action) => (
-        <button
-          key={action.label}
-          title={action.tooltip}
-          onClick={() => console.log(action.label, messageId)}
-          className="w-7 h-7 flex items-center justify-center
-            rounded hover:bg-muted text-muted-foreground
-            hover:text-foreground transition-colors text-xs"
-        >
-          {action.icon}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// User Message Component
-function UserMessage({ message }: { message: StoryEvent }) {
-  const [showActions, setShowActions] = useState(false);
-
-  return (
-    <div
-      className="group relative flex justify-end px-4 py-2"
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-    >
-      <div className="max-w-[80%] rounded-2xl px-4 py-2.5
-        bg-primary/15 text-sm text-foreground leading-relaxed">
+    <div className={`relative px-4 py-3 my-2 rounded-lg bg-muted/10 border-l-2 ${borderColor}`}>
+      {message.agentRole && <AgentLabel role={message.agentRole} />}
+      <div className="text-sm text-foreground leading-relaxed mt-1.5 whitespace-pre-wrap">
         {message.content}
       </div>
-
-      {/* Hover action buttons */}
-      {showActions && (
-        <MessageActions messageId={message.id} role="user" />
+      {message.canvasLinkId && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary cursor-pointer transition-colors">
+          <span>📌</span>
+          <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
+        </div>
       )}
     </div>
   );
 }
 
-function AIMessage({ msg }: { msg: StoryEvent }) {
-  if (msg.type !== 'ai') return <>{msg.content}</>;
-  
-  const [showActions, setShowActions] = useState(false);
-
-  const hasLegacyThinking = !!msg.thinking;
-  const hasLegacyActions = !!msg.actions && msg.actions.length > 0;
-  const hasNewThoughtProcess = !!msg.thoughtProcess;
+// Progress Message Component (L2)
+function ProgressMessage({ message }: { message: StoryEvent }) {
+  const agentIcons: Record<string, string> = {
+    scout: "🕵️",
+    capturer: "📸",
+    analyst: "📊",
+    comparator: "⚖️",
+    reporter: "📝",
+  };
+  const icon = agentIcons[message.agentRole || ''] || "🤖";
 
   return (
-    <div 
-      className="group relative px-4 py-2 hover:bg-muted/20 transition-colors rounded-lg flex flex-col w-full min-w-0"
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-    >
-      {/* Agent Role Label */}
-      {msg.agentRole && <AgentLabel role={msg.agentRole} />}
+    <div className="flex items-center gap-2 px-4 py-1.5 my-0.5">
+      <span className="text-xs">{icon}</span>
+      <span className="text-xs text-muted-foreground">
+        {message.content}
+      </span>
+    </div>
+  );
+}
 
-      {/* Message text — NO bubble, NO background */}
-      <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap mb-2">
-        {msg.content}
-      </div>
+// Process Message Component (L3)
+function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const agent = messages[0];
+  const agentIcons: Record<string, string> = {
+    scout: "🕵️",
+    capturer: "📸",
+    analyst: "📊",
+    comparator: "⚖️",
+    reporter: "📝",
+  };
+  const icon = agentIcons[agent.agentRole || ''] || "🤖";
+  const agentName = agent.agentRole
+    ? agent.agentRole.charAt(0).toUpperCase() + agent.agentRole.slice(1)
+    : "AI";
 
-      {/* New Structured Thought Process */}
-      {hasNewThoughtProcess && msg.thoughtProcess && (
-          <ThoughtProcessView steps={msg.thoughtProcess.steps} />
-      )}
+  const hasActiveStep = messages.some(
+    (m) => m.thoughtProcess?.steps?.some((s) => s.status === "active")
+  );
 
-      {/* Legacy Thinking Section (Fallback) */}
-      {hasLegacyThinking && !hasNewThoughtProcess && (
-         <div className="mb-3">
-             <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/70 mb-2 bg-muted/50 px-2 py-1 rounded-md w-fit">
-                <Brain className="w-3 h-3" />
-                <span>Legacy Thought Process</span>
-             </div>
-             <div className="pl-3 border-l-2 border-primary/20 ml-1 mb-3">
-                 <p className="text-xs text-muted-foreground/80 italic leading-relaxed">
-                     {msg.thinking}
-                 </p>
-             </div>
-         </div>
-      )}
-      
-      {/* Legacy Actions Section (Fallback) */}
-      {hasLegacyActions && !hasNewThoughtProcess && (
-         <div className="space-y-1.5 mb-3">
-             {msg.actions?.map((action, idx) => (
-                 <div key={idx} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/20 px-2.5 py-1.5 rounded-md border border-border/40">
-                     <div className="w-3.5 h-3.5 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                         <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
-                     </div>
-                     <span>{action}</span>
-                 </div>
-             ))}
-         </div>
-      )}
+  const allSteps = messages.flatMap(
+    (m) => m.thoughtProcess?.steps || []
+  );
 
-      {/* Hover action buttons */}
-      {showActions && (
-        <MessageActions messageId={msg.id} role="ai" />
+  const expanded = isExpanded || hasActiveStep;
+  const totalSteps = allSteps.length || messages.length;
+  const doneSteps = allSteps.filter((s) => s.status === "done").length;
+
+  return (
+    <div className="px-4 py-1 my-0.5">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors w-full text-left"
+      >
+        <span>{expanded ? "▾" : "▸"}</span>
+        <span>{icon}</span>
+        <span>{agentName}</span>
+        <span className="text-muted-foreground/40">·</span>
+        <span>
+          {hasActiveStep
+            ? "working..."
+            : `${doneSteps} step${doneSteps !== 1 ? "s" : ""} completed`}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="mt-1.5 ml-6 pl-3 border-l border-border/30 space-y-1">
+          {allSteps.map((step, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground/60">
+              <span className={cn(
+                "w-1.5 h-1.5 rounded-full shrink-0",
+                step.status === "done"
+                  ? "bg-green-400/60"
+                  : step.status === "active"
+                  ? "bg-blue-400 animate-pulse"
+                  : "bg-muted-foreground/20"
+              )} />
+              <span>{step.label}</span>
+            </div>
+          ))}
+          {messages.map((m, i) => (
+            <div key={i} className="text-xs text-muted-foreground/50 mt-1 italic">
+              {m.content}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-function AIMessageContent({ msg }: { msg: StoryEvent }) {
-  // This wrapper is now mostly redundant but kept for compatibility if needed elsewhere, 
-  // though we will use AIMessage directly in the list.
-  return <AIMessage msg={msg} />;
+// Default level helper
+function getDefaultLevel(msg: StoryEvent) {
+  if (msg.canvasLinkId) return "insight";
+  if (msg.agentRole && ["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
+    return "insight";
+  }
+  if (msg.thoughtProcess) return "process";
+  return "progress";
+}
+
+// Main List Renderer
+function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
+    const rendered = [];
+    let i = 0;
+  
+    while (i < messages.length) {
+      const msg = messages[i];
+      const prevMsg = i > 0 ? messages[i - 1] : null;
+  
+      // Phase divider
+      if (msg.phase && msg.phase !== prevMsg?.phase) {
+        rendered.push(
+          <PhaseDivider key={`phase-${i}`} label={msg.phase} />
+        );
+      }
+  
+      // User message
+      if (msg.role === "user") {
+        rendered.push(
+          <div key={msg.id} className="flex justify-end px-4 py-2">
+            <div className="max-w-[80%] rounded-2xl px-4 py-2.5 bg-primary/15 text-sm text-foreground leading-relaxed">
+              {msg.content}
+            </div>
+          </div>
+        );
+        i++;
+        continue;
+      }
+  
+      // AI message — route by messageLevel
+      const level = msg.messageLevel || getDefaultLevel(msg);
+  
+      if (level === "insight") {
+        rendered.push(
+          <InsightMessage key={msg.id} message={msg} />
+        );
+        i++;
+      } else if (level === "progress") {
+        rendered.push(
+          <ProgressMessage key={msg.id} message={msg} />
+        );
+        i++;
+      } else {
+        // level === "process" — group consecutive L3 from same agent
+        const group = [msg];
+        while (
+          i + 1 < messages.length &&
+          messages[i + 1].role === "ai" &&
+          (messages[i + 1].messageLevel || getDefaultLevel(messages[i + 1])) === "process" &&
+          messages[i + 1].agentRole === msg.agentRole &&
+          messages[i + 1].phase === msg.phase
+        ) {
+          i++;
+          group.push(messages[i + 1]);
+        }
+        rendered.push(
+          <ProcessMessage key={`proc-${msg.id}`} messages={group} />
+        );
+        i += group.length;
+      }
+    }
+  
+    return <div className="flex flex-col gap-0.5">{rendered}</div>;
 }
 
 // Suggestion Chips Component
@@ -361,25 +390,7 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-6">
-        <div className="space-y-6">
-          {events.filter(e => ['user', 'ai'].includes(e.type)).map((msg, i, arr) => {
-            const prevMsg = i > 0 ? arr[i-1] : null;
-            const showDivider = msg.phase && msg.phase !== prevMsg?.phase;
-
-            return (
-                <React.Fragment key={msg.id}>
-                    {showDivider && <PhaseDivider label={msg.phase!} />}
-                    
-                    {msg.type === 'user' ? (
-                        <UserMessage message={msg} />
-                    ) : (
-                        <AIMessage msg={msg} />
-                    )}
-                </React.Fragment>
-            );
-          })}
-          
-        </div>
+        <ChatMessageList messages={events.filter(e => ['user', 'ai'].includes(e.type))} />
       </ScrollArea>
 
       {/* Input Area */}

@@ -25,6 +25,7 @@ export interface StoryEvent {
   agentRole?: AgentRole;
   title?: string;
   content: string; // Text content or Image URL
+  messageLevel?: "insight" | "progress" | "process";
   thinking?: string; // Legacy simple string thinking
   thoughtProcess?: ThoughtProcess; // New structured thinking
   actions?: string[]; // Legacy List of actions taken by AI
@@ -35,6 +36,7 @@ export interface StoryEvent {
   parentId?: string; // For branching logic
   fileType?: string; // For file cards
   canvasLinkId?: string;
+  canvasCardTitle?: string;
 }
 
 export interface Scenario {
@@ -71,105 +73,110 @@ export const SCENARIOS: Scenario[] = [
     goal: 'Analyze competitor.com onboarding flow',
     thumbnail: '/thumbnails/dashboard.jpg',
     events: [
-      {
-        id: "m1",
-        type: "ai",
-        role: "ai",
-        agentRole: "scout",
-        content: "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
-        timestamp: '10:00 AM'
-      },
-      {
-        id: "m2",
-        type: "user",
-        role: "user",
-        content: "Analyze the new user signup and onboarding flow for competitor.com.",
-        timestamp: '10:01 AM'
-      },
-      {
-        id: "m3",
-        type: "ai",
-        role: "ai",
-        agentRole: "scout",
-        content: "Understood. Simulating a new user signing up for competitor.com...",
-        phase: "Browsing competitor.com",
-        thoughtProcess: {
-          steps: [
-            { label: "Preparing to visit competitor.com...", status: "done" },
-            { label: "Simulating a first-time visitor", status: "done" },
-          ],
+        {
+          id: "m1",
+          type: "ai",
+          role: "ai",
+          agentRole: "scout",
+          content:
+            "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
+          messageLevel: "insight",
+          phase: undefined,
+          timestamp: '10:00 AM'
         },
-        timestamp: '10:01 AM'
-      },
-      {
-        id: "m4",
-        type: "ai",
-        role: "ai",
-        agentRole: "scout",
-        content: "Landed on the homepage. I can see a navigation bar with Pricing, Features, and Sign Up links.",
-        phase: "Browsing competitor.com",
-        timestamp: '10:02 AM'
-      },
-      {
-        id: "m5",
-        type: "user",
-        role: "user",
-        content: "Okay, find their pricing and then sign up for the free trial.",
-        phase: "Browsing competitor.com",
-        timestamp: '10:03 AM'
-      },
-      {
-        id: "m6",
-        type: "ai",
-        role: "ai",
-        agentRole: "scout",
-        content: "Searching for pricing... Found it. Heading to the pricing page.",
-        phase: "Analyzing Pricing",
-        thoughtProcess: {
-          steps: [
-            { label: "Looking through the navigation...", status: "done" },
-            { label: "Found the pricing page", status: "done" },
-            { label: "Heading to pricing...", status: "done" },
-          ],
+        {
+          id: "m2",
+          type: "user",
+          role: "user",
+          content:
+            "Analyze the new user signup and onboarding flow for competitor.com.",
+          phase: undefined,
+          timestamp: '10:01 AM'
         },
-        timestamp: '10:03 AM'
-      },
-      {
-        id: "m7",
-        type: "ai",
-        role: "ai",
-        agentRole: "analyst",
-        content: "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\nThe free trial requires a credit card — this is a potential friction point for new users.",
-        phase: "Analyzing Pricing",
-        canvasLinkId: "card-pricing",
-        timestamp: '10:04 AM'
-      },
-      {
-        id: 'evt-6',
-        type: 'action',
-        title: '2. Analyzed Pricing',
-        content: 'Identified 3 tiers. "Pro" plan is highlighted.',
-        image: saasPricingPage,
-        timestamp: '10:02 AM',
-        metadata: { 'Elements': '3 Cards', 'CTA': 'Start Free Trial' },
-        parentId: 'evt-3'
-      },
-      {
-        id: "m8",
-        type: "ai",
-        role: "ai",
-        agentRole: "scout",
-        content: "Now proceeding to sign up for the free trial...",
-        phase: "Signing Up",
-        thoughtProcess: {
-          steps: [
-            { label: "Clicking 'Start Free Trial'...", status: "done" },
-            { label: "Filling in registration form...", status: "active" },
-            { label: "Checking for friction points", status: "pending" },
-          ],
+        {
+          id: "m3",
+          type: "ai",
+          role: "ai",
+          agentRole: "scout",
+          content:
+            "Understood. Simulating a new user signing up for competitor.com...",
+          messageLevel: "process",
+          phase: "Browsing competitor.com",
+          thoughtProcess: {
+            steps: [
+              { label: "Preparing to visit competitor.com...", status: "done" },
+              { label: "Simulating a first-time visitor", status: "done" },
+            ],
+          },
+          timestamp: '10:01 AM'
         },
-        timestamp: '10:05 AM'
-      },
+        {
+          id: "m4",
+          type: "ai",
+          role: "ai",
+          agentRole: "scout",
+          content:
+            "Landed on the homepage. Found navigation with Pricing, Features, and Sign Up links.",
+          messageLevel: "progress",
+          phase: "Browsing competitor.com",
+          timestamp: '10:02 AM'
+        },
+        {
+          id: "m5",
+          type: "user",
+          role: "user",
+          content:
+            "Okay, find their pricing and then sign up for the free trial.",
+          phase: "Browsing competitor.com",
+          timestamp: '10:03 AM'
+        },
+        {
+          id: "m6",
+          type: "ai",
+          role: "ai",
+          agentRole: "scout",
+          content: "Reached the pricing page.",
+          messageLevel: "process",
+          phase: "Analyzing Pricing",
+          thoughtProcess: {
+            steps: [
+              { label: "Looking through the navigation...", status: "done" },
+              { label: "Found the pricing page", status: "done" },
+              { label: "Heading to pricing...", status: "done" },
+            ],
+          },
+          timestamp: '10:03 AM'
+        },
+        {
+          id: "m7",
+          type: "ai",
+          role: "ai",
+          agentRole: "analyst",
+          content:
+            "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\n\nThe free trial requires a credit card — this is a potential friction point for new users.",
+          messageLevel: "insight",
+          phase: "Analyzing Pricing",
+          canvasLinkId: "card-pricing",
+          canvasCardTitle: "Pricing Analysis",
+          timestamp: '10:04 AM'
+        },
+        {
+          id: "m8",
+          type: "ai",
+          role: "ai",
+          agentRole: "scout",
+          content: "Now proceeding to sign up for the free trial...",
+          messageLevel: "process",
+          phase: "Signing Up",
+          thoughtProcess: {
+            steps: [
+              { label: "Clicking 'Start Free Trial'...", status: "done" },
+              { label: "Filling in registration form...", status: "active" },
+              { label: "Checking for friction points", status: "pending" },
+            ],
+          },
+          timestamp: '10:05 AM'
+        },
     ]
   },
   {
