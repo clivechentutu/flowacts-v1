@@ -99,6 +99,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { PageTabNav, PageTab } from "@/components/canvas/PageTabNav";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PromptCard {
@@ -699,6 +700,75 @@ function RoleMention({ role }: { role: string }) {
   );
 }
 
+const DEMO_PAGES: PageTab[] = [
+  {
+    id: "p1",
+    icon: "🔍",
+    title: "Signup Flow",
+    completedSteps: 4,
+    totalSteps: 5,
+    status: "completed",
+    isActive: true
+  },
+  {
+    id: "p2",
+    icon: "⚖️",
+    title: "Pricing Compare",
+    completedSteps: 2,
+    totalSteps: 5,
+    status: "running",
+    isActive: false
+  },
+  {
+    id: "p3",
+    icon: "📋",
+    title: "Features Audit",
+    completedSteps: 0,
+    totalSteps: 0,
+    status: "idle",
+    isActive: false
+  }
+];
+
+const getPageIcon = (text: string): string => {
+  const lower = text.toLowerCase();
+  if (lower.match(/analyze|audit|check|review|inspect/)) return "🔍";
+  if (lower.match(/compare|vs|versus|difference|benchmark/)) return "⚖️";
+  if (lower.match(/pricing|price|cost|plan|subscription/)) return "💰";
+  if (lower.match(/signup|register|onboard|login|auth/)) return "📝";
+  if (lower.match(/mobile|responsive|phone|tablet/)) return "📱";
+  if (lower.match(/landing|homepage|hero/)) return "🏠";
+  return "📋";
+};
+
+const generatePageTitle = (text: string, count: number): string => {
+    // Naive extraction logic based on instructions
+    // Extract core object + action
+    
+    const lower = text.toLowerCase();
+    let title = `Task ${count + 1}`;
+
+    // Common patterns
+    if (lower.includes('signup') && lower.includes('flow')) title = "Signup Flow";
+    else if (lower.includes('pricing') && lower.includes('compare')) title = "Pricing Compare";
+    else if (lower.includes('mobile') && lower.includes('check')) title = "Mobile Check";
+    else if (lower.includes('checkout')) title = "Checkout Audit";
+    else if (lower.includes('onboarding')) title = "Onboarding";
+    else if (lower.includes('landing') && lower.includes('analy')) title = "Landing Analysis";
+    else {
+        // Fallback: First 2 meaningful words
+        const words = text.split(' ').filter(w => w.length > 2 && !['the', 'of', 'and', 'for', 'to'].includes(w.toLowerCase()));
+        if (words.length >= 2) {
+             title = words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        } else if (words.length === 1) {
+             title = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+        }
+    }
+
+    if (title.length > 18) title = title.slice(0, 17) + '…';
+    return title;
+};
+
 export default function Home() {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'home' | 'project' | 'library' | 'projects-list'>('home');
@@ -710,8 +780,11 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'canvas' | 'files'>('canvas');
   const [uploadedFiles, setUploadedFiles] = useState<StoryEvent[]>([]);
   const [activeFileTab, setActiveFileTab] = useState<'generated' | 'uploaded'>('generated');
-  const [pages, setPages] = useState<string[]>(['Page 1']);
-  const [activePage, setActivePage] = useState('Page 1');
+  
+  // Replaced simple pages string array with PageTab objects
+  const [pages, setPages] = useState<PageTab[]>(DEMO_PAGES);
+  const [activePageId, setActivePageId] = useState(DEMO_PAGES[0].id);
+
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [projectListSearch, setProjectListSearch] = useState("");
   const [projectListFilter, setProjectListFilter] = useState<'all' | 'favorites'>('all');
@@ -1019,9 +1092,30 @@ export default function Home() {
   }, [activeScenarioId, activeTab]);
 
   const handleSendMessage = (message: string) => {
+    // Generate semantic title and icon from user input
+    const title = generatePageTitle(message, pages.length);
+    const icon = getPageIcon(message);
+    
+    // Create a new page tab for this task
+    const newPageId = `p-${Date.now()}`;
+    const newPage: PageTab = {
+        id: newPageId,
+        icon,
+        title,
+        completedSteps: 1, 
+        totalSteps: 5, 
+        isActive: true,
+        status: 'running'
+    };
+    
+    // Add to pages and switch to it
+    setPages(prev => [...prev, newPage]);
+    setActivePageId(newPageId);
+    setActiveTab('project');
+    
     toast({
-      title: "Demo Mode",
-      description: "This is a playback demo. Try switching scenarios to see different flows!",
+      title: "Task Started",
+      description: `Analysis for "${title}" has begun.`,
     });
   };
 
@@ -1054,14 +1148,27 @@ export default function Home() {
   };
 
   const handleAddPage = () => {
-      const newPage = `Page ${pages.length + 1}`;
+      const newPageId = `p${Date.now()}`;
+      const newPage: PageTab = {
+          id: newPageId,
+          icon: "📋",
+          title: `Task ${pages.length + 1}`,
+          completedSteps: 0,
+          totalSteps: 0,
+          isActive: true,
+          status: 'idle'
+      };
       setPages([...pages, newPage]);
-      setActivePage(newPage);
+      setActivePageId(newPageId);
       setEvents([]); // Clear AI chat events when adding a new page
       toast({
-          title: "Page Added",
-          description: `${newPage} has been created.`,
+          title: "Task Added",
+          description: `${newPage.title} has been created.`,
       });
+  };
+
+  const handleRenameTab = (id: string, newTitle: string) => {
+      setPages(pages.map(p => p.id === id ? { ...p, title: newTitle } : p));
   };
 
 
@@ -1911,38 +2018,21 @@ export default function Home() {
             
             {/* Page Management - Only visible in Canvas mode */}
             {viewMode === 'canvas' && (
-                <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 flex items-center justify-center animate-in fade-in slide-in-from-top-2 duration-300">
-                     <div className="flex items-center gap-0.5 bg-muted/10 backdrop-blur-[1px] p-0.5 rounded-lg border border-white/5 hover:border-border/20 transition-all group/pages">
-                        {pages.map((page) => (
-                            <button
-                                key={page}
-                                onClick={() => setActivePage(page)}
-                                className={cn(
-                                    "px-3 py-1 rounded-md text-[11px] transition-all duration-200 border border-transparent",
-                                    activePage === page
-                                        ? "bg-card/80 text-foreground font-medium shadow-sm border-border/30"
-                                        : "text-muted-foreground/60 hover:text-foreground hover:bg-muted/10"
-                                )}
-                            >
-                                {page}
-                            </button>
-                        ))}
-                        <div className="w-px h-3 bg-border/20 mx-1" />
-                        <button 
-                            onClick={handleAddPage}
-                            className="h-6 w-6 flex items-center justify-center rounded-md hover:bg-muted/20 transition-colors text-muted-foreground/50 hover:text-foreground"
-                            title="Add New Page"
-                        >
-                            <Plus className="w-3.5 h-3.5" />
-                        </button>
-                    </div>
+                <div className="absolute top-0 left-0 right-0 z-40 bg-background/50 backdrop-blur-sm">
+                    <PageTabNav 
+                        pages={pages}
+                        activePageId={activePageId}
+                        onSwitch={setActivePageId}
+                        onAdd={handleAddPage}
+                        onRenameTab={handleRenameTab}
+                    />
                 </div>
             )}
             
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full pt-[48px]">
                 {/* Canvas is ALWAYS rendered underneath */}
                 <FlowCanvas 
-                    events={activePage === 'Page 1' ? events : []} 
+                    events={activePageId === 'p1' ? events : []} 
                     droppedFiles={uploadedFiles} 
                     onFileDrop={(files) => setUploadedFiles(files)} 
                     onFileDelete={(id) => setUploadedFiles(prev => prev.filter(f => f.id !== id))}

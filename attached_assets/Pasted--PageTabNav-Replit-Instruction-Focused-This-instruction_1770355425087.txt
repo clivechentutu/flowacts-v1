@@ -1,0 +1,375 @@
+# PageTabNav — Replit Instruction (Focused)
+
+> This instruction ONLY covers replacing "Page 1 < >" with semantic tab navigation.
+> Do NOT change anything else in Canvas or Chat.
+
+---
+
+## What to Change
+
+**Find:** The current page navigation at the bottom of the Canvas area:
+```
+Page 1  < >
+```
+
+**Replace with:** A semantic tab bar at the **TOP** of the Canvas panel (below any header, above the canvas content area).
+
+---
+
+## 1. Page Title Generation Rules
+
+Each Page/Tab title is **auto-generated from the user's chat input** when a new task begins. The system extracts a short label from the user's intent.
+
+### Title Format
+
+```
+[Object] + [Action]
+```
+
+**Maximum: 18 characters.** If the generated title exceeds 18 characters, truncate with ellipsis.
+
+### Extraction Examples
+
+| User Chat Input | Generated Page Title |
+|----------------|---------------------|
+| "Analyze the signup flow of notion.so" | `Signup Flow` |
+| "Compare Notion pricing with Slack" | `Pricing Compare` |
+| "Check mobile responsiveness" | `Mobile Check` |
+| "Audit the checkout process" | `Checkout Audit` |
+| "Look at their onboarding experience" | `Onboarding` |
+| "Analyze competitor landing pages" | `Landing Analysis` |
+
+### Rules for Title Generation
+
+1. **Extract the core object** — what is being analyzed (signup, pricing, mobile, checkout, etc.)
+2. **Extract the action type** — what kind of analysis (flow, compare, audit, check)
+3. **Combine as `[Object] [Action]`** — 2-3 words max
+4. **Strip the target site name** — don't include "notion.so" or "Slack" in the title (the project context already provides this)
+5. **Capitalize each word** — Title Case
+6. **If extraction fails**, fall back to `Task 1`, `Task 2`, etc.
+
+### User Can Edit Title
+
+- **Double-click** on a tab title to enter edit mode (inline text input)
+- Press **Enter** to confirm, **Escape** to cancel
+- The same 18-character max applies to user-edited titles
+- Show a subtle pencil icon on hover to hint editability
+
+---
+
+## 2. Tab Icon Rules
+
+Each tab has a leading emoji icon, auto-assigned based on task keywords.
+
+| Keywords in user input | Icon | Meaning |
+|----------------------|------|---------|
+| analyze, audit, check, review, inspect | 🔍 | Analysis |
+| compare, vs, versus, difference, benchmark | ⚖️ | Comparison |
+| pricing, price, cost, plan, subscription | 💰 | Pricing |
+| signup, register, onboard, login, auth | 📝 | User flow |
+| mobile, responsive, phone, tablet | 📱 | Mobile |
+| landing, homepage, hero, above the fold | 🏠 | Landing page |
+| *default / no match* | 📋 | General task |
+
+**Rule:** Scan the user's chat message for these keywords. Use the **first match**. If no match, use 📋.
+
+---
+
+## 3. Tab Visual Design
+
+### Single Tab Anatomy
+
+```
+┌─────────────────┐
+│ 🔍 Signup Flow  │  ← icon + title (18 char max)
+│ ●●●●○          │  ← progress dots
+└─────────────────┘
+```
+
+### Dimensions & Constraints
+
+| Property | Value | Reason |
+|----------|-------|--------|
+| Tab min-width | `120px` | Prevent tabs from being too narrow |
+| Tab max-width | `160px` | Prevent tabs from being too wide |
+| Title max chars | 18 | Fits within 160px at text-xs |
+| Title overflow | `truncate` (ellipsis) | Graceful handling of long titles |
+| Tab height | Auto (fits 2 lines: title + dots) | ~48px total |
+| Gap between tabs | `4px` (`gap-1`) | Tight but readable |
+| Tab row padding | `px-2 py-1` | Minimal chrome |
+
+### Active vs Inactive Tab
+
+| State | Background | Border | Text Color |
+|-------|-----------|--------|------------|
+| **Active** | `bg-primary/10` | `border border-primary/20` | `text-foreground` |
+| **Inactive** | transparent | none | `text-muted-foreground` |
+| **Inactive:hover** | `bg-muted/50` | none | `text-muted-foreground` |
+
+### Progress Dots
+
+- Each dot: `w-1.5 h-1.5 rounded-full`
+- Completed step: `bg-primary`
+- Incomplete step: `bg-muted`
+- Max dots shown: **7**. If totalSteps > 7, show as text instead: `"4/12"`
+- If task has 0 steps yet (just started): show a single pulsing dot `animate-pulse bg-primary/50`
+
+---
+
+## 4. Layout Rules for Multiple Tabs
+
+### 1-3 Tabs (Common Case)
+
+Tabs display side by side. Each tab takes its natural width (120-160px). Plenty of room.
+
+```
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ [+]
+│ 🔍 Signup    │ │ ⚖️ Pricing   │ │ 📋 Features  │
+│ ●●●●○       │ │ ●●○○○       │ │ ○○○○○       │
+└──────────────┘ └──────────────┘ └──────────────┘
+```
+
+### 4-6 Tabs
+
+Tabs still display side by side but may need horizontal scroll. Add `overflow-x-auto` to the tab container. Show a subtle scroll shadow on the right edge if overflowing.
+
+### 7+ Tabs (Rare, but handle it)
+
+Switch to **breadcrumb + dropdown** mode:
+
+```
+┌──────────────────────────────────────────────────┐
+│ 📋 Project Name > 🔍 Signup Flow  [▼]           │
+└──────────────────────────────────────────────────┘
+```
+
+Clicking [▼] opens a dropdown:
+```
+┌──────────────────────────┐
+│ 🔍 Signup Flow        ✓  │ ← current (checkmark)
+│ ⚖️ Pricing Compare       │
+│ 📝 Onboarding         ◌  │ ← in progress (spinner)
+│ 📱 Mobile Check          │
+│ 📋 Features Audit        │
+│ 📋 Checkout Audit        │
+│ 📋 Landing Review        │
+│ ─────────────────────── │
+│ + New Task               │
+└──────────────────────────┘
+```
+
+---
+
+## 5. The [+] Button
+
+- Always visible at the end of the tab row
+- Size: `w-8 h-8`, icon: `+`
+- Style: `rounded-lg hover:bg-muted text-muted-foreground`
+- Click behavior: Creates a new empty Page and switches to it
+- The new page gets a default title: `Task N` (where N = page count + 1)
+
+---
+
+## 6. Data Model
+
+```ts
+interface PageTab {
+  id: string;
+  icon: string;           // emoji, auto-assigned
+  title: string;          // max 18 chars, AI-generated
+  completedSteps: number; // for progress dots
+  totalSteps: number;     // for progress dots
+  isActive: boolean;      // currently selected
+  status: "idle" | "running" | "completed"; // task status
+}
+```
+
+---
+
+## 7. Reference Implementation
+
+```jsx
+function PageTabNav({ pages, activePageId, onSwitch, onAdd, onRenameTab }) {
+  const [editingId, setEditingId] = React.useState(null);
+  const [editValue, setEditValue] = React.useState("");
+
+  // Switch to breadcrumb mode for 7+ pages
+  if (pages.length > 6) {
+    return (
+      <PageBreadcrumbNav
+        pages={pages}
+        activePageId={activePageId}
+        onSwitch={onSwitch}
+        onAdd={onAdd}
+      />
+    );
+  }
+
+  const handleDoubleClick = (page) => {
+    setEditingId(page.id);
+    setEditValue(page.title);
+  };
+
+  const handleRenameConfirm = (pageId) => {
+    if (editValue.trim()) {
+      onRenameTab(pageId, editValue.trim().slice(0, 18));
+    }
+    setEditingId(null);
+  };
+
+  return (
+    <div className="flex items-center gap-1 px-2 py-1 border-b
+      border-border overflow-x-auto scrollbar-thin">
+      {pages.map((page) => {
+        const isActive = page.id === activePageId;
+        const isEditing = editingId === page.id;
+
+        return (
+          <button
+            key={page.id}
+            onClick={() => onSwitch(page.id)}
+            onDoubleClick={() => handleDoubleClick(page)}
+            className={`flex flex-col items-start px-3 py-2 rounded-lg
+              text-left min-w-[120px] max-w-[160px] transition-colors
+              shrink-0 ${
+              isActive
+                ? "bg-primary/10 border border-primary/20"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {/* Title row: icon + title */}
+            <span className="text-xs font-medium flex items-center
+              gap-1 w-full">
+              <span className="shrink-0">{page.icon}</span>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value.slice(0, 18))}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleRenameConfirm(page.id);
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  onBlur={() => handleRenameConfirm(page.id)}
+                  autoFocus
+                  className="bg-transparent border-b border-primary
+                    outline-none text-xs w-full text-foreground"
+                  maxLength={18}
+                />
+              ) : (
+                <span className={`truncate ${
+                  isActive ? "text-foreground" : "text-muted-foreground"
+                }`}>
+                  {page.title}
+                </span>
+              )}
+            </span>
+
+            {/* Progress dots */}
+            <div className="flex gap-0.5 mt-1">
+              {page.totalSteps === 0 ? (
+                /* Task just started — pulsing dot */
+                <span className="w-1.5 h-1.5 rounded-full
+                  bg-primary/50 animate-pulse" />
+              ) : page.totalSteps > 7 ? (
+                /* Too many steps — show as text */
+                <span className="text-[10px] text-muted-foreground">
+                  {page.completedSteps}/{page.totalSteps}
+                </span>
+              ) : (
+                /* Normal — show dots */
+                Array.from({ length: page.totalSteps }).map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      i < page.completedSteps ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
+                ))
+              )}
+            </div>
+          </button>
+        );
+      })}
+
+      {/* Add new page button */}
+      <button
+        onClick={onAdd}
+        className="w-8 h-8 flex items-center justify-center rounded-lg
+          hover:bg-muted text-muted-foreground shrink-0"
+        title="New task"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+```
+
+---
+
+## 8. Mock Data for Demo
+
+Use this data to render the demo. It simulates a project analyzing Notion's UX.
+
+```js
+const DEMO_PAGES = [
+  {
+    id: "p1",
+    icon: "🔍",
+    title: "Signup Flow",
+    completedSteps: 4,
+    totalSteps: 5,
+    status: "completed"
+  },
+  {
+    id: "p2",
+    icon: "⚖️",
+    title: "Pricing Compare",
+    completedSteps: 2,
+    totalSteps: 5,
+    status: "running"
+  },
+  {
+    id: "p3",
+    icon: "📋",
+    title: "Features Audit",
+    completedSteps: 0,
+    totalSteps: 0,
+    status: "idle"
+  }
+];
+```
+
+---
+
+## 9. What NOT to Do
+
+- Do NOT remove the existing page switching logic — just change the UI from "Page 1 < >" to tabs
+- Do NOT change the Canvas content area
+- Do NOT change the Chat panel
+- Do NOT change the [Canvas][Files] tabs at the bottom
+- Do NOT add any new card types or connectors in this step
+- Do NOT make tabs draggable/reorderable (keep it simple for now)
+
+---
+
+## 10. Acceptance Criteria
+
+After implementation, the Canvas top area should show:
+
+1. ✅ Tab bar with 3 demo tabs (Signup Flow, Pricing Compare, Features Audit)
+2. ✅ Each tab shows icon + title (max 18 chars, truncated with ellipsis if longer)
+3. ✅ Active tab is visually highlighted (primary color background)
+4. ✅ Clicking a tab switches the active page
+5. ✅ Double-clicking a tab title allows inline editing
+6. ✅ Progress dots show below each title
+7. ✅ [+] button at the end creates a new tab
+8. ✅ "Page 1 < >" navigation is removed
+9. ✅ Dark theme styling consistent with the rest of the app
+
+---
+
+*Document created: 2026-02-06*
+*Scope: PageTabNav only — single focused optimization*
+*Next step: After this works well, proceed to ScreenshotCard optimization*
