@@ -53,7 +53,13 @@ export function PageBottomNav({
   };
 
   return (
-    <div className="flex items-center justify-between px-2 py-2 border-t border-border bg-background/80 backdrop-blur-sm h-[48px] overflow-hidden">
+    <div className="flex items-center justify-between px-2 py-2 border-t border-border bg-background/80 backdrop-blur-sm h-10 overflow-hidden">
+      {/* Pages Label */}
+      <div className="flex items-center gap-1 pr-2 border-r border-border mr-1 shrink-0">
+        <span className="text-xs">📄</span>
+        <span className="text-xs font-medium text-muted-foreground">Pages</span>
+      </div>
+
       {/* Tabs Area */}
       <div className="flex items-center gap-1 flex-1 overflow-x-auto no-scrollbar mask-linear-fade">
         {pages.map((page) => {
@@ -63,13 +69,13 @@ export function PageBottomNav({
                     key={page.id}
                     onClick={() => onSwitch(page.id)}
                     className={cn(
-                        "flex items-center gap-2 px-3 py-1.5 rounded-md transition-all whitespace-nowrap border text-sm max-w-[200px]",
+                        "flex items-center gap-1 px-2.5 py-1 rounded-md transition-all whitespace-nowrap text-xs max-w-[140px]",
                         isActive 
-                            ? "bg-muted text-foreground border-border shadow-sm font-medium" 
-                            : "bg-transparent text-muted-foreground border-transparent hover:bg-muted/50 hover:text-foreground"
+                            ? "bg-primary/10 text-foreground font-medium" 
+                            : "bg-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     )}
                 >
-                    <span className="text-base leading-none select-none">{page.icon}</span>
+                    <span className="text-sm leading-none select-none">{page.icon}</span>
                     
                     {isActive && isEditing ? (
                          <input
@@ -83,7 +89,7 @@ export function PageBottomNav({
                             }}
                             onBlur={handleConfirm}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-transparent border-b border-primary outline-none text-sm font-medium text-foreground min-w-[60px] max-w-[120px] p-0 h-5"
+                            className="bg-transparent border-b border-primary outline-none text-xs font-medium text-foreground min-w-[60px] max-w-[100px] p-0 h-4"
                             maxLength={18}
                             autoFocus
                         />
@@ -104,7 +110,7 @@ export function PageBottomNav({
                     )}
                     
                     {page.totalSteps > 0 && (
-                        <span className={cn("text-[10px] tabular-nums opacity-60", isActive ? "text-foreground" : "text-muted-foreground")}>
+                        <span className={cn("text-[10px] tabular-nums ml-1", isActive ? "text-foreground opacity-80" : "text-muted-foreground opacity-60")}>
                             {page.completedSteps}/{page.totalSteps}
                         </span>
                     )}
@@ -116,10 +122,11 @@ export function PageBottomNav({
       {/* Right: Add Button */}
       <button
         onClick={onAdd}
-        className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0 ml-2"
-        title="New Task Page"
+        className="ml-auto px-2 h-7 rounded text-xs text-muted-foreground hover:bg-muted shrink-0 flex items-center gap-0.5"
+        title="Add page to this project"
       >
-        <Plus className="w-5 h-5" />
+        <Plus className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">Page</span>
       </button>
     </div>
   );

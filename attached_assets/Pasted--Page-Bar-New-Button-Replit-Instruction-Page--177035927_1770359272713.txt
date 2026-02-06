@@ -1,0 +1,375 @@
+# Page Bar 栏目标识 & New Button 区分 — Replit Instruction
+
+> 基于当前实现的两处微调优化。不改变整体布局，只优化底部Page栏的可理解性和两个"新建"按钮的区分度。
+
+---
+
+## 当前问题
+
+参考当前截图，存在两个可理解性问题：
+
+### 问题1：底部Page栏缺少栏目标识
+
+当前底部栏直接显示：
+```
+Signup Flow 4/5 | Pricing Compare | Features Audit | [+]
+```
+
+用户（尤其首次使用）无法立即理解"这一栏是什么"。需要一个简短的栏目标识，说明这些tabs代表的是当前Project下的Pages/Tasks。
+
+### 问题2：两个 [+] 按钮无法区分
+
+当前有两个 `+` 按钮：
+- **顶部左侧**：新建 Project
+- **底部Page栏右侧**：新建 Page（在当前Project下新建task）
+
+两者外观相同，用户无法理解区别。
+
+---
+
+## 优化方案 A：底部Page栏增加栏目标识
+
+### 设计方案
+
+在底部Page栏的**最左侧**，page tabs之前，增加一个固定的栏目标识：
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ 📄 Pages │ Signup Flow 4/5 │ Pricing Compare │ ... │  [+]   │
+│ ↑标识     │ ↑ page tabs ──────────────────────→    │        │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 栏目标识规格
+
+| Property | Value |
+|----------|-------|
+| 文案 | `Pages` |
+| Icon | `📄` (或使用 Lucide `FileText` icon) |
+| 字体 | `text-xs font-medium text-muted-foreground` |
+| 样式 | 不可点击，纯标识作用 |
+| 分隔 | 标识右侧有一条竖线分隔符 `border-r border-border` |
+| 宽度 | 固定，不参与tab的flex布局 |
+
+### 为什么用 "Pages" 而不是其他词
+
+| 候选词 | 评估 |
+|--------|------|
+| **Pages** | 最直观，Figma/Sketch用户熟悉，与Canvas画布概念匹配 |
+| Tasks | 偏向任务管理工具的语义，可能让用户以为是todo list |
+| Flows | 太具体，不是所有page都是flow分析 |
+| Tabs | 太技术化，描述的是UI控件而非内容 |
+
+**结论：使用 `Pages`。**
+
+### 交互细节
+
+- 栏目标识始终可见，不随tab滚动
+- 当只有1个page时，仍然显示标识（帮助用户理解可以创建更多page）
+- 标识区域不可点击、不可编辑
+
+---
+
+## 优化方案 B：两个 New 按钮的区分
+
+### 核心原则
+
+两个"新建"操作的层级不同，必须在视觉上体现这种层级差异：
+
+- **New Project** = 顶层操作，创建全新的分析项目
+- **New Page** = 子级操作，在当前Project内添加新的task/canvas
+
+### 区分方案
+
+#### 顶部：New Project 按钮
+
+```
+┌─────────────────────────────────────────────────────┐
+│ [+ New] Notion Signup Analysis     [Canvas] [Files] │
+│  ↑ 新建Project                                      │
+└─────────────────────────────────────────────────────┘
+```
+
+| Property | Value |
+|----------|-------|
+| Icon | `+` (Lucide `Plus` icon) |
+| 文案 | 无文字标签（空间有限），但 **hover tooltip** 显示 `"New Project"` |
+| 样式 | `w-8 h-8 rounded-lg border border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5` |
+| 视觉特征 | **虚线边框 (dashed border)** — 暗示"创建新容器" |
+| Icon颜色 | `text-muted-foreground hover:text-primary` |
+| Tooltip | `"New Project"` — 鼠标悬停1秒后显示 |
+
+**设计意图**：虚线边框在欧美产品中是"创建新容器/新空间"的通用视觉暗示（Notion新建page、Trello新建board都用虚线）。
+
+#### 底部：New Page 按钮
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ 📄 Pages │ Signup Flow 4/5 │ Pricing Compare │  [+ Page]    │
+│                                                ↑ 新建Page    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+| Property | Value |
+|----------|-------|
+| Icon | `+` (Lucide `Plus` icon) |
+| 文案 | 空间允许时显示 `"+ Page"`；空间不足时只显示 `+` |
+| 样式 | `px-2 h-7 rounded text-xs hover:bg-muted text-muted-foreground` |
+| 视觉特征 | **无边框，纯文字按钮** — 轻量级，暗示"在已有容器内添加子项" |
+| Tooltip | `"Add page to this project"` — 鼠标悬停1秒后显示 |
+
+**设计意图**：与顶部的虚线边框按钮形成对比。底部按钮更轻量，视觉上传达"这是一个子级操作"。
+
+### 视觉对比总结
+
+```
+顶部 New Project:                底部 New Page:
+┌ ─ ─ ─ ┐
+│   +   │  ← 虚线边框            [+ Page]  ← 无边框，纯文字
+└ ─ ─ ─ ┘     较大(32px)                      较小(28px)
+  tooltip: "New Project"          tooltip: "Add page to this project"
+```
+
+| 维度 | New Project (顶部) | New Page (底部) |
+|------|-------------------|----------------|
+| 边框 | 虚线 dashed | 无边框 |
+| 尺寸 | 32x32px | auto x 28px |
+| 文案 | 无（仅icon） | `+ Page`（空间允许时） |
+| Tooltip | `New Project` | `Add page to this project` |
+| 视觉权重 | 较重 — 顶层操作 | 较轻 — 子级操作 |
+| 位置语境 | 紧邻Project名称 | 在Pages栏内部 |
+
+### 为什么这样区分有效
+
+1. **虚线 vs 无边框**：用户潜意识中，虚线框 = "这里可以放一个新东西"（空位暗示），无边框文字 = "追加一个"（列表追加暗示）
+2. **位置语境强化理解**：New Project紧邻Project名称，New Page在Pages栏内部，位置本身就在解释"我在创建什么"
+3. **Tooltip兜底**：即使视觉区分不够，hover tooltip用明确文字消除歧义
+
+---
+
+## 整合后的完整底部Page栏
+
+### 布局
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ 📄 Pages │ 🔍 Signup Flow 4/5 │ ⚖️ Pricing Compare │ 📋 Features Audit │ [+ Page] │
+│ ↑固定标识  │ ↑ active tab (高亮)  │ ↑ inactive tab      │ ↑ inactive tab      │ ↑新建     │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 完整规格
+
+| 元素 | 样式 |
+|------|------|
+| 整体栏 | `h-10 flex items-center border-t border-border bg-background/80 backdrop-blur-sm px-2` |
+| "Pages" 标识 | `text-xs font-medium text-muted-foreground flex items-center gap-1 pr-2 border-r border-border mr-1 shrink-0` |
+| Active tab | `px-2.5 py-1 rounded-md bg-primary/10 text-foreground text-xs font-medium` |
+| Inactive tab | `px-2.5 py-1 rounded-md text-muted-foreground text-xs hover:bg-muted/50 hover:text-foreground` |
+| Tab icon | `mr-1` (emoji, inline with title) |
+| Progress | `text-[10px] text-muted-foreground ml-1` 显示为 `4/5` |
+| [+ Page] 按钮 | `ml-auto px-2 h-7 rounded text-xs text-muted-foreground hover:bg-muted shrink-0` |
+| Tab溢出 | 中间tab区域 `overflow-x-auto scrollbar-none flex-1` |
+
+---
+
+## Reference Implementation
+
+### 底部 Page Bar 组件
+
+```jsx
+function PageBar({ pages, activePageId, onSwitch, onAdd, onRename }) {
+  const [editingId, setEditingId] = React.useState(null);
+  const [editValue, setEditValue] = React.useState("");
+
+  const handleDoubleClick = (page) => {
+    setEditingId(page.id);
+    setEditValue(page.title);
+  };
+
+  const handleConfirm = (pageId) => {
+    if (editValue.trim()) {
+      onRename(pageId, editValue.trim().slice(0, 18));
+    }
+    setEditingId(null);
+  };
+
+  return (
+    <div className="h-10 flex items-center border-t border-border
+      bg-background/80 backdrop-blur-sm px-2">
+
+      {/* Section label */}
+      <div className="flex items-center gap-1 pr-2 border-r
+        border-border mr-1 shrink-0">
+        <span className="text-xs">📄</span>
+        <span className="text-xs font-medium
+          text-muted-foreground">
+          Pages
+        </span>
+      </div>
+
+      {/* Page tabs — scrollable */}
+      <div className="flex items-center gap-1 flex-1
+        overflow-x-auto scrollbar-none">
+        {pages.map((page) => {
+          const isActive = page.id === activePageId;
+          const isEditing = editingId === page.id;
+
+          return (
+            <button
+              key={page.id}
+              onClick={() => onSwitch(page.id)}
+              onDoubleClick={() => handleDoubleClick(page)}
+              className={`flex items-center gap-1 px-2.5 py-1
+                rounded-md text-xs shrink-0 transition-colors ${
+                isActive
+                  ? "bg-primary/10 text-foreground font-medium"
+                  : "text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              <span>{page.icon}</span>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editValue}
+                  onChange={(e) =>
+                    setEditValue(e.target.value.slice(0, 18))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter")
+                      handleConfirm(page.id);
+                    if (e.key === "Escape")
+                      setEditingId(null);
+                  }}
+                  onBlur={() => handleConfirm(page.id)}
+                  autoFocus
+                  className="bg-transparent border-b
+                    border-primary outline-none text-xs
+                    w-20"
+                  maxLength={18}
+                />
+              ) : (
+                <span className="truncate max-w-[120px]">
+                  {page.title}
+                </span>
+              )}
+              {page.totalSteps > 0 && (
+                <span className="text-[10px]
+                  text-muted-foreground">
+                  {page.completedSteps}/{page.totalSteps}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Add page button */}
+      <button
+        onClick={onAdd}
+        className="ml-auto px-2 h-7 rounded text-xs
+          text-muted-foreground hover:bg-muted shrink-0
+          flex items-center gap-0.5"
+        title="Add page to this project"
+      >
+        <span>+</span>
+        <span className="hidden sm:inline">Page</span>
+      </button>
+    </div>
+  );
+}
+```
+
+### 顶部 New Project 按钮组件
+
+```jsx
+function NewProjectButton({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-8 h-8 flex items-center justify-center
+        rounded-lg border border-dashed
+        border-muted-foreground/30
+        hover:border-primary/50 hover:bg-primary/5
+        text-muted-foreground hover:text-primary
+        transition-colors"
+      title="New Project"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" strokeWidth="2">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+    </button>
+  );
+}
+```
+
+### 顶部 Header 整合
+
+```jsx
+function CanvasHeader({ project, onRenameProject, onNewProject }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2
+      border-b border-border">
+      {/* New Project button — dashed border */}
+      <NewProjectButton onClick={onNewProject} />
+
+      {/* Project name — editable */}
+      <ProjectHeader
+        project={project}
+        onRename={onRenameProject}
+      />
+
+      {/* Right side: Canvas/Files toggle (unchanged) */}
+    </div>
+  );
+}
+```
+
+---
+
+## 整合后的完整布局
+
+```
+┌─ [+ ̣] 🕵️ Notion Signup Analysis          [Canvas][Files] ─┐
+│   ↑虚线框                                                    │
+│   New Project                                                │
+│                                                              │
+│                    Canvas Content                            │
+│                                                              │
+├──────────────────────────────────────────────────────────────┤
+│ 📄 Pages │ 🔍 Signup Flow 4/5 │ ⚖️ Pricing │ 📋 Audit │ [+ Page] │
+│           ↑ tab点击切换                              ↑无边框文字  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## What NOT to Do
+
+- Do NOT change the Canvas content area
+- Do NOT change the Chat panel or Chat side [+] button (that is a separate optimization)
+- Do NOT change the [Canvas][Files] toggle
+- Do NOT add drag-to-reorder for tabs
+- Do NOT make the "Pages" label clickable or editable
+
+---
+
+## Acceptance Criteria
+
+1. ✅ 底部Page栏左侧显示 `📄 Pages` 固定标识，与tabs之间有竖线分隔
+2. ✅ Page tabs 点击切换（非箭头翻页），active tab 有高亮
+3. ✅ 每个tab显示 icon + title + progress (如 `4/5`)
+4. ✅ 双击tab title可编辑
+5. ✅ 顶部 New Project 按钮使用**虚线边框**样式，hover tooltip `"New Project"`
+6. ✅ 底部 New Page 按钮使用**无边框文字**样式 `[+ Page]`，hover tooltip `"Add page to this project"`
+7. ✅ 两个新建按钮在视觉上有明确区分（虚线框 vs 纯文字）
+8. ✅ Dark theme 一致性
+
+---
+
+*Document: 24 — Page Bar 栏目标识 & New Button 区分*
+*Created: 2026-02-06*
+*Scope: 底部Page栏增加"Pages"标识 + 两个New按钮视觉区分*
+*Dependency: 基于文档23 v2的布局基础上微调*
