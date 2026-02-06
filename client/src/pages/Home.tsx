@@ -1240,6 +1240,22 @@ export default function Home() {
       setProjectInfo(prev => ({ ...prev, name: newName }));
   };
 
+  const handleNewProject = () => {
+    setProjectInfo({
+      id: `proj-${Date.now()}`,
+      icon: '🕵️',
+      name: 'Untitled Project'
+    });
+    setPages(DEMO_PAGES);
+    setActivePageId(DEMO_PAGES[0].id);
+    setEvents([]);
+    setActiveTab('home');
+    toast({
+      title: "New Project Started",
+      description: "Ready for a new analysis session.",
+    });
+  };
+
 
   const getFilteredScenarios = () => {
     // Helper to generate multiple dummy items based on a template
@@ -2104,6 +2120,7 @@ export default function Home() {
                         <ProjectHeader 
                             project={projectInfo}
                             onRename={handleRenameProject}
+                            onNewProject={handleNewProject}
                         />
                      </div>
                 </div>

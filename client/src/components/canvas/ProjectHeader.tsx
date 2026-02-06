@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { Plus } from "lucide-react";
 
 export interface ProjectInfo {
   id: string;
@@ -10,9 +11,10 @@ export interface ProjectInfo {
 interface ProjectHeaderProps {
   project: ProjectInfo;
   onRename: (newName: string) => void;
+  onNewProject?: () => void;
 }
 
-export function ProjectHeader({ project, onRename }: ProjectHeaderProps) {
+export function ProjectHeader({ project, onRename, onNewProject }: ProjectHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(project.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,8 +33,15 @@ export function ProjectHeader({ project, onRename }: ProjectHeaderProps) {
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2">
-      <span className="text-base select-none">{project.icon}</span>
+    <div className="flex items-center gap-2 px-2 py-1.5">
+      <button
+        onClick={onNewProject}
+        className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors mr-1"
+        title="New Project"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+
       {isEditing ? (
         <input
           ref={inputRef}
@@ -44,7 +53,7 @@ export function ProjectHeader({ project, onRename }: ProjectHeaderProps) {
             if (e.key === "Escape") setIsEditing(false);
           }}
           onBlur={handleConfirm}
-          className="bg-transparent border-b border-primary outline-none text-sm font-semibold text-foreground h-5 w-[200px] p-0"
+          className="bg-transparent border-b border-primary outline-none text-sm font-semibold text-foreground h-5 w-[180px] p-0"
           maxLength={28}
         />
       ) : (
@@ -57,7 +66,7 @@ export function ProjectHeader({ project, onRename }: ProjectHeaderProps) {
           title="Double click to rename project"
         >
           {project.name}
-          <span className="opacity-0 group-hover:opacity-100 ml-2 text-muted-foreground text-[10px] transition-opacity absolute -right-4 top-0.5">
+          <span className="opacity-0 group-hover:opacity-100 ml-2 text-muted-foreground text-[10px] transition-opacity">
             ✏️
           </span>
         </span>
