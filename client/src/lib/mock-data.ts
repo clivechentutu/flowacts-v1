@@ -36,8 +36,8 @@ export interface StoryEvent {
   thinking?: string; // Legacy simple string thinking
   thoughtProcess?: ThoughtProcess; // New structured thinking
   taskPlan?: TaskPlanStep[]; // For messageLevel="plan"
+  taskPlanStepId?: string; // Links message to a Task Plan step
   actions?: string[]; // Legacy List of actions taken by AI
-  phase?: string; // For phase dividers
   image?: string; // For action cards
   timestamp: string;
   metadata?: Record<string, string>;
@@ -87,7 +87,6 @@ export const SCENARIOS: Scenario[] = [
           role: "user",
           content:
             "Analyze the new user signup and onboarding flow for competitor.com.",
-          phase: undefined,
           timestamp: '10:01 AM'
         },
         {
@@ -97,7 +96,6 @@ export const SCENARIOS: Scenario[] = [
           agentRole: "scout",
           content: "I've created a plan to analyze the onboarding flow.",
           messageLevel: "plan",
-          phase: undefined, // Remove phase for Task Plan to sit at top
           taskPlan: [
             { id: "tp1", label: "Browse competitor.com homepage", status: "done", agentRole: "scout" },
             { id: "tp2", label: "Navigate to Pricing & Sign Up", status: "done", agentRole: "scout" },
@@ -115,7 +113,7 @@ export const SCENARIOS: Scenario[] = [
           content:
             "Simulating a new user signing up for competitor.com...",
           messageLevel: "process",
-          phase: "Browsing competitor.com",
+          taskPlanStepId: "tp1",
           thoughtProcess: {
             steps: [
               { label: "Preparing to visit competitor.com...", status: "done" },
@@ -133,7 +131,7 @@ export const SCENARIOS: Scenario[] = [
           content:
             "Landed on homepage. Found navigation with Pricing, Features, and Sign Up links.",
           messageLevel: "progress",
-          phase: "Browsing competitor.com",
+          taskPlanStepId: "tp1",
           timestamp: '10:02 AM'
         },
         {
@@ -143,7 +141,7 @@ export const SCENARIOS: Scenario[] = [
           agentRole: "scout",
           content: "Reaching the pricing page...",
           messageLevel: "process",
-          phase: "Analyzing Pricing",
+          taskPlanStepId: "tp2",
           thoughtProcess: {
             steps: [
               { label: "Looking through navigation...", status: "done" },
@@ -161,7 +159,7 @@ export const SCENARIOS: Scenario[] = [
           content:
             "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\n\n⚠️ The free trial requires a credit card — this is a potential friction point for new users.",
           messageLevel: "insight",
-          phase: "Analyzing Pricing",
+          taskPlanStepId: "tp3",
           canvasLinkId: "card-pricing",
           canvasCardTitle: "Pricing Analysis",
           timestamp: '10:04 AM'
@@ -173,7 +171,7 @@ export const SCENARIOS: Scenario[] = [
           agentRole: "scout",
           content: "Now proceeding to sign up for the free trial...",
           messageLevel: "process",
-          phase: "Testing Signup Flow",
+          taskPlanStepId: "tp4",
           thoughtProcess: {
             steps: [
               { label: "Clicking 'Start Free Trial'...", status: "done" },

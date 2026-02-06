@@ -1,4 +1,4 @@
-import { StoryEvent, ThoughtProcess } from "@/lib/mock-data";
+import { StoryEvent, ThoughtProcess, TaskPlanStep } from "@/lib/mock-data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -30,15 +30,58 @@ interface ChatPanelProps {
   persona: string;
 }
 
-// Phase Divider Component
-function PhaseDivider({ label }: { label: string }) {
+// Flow Node Component (NEW - replaces PhaseDivider)
+function FlowNode({ step, children, isLast }: { step: TaskPlanStep; children?: React.ReactNode; isLast: boolean }) {
+  const agentIcons: Record<string, string> = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+  const icon = agentIcons[step.agentRole] || "🤖";
+
+  // Status-based styles
+  const dotStyles = {
+    done: "bg-green-400/60",
+    active: "bg-blue-400 animate-pulse",
+    pending: "bg-muted-foreground/20",
+  };
+  const textStyles = {
+    done: "text-muted-foreground",
+    active: "text-foreground font-medium",
+    pending: "text-muted-foreground/40",
+  };
+  const lineStyles = {
+    done: "border-border/20",
+    active: "border-blue-400/30",
+    pending: "border-border/10 border-dashed",
+  };
+
   return (
-    <div className="flex items-center gap-3 my-4 px-2">
-      <div className="flex-1 h-px bg-border/50" />
-      <span className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider whitespace-nowrap">
-        {label}
-      </span>
-      <div className="flex-1 h-px bg-border/50" />
+    <div className="relative">
+      {/* Node header: dot + agent icon + label */}
+      <div className={`flex items-center gap-2.5 py-1.5 ${textStyles[step.status]}`}>
+        {/* Status dot */}
+        <span className={`w-2 h-2 rounded-full shrink-0 ${dotStyles[step.status]}`} />
+        {/* Agent icon */}
+        <span className="text-sm shrink-0">{icon}</span>
+        {/* Step label */}
+        <span className="text-xs">{step.label}</span>
+      </div>
+
+      {/* Connecting line + children content */}
+      {(children || !isLast) && (
+        <div className={`ml-[3px] pl-5 border-l ${lineStyles[step.status]} ${
+          isLast && step.status === "pending" ? "border-none" : ""
+        }`}>
+          {/* Child messages (L3 process, L2 progress, L1 insight) */}
+          {children && (
+            <div className="pb-3 space-y-1">
+              {children}
+            </div>
+          )}
+          {/* Spacing when no children but not last */}
+          {!children && !isLast && <div className="h-2" />}
+        </div>
+      )}
     </div>
   );
 }
@@ -238,17 +281,7 @@ function ProgressMessage({ message }: { message: StoryEvent }) {
 function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const agent = messages[0];
-  const agentIcons: Record<string, string> = {
-    scout: "🕵️",
-    capturer: "📸",
-    analyst: "📊",
-    comparator: "⚖️",
-    reporter: "📝",
-  };
-  const icon = agentIcons[agent.agentRole || ''] || "🤖";
-  const agentName = agent.agentRole
-    ? agent.agentRole.charAt(0).toUpperCase() + agent.agentRole.slice(1)
-    : "AI";
+  // Note: Agent icon and name removed from ProcessMessage since parent FlowNode shows it
 
   const hasActiveStep = messages.some(
     (m) => m.thoughtProcess?.steps?.some((s) => s.status === "active")
@@ -262,15 +295,12 @@ function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
   const doneSteps = allSteps.filter((s) => s.status === "done").length;
 
   return (
-    <div className="px-4 py-1 my-0.5">
+    <div className="py-0.5 my-0.5">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex items-center gap-2 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors w-full text-left"
       >
         <span>{expanded ? "▾" : "▸"}</span>
-        <span>{icon}</span>
-        <span>{agentName}</span>
-        <span className="text-muted-foreground/40">·</span>
         <span>
           {hasActiveStep
             ? "working..."
@@ -279,7 +309,7 @@ function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
       </button>
 
       {expanded && (
-        <div className="mt-1.5 ml-6 pl-3 border-l border-border/30 space-y-1">
+        <div className="mt-1.5 ml-3 pl-3 border-l border-border/30 space-y-1">
           {allSteps.map((step, i) => (
             <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground/60">
               <span className={cn(
@@ -294,9 +324,11 @@ function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
             </div>
           ))}
           {messages.map((m, i) => (
-            <div key={i} className="text-xs text-muted-foreground/50 mt-1 italic">
-              {m.content}
-            </div>
+             m.content ? (
+                <div key={i} className="text-xs text-muted-foreground/50 mt-1 italic">
+                {m.content}
+                </div>
+            ) : null
           ))}
         </div>
       )}
@@ -327,73 +359,129 @@ function getDefaultLevel(msg: StoryEvent) {
 }
   
   // Main List Renderer
-  function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
-      const rendered = [];
-      let i = 0;
-    
-      while (i < messages.length) {
-        const msg = messages[i];
-        const prevMsg = i > 0 ? messages[i - 1] : null;
-    
-        // Phase divider
-        if (msg.phase && msg.phase !== prevMsg?.phase) {
-          rendered.push(
-            <PhaseDivider key={`phase-${i}`} label={msg.phase} />
-          );
-        }
-    
-        // User message
-        if (msg.role === "user") {
-          rendered.push(
-            <div key={msg.id} className="flex justify-end px-4 py-2">
-              <div className="max-w-[80%] rounded-2xl px-4 py-2.5 bg-primary/15 text-sm text-foreground leading-relaxed">
-                {msg.content}
+function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
+    // 1. Separate special messages from flow messages
+    const taskPlanMsg = messages.find((m) => m.taskPlan);
+    const taskPlanSteps = taskPlanMsg?.taskPlan || [];
+  
+    // 2. Group messages by taskPlanStepId
+    const stepMessages: Record<string, StoryEvent[]> = {};
+    taskPlanSteps.forEach((step) => {
+      stepMessages[step.id] = [];
+    });
+  
+    const preFlowMessages: StoryEvent[] = []; // Messages before the flow (greeting, user request, task plan)
+  
+    messages.forEach((msg) => {
+      if (msg.taskPlan || msg.role === "user" || (!msg.taskPlanStepId && msg.messageLevel === "insight" && !taskPlanMsg)) {
+        preFlowMessages.push(msg);
+      } else if (msg.taskPlanStepId && stepMessages[msg.taskPlanStepId]) {
+        stepMessages[msg.taskPlanStepId].push(msg);
+      } else {
+        // Fallback for messages not linked to a plan or before plan exists
+        // Only if it's not a user message (already handled) and not the task plan itself
+         if (!msg.taskPlan && msg.role !== 'user') {
+             // Treat as pre-flow if no task plan exists yet, or put in preFlowMessages
+             preFlowMessages.push(msg);
+         }
+      }
+    });
+
+    const renderedPreFlow = [];
+    let i = 0;
+    while(i < preFlowMessages.length) {
+        const msg = preFlowMessages[i];
+         // User message
+         if (msg.role === "user") {
+            renderedPreFlow.push(
+              <div key={msg.id} className="flex justify-end px-4 py-2">
+                <div className="max-w-[80%] rounded-2xl px-4 py-2.5 bg-primary/15 text-sm text-foreground leading-relaxed">
+                  {msg.content}
+                </div>
               </div>
-            </div>
-          );
-          i++;
-          continue;
-        }
-    
-        // AI message — route by messageLevel
-        const level = msg.messageLevel || getDefaultLevel(msg);
-    
-        if (level === "plan") {
-            rendered.push(
-              <TaskPlanCard key={msg.id} message={msg} />
             );
             i++;
-        } else if (level === "insight") {
-          rendered.push(
-            <InsightMessage key={msg.id} message={msg} />
-          );
-          i++;
-        } else if (level === "progress") {
-          rendered.push(
-            <ProgressMessage key={msg.id} message={msg} />
-          );
-          i++;
-        } else {
-          // level === "process" — group consecutive L3 from same agent
-          const group = [msg];
-          while (
-            i + 1 < messages.length &&
-            messages[i + 1].role === "ai" &&
-            (messages[i + 1].messageLevel || getDefaultLevel(messages[i + 1])) === "process" &&
-            messages[i + 1].agentRole === msg.agentRole &&
-            messages[i + 1].phase === msg.phase
-          ) {
-            i++;
-            group.push(messages[i + 1]);
+            continue;
           }
-          rendered.push(
-            <ProcessMessage key={`proc-${msg.id}`} messages={group} />
-          );
-          i += group.length;
-        }
-      }
-    
-      return <div className="flex flex-col gap-0.5">{rendered}</div>;
+
+          // Plan or unlinked messages
+          const level = msg.messageLevel || getDefaultLevel(msg);
+          if (level === "plan") {
+             renderedPreFlow.push(<TaskPlanCard key={msg.id} message={msg} />);
+             i++;
+          } else if (level === "insight") {
+             renderedPreFlow.push(<InsightMessage key={msg.id} message={msg} />);
+             i++;
+          } else if (level === "progress") {
+             renderedPreFlow.push(<ProgressMessage key={msg.id} message={msg} />);
+             i++;
+          } else {
+              // Process messages (unlinked)
+               const group = [msg];
+               while (
+                i + 1 < preFlowMessages.length &&
+                preFlowMessages[i + 1].role === "ai" &&
+                (preFlowMessages[i + 1].messageLevel || getDefaultLevel(preFlowMessages[i + 1])) === "process" &&
+                preFlowMessages[i + 1].agentRole === msg.agentRole
+              ) {
+                i++;
+                group.push(preFlowMessages[i + 1]);
+              }
+              renderedPreFlow.push(
+                <ProcessMessage key={`proc-${msg.id}`} messages={group} />
+              );
+              i += group.length; // Correct increment: if group has 1, i increments by 1 total in loop
+          }
+    }
+  
+    // 3. Render Flow
+    return (
+      <div className="flex flex-col gap-0.5">
+        {/* Pre-flow messages */}
+        {renderedPreFlow}
+
+        {/* Flow Nodes */}
+        {taskPlanSteps.map((step, index) => {
+            const children = stepMessages[step.id];
+            const hasChildren = children && children.length > 0;
+            const isLast = index === taskPlanSteps.length - 1;
+
+            // Render children inside the node
+            const renderedChildren = [];
+            let j = 0;
+            while (j < children.length) {
+                const msg = children[j];
+                const level = msg.messageLevel || getDefaultLevel(msg);
+
+                if (level === "insight") {
+                    renderedChildren.push(<InsightMessage key={msg.id} message={msg} />);
+                    j++;
+                } else if (level === "progress") {
+                    renderedChildren.push(<ProgressMessage key={msg.id} message={msg} />);
+                    j++;
+                } else {
+                    // Process messages - group them
+                    const group = [msg];
+                    while (
+                        j + 1 < children.length &&
+                        (children[j + 1].messageLevel || getDefaultLevel(children[j + 1])) === "process"
+                    ) {
+                        j++;
+                        group.push(children[j + 1]);
+                    }
+                    renderedChildren.push(<ProcessMessage key={`proc-${msg.id}`} messages={group} />);
+                    j += group.length; // Correct increment
+                }
+            }
+
+            return (
+                <FlowNode key={step.id} step={step} isLast={isLast}>
+                    {hasChildren ? renderedChildren : null}
+                </FlowNode>
+            );
+        })}
+      </div>
+    );
   }
 
 // Suggestion Chips Component

@@ -1,0 +1,687 @@
+# AI Chat Flow Node Streaming Output — Replit Instruction (v3)
+
+> **This replaces Doc 26-v2.** The key change: replace Phase Dividers (horizontal lines) with **Flow Nodes** (vertical timeline nodes). This aligns with mainstream AI agent products like Manus AI and Devin AI. Task Plan card is kept unchanged.
+
+---
+
+## What Changed from v2
+
+| v2 (current) | v3 (this update) |
+|--------------|-------------------|
+| `PhaseDivider` component with `──── LABEL ────` | **`FlowNode`** component with `● Agent Label` |
+| Messages flat inside phases | Messages nested as FlowNode children |
+| `phase` field on messages | `taskPlanStepId` field linking to Task Plan |
+| Horizontal dividers between stages | Vertical timeline with connecting lines |
+
+**What stays the same:** Task Plan card, L1/L2/L3 message levels, AgentLabel, InsightMessage, ProgressMessage, ProcessMessage components.
+
+---
+
+## Interaction Model (unchanged from v2)
+
+Upliftly is a **task-execution Agent**. User sends ONE complex request → Agent auto-decomposes into Task Plan → Agent executes all steps automatically → user intervenes only when needed.
+
+---
+
+## Updated Data Model
+
+```ts
+interface TaskPlanStep {
+  id: string;
+  label: string;
+  status: "done" | "active" | "pending";
+  agentRole: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "ai";
+  agentRole?: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  content: string;
+  messageLevel?: "insight" | "progress" | "process" | "plan";
+  thoughtProcess?: {
+    steps: Array<{ label: string; status: "done" | "active" | "pending" }>;
+  };
+  taskPlan?: TaskPlanStep[];
+  taskPlanStepId?: string;  // NEW: links message to a Task Plan step
+  canvasLinkId?: string;
+  canvasCardTitle?: string;
+}
+```
+
+**Key change:** Removed `phase` field. Added `taskPlanStepId` to link each message to its parent Task Plan step.
+
+---
+
+## Component 1: AgentLabel (unchanged from v2)
+
+```jsx
+function AgentLabel({ role }) {
+  const agents = {
+    scout:      { icon: "🕵️", name: "Scout",      color: "text-blue-400" },
+    capturer:   { icon: "📸", name: "Capturer",   color: "text-purple-400" },
+    analyst:    { icon: "📊", name: "Analyst",    color: "text-orange-400" },
+    comparator: { icon: "⚖️", name: "Comparator", color: "text-green-400" },
+    reporter:   { icon: "📝", name: "Reporter",   color: "text-pink-400" },
+  };
+  const agent = agents[role] || agents.scout;
+  return (
+    <div className={`flex items-center gap-1.5 ${agent.color}`}>
+      <span className="text-sm">{agent.icon}</span>
+      <span className="text-xs font-semibold">{agent.name}</span>
+    </div>
+  );
+}
+```
+
+---
+
+## Component 2: FlowNode (NEW — replaces PhaseDivider)
+
+This is the core new component. Each FlowNode represents one Task Plan step in the vertical execution timeline.
+
+```jsx
+function FlowNode({ step, children, isLast }) {
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+  const icon = agentIcons[step.agentRole] || "🤖";
+
+  // Status-based styles
+  const dotStyles = {
+    done: "bg-green-400/60",
+    active: "bg-blue-400 animate-pulse",
+    pending: "bg-muted-foreground/20",
+  };
+  const textStyles = {
+    done: "text-muted-foreground",
+    active: "text-foreground font-medium",
+    pending: "text-muted-foreground/40",
+  };
+  const lineStyles = {
+    done: "border-border/20",
+    active: "border-blue-400/30",
+    pending: "border-border/10 border-dashed",
+  };
+
+  return (
+    <div className="relative">
+      {/* Node header: dot + agent icon + label */}
+      <div className={`flex items-center gap-2.5 py-1.5 ${textStyles[step.status]}`}>
+        {/* Status dot */}
+        <span className={`w-2 h-2 rounded-full shrink-0 ${dotStyles[step.status]}`} />
+        {/* Agent icon */}
+        <span className="text-sm shrink-0">{icon}</span>
+        {/* Step label */}
+        <span className="text-xs">{step.label}</span>
+      </div>
+
+      {/* Connecting line + children content */}
+      {(children || !isLast) && (
+        <div className={`ml-[3px] pl-5 border-l ${lineStyles[step.status]} ${
+          isLast && step.status === "pending" ? "border-none" : ""
+        }`}>
+          {/* Child messages (L3 process, L2 progress, L1 insight) */}
+          {children && (
+            <div className="pb-3 space-y-1">
+              {children}
+            </div>
+          )}
+          {/* Spacing when no children but not last */}
+          {!children && !isLast && <div className="h-2" />}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Key visual traits:**
+- Status dot: `●` done (green), `◎` active (blue pulse), `○` pending (gray)
+- Agent icon + step label inline with dot
+- Vertical connecting line (`border-left`) between nodes
+- Child content indented under the connecting line
+- Line style changes based on status (solid for done, pulse for active, dashed for pending)
+- No horizontal dividers anywhere
+
+---
+
+## Component 3: TaskPlanCard (unchanged from v2)
+
+```jsx
+function TaskPlanCard({ message }) {
+  const steps = message.taskPlan || [];
+  const doneCount = steps.filter((s) => s.status === "done").length;
+
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  return (
+    <div className="px-4 py-3 my-2 rounded-lg bg-muted/10
+      border border-border/30">
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-xs font-semibold text-foreground/80
+          uppercase tracking-wide">
+          Task Plan
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {doneCount}/{steps.length} completed
+        </span>
+      </div>
+      <div className="h-1 rounded-full bg-muted/30 mb-3 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary/60 transition-all
+            duration-500 ease-out"
+          style={{ width: `${(doneCount / steps.length) * 100}%` }}
+        />
+      </div>
+      <div className="space-y-1.5">
+        {steps.map((step) => (
+          <div key={step.id}
+            className={`flex items-center gap-2.5 text-xs py-0.5 ${
+              step.status === "active"
+                ? "text-foreground"
+                : step.status === "done"
+                ? "text-muted-foreground/50"
+                : "text-muted-foreground/40"
+            }`}>
+            <span className="w-4 text-center shrink-0">
+              {step.status === "done" && "✓"}
+              {step.status === "active" && (
+                <span className="inline-block w-1.5 h-1.5 rounded-full
+                  bg-blue-400 animate-pulse" />
+              )}
+              {step.status === "pending" && "○"}
+            </span>
+            <span className="shrink-0">
+              {agentIcons[step.agentRole] || "🤖"}
+            </span>
+            <span className={
+              step.status === "done"
+                ? "line-through decoration-muted-foreground/30"
+                : ""
+            }>
+              {step.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Component 4: InsightMessage (L1 — unchanged from v2)
+
+```jsx
+function InsightMessage({ message }) {
+  const agentColors = {
+    scout: "border-blue-400/50",
+    capturer: "border-purple-400/50",
+    analyst: "border-orange-400/50",
+    comparator: "border-green-400/50",
+    reporter: "border-pink-400/50",
+  };
+  const borderColor = agentColors[message.agentRole] || "border-border";
+
+  return (
+    <div className={`relative px-4 py-3 my-1.5 rounded-lg bg-muted/10
+      border-l-2 ${borderColor}`}>
+      {message.agentRole && <AgentLabel role={message.agentRole} />}
+      <div className="text-sm text-foreground leading-relaxed mt-1.5">
+        {message.content}
+      </div>
+      {message.canvasLinkId && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs
+          text-primary/70 hover:text-primary cursor-pointer
+          transition-colors">
+          <span>📌</span>
+          <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## Component 5: ProgressMessage (L2 — unchanged from v2)
+
+```jsx
+function ProgressMessage({ message }) {
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+  const icon = agentIcons[message.agentRole] || "🤖";
+
+  return (
+    <div className="flex items-start gap-2 py-1 my-0.5">
+      <span className="text-xs mt-0.5">{icon}</span>
+      <span className="text-xs text-muted-foreground leading-relaxed">
+        {message.content}
+      </span>
+    </div>
+  );
+}
+```
+
+---
+
+## Component 6: ProcessMessage (L3 — unchanged from v2)
+
+```jsx
+function ProcessMessage({ messages }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const agent = messages[0];
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+  const icon = agentIcons[agent.agentRole] || "🤖";
+  const agentName = agent.agentRole
+    ? agent.agentRole.charAt(0).toUpperCase() + agent.agentRole.slice(1)
+    : "AI";
+
+  const hasActiveStep = messages.some(
+    (m) => m.thoughtProcess?.steps?.some((s) => s.status === "active")
+  );
+  const allSteps = messages.flatMap(
+    (m) => m.thoughtProcess?.steps || []
+  );
+  const expanded = isExpanded || hasActiveStep;
+  const doneSteps = allSteps.filter((s) => s.status === "done").length;
+
+  return (
+    <div className="py-0.5 my-0.5">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-xs
+          text-muted-foreground/60 hover:text-muted-foreground
+          transition-colors w-full text-left"
+      >
+        <span>{expanded ? "▾" : "▸"}</span>
+        <span>
+          {hasActiveStep
+            ? "working..."
+            : `${doneSteps} step${doneSteps !== 1 ? "s" : ""} completed`}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="mt-1.5 ml-3 pl-3 border-l border-border/30
+          space-y-1">
+          {allSteps.map((step, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs
+              text-muted-foreground/60">
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                step.status === "done"
+                  ? "bg-green-400/60"
+                  : step.status === "active"
+                  ? "bg-blue-400 animate-pulse"
+                  : "bg-muted-foreground/20"
+              }`} />
+              <span>{step.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Note:** Removed the Agent icon and name from ProcessMessage since the parent FlowNode already shows which Agent is executing. The L3 block now only shows the collapsible step list.
+
+---
+
+## Component 7: ChatMessageList (REWRITTEN — core rendering logic)
+
+This is the main change. Instead of flat message rendering with phase dividers, messages are now grouped under FlowNodes.
+
+```jsx
+function ChatMessageList({ messages }) {
+  // 1. Separate special messages from flow messages
+  const taskPlanMsg = messages.find((m) => m.taskPlan);
+  const taskPlanSteps = taskPlanMsg?.taskPlan || [];
+
+  // 2. Group messages by taskPlanStepId
+  const stepMessages = {};
+  taskPlanSteps.forEach((step) => {
+    stepMessages[step.id] = [];
+  });
+
+  const preFlowMessages = []; // Messages before the flow (greeting, user request, task plan)
+
+  messages.forEach((msg) => {
+    if (msg.taskPlan || msg.role === "user" || (!msg.taskPlanStepId && msg.messageLevel === "insight" && !taskPlanMsg)) {
+      preFlowMessages.push(msg);
+    } else if (msg.taskPlanStepId && stepMessages[msg.taskPlanStepId]) {
+      stepMessages[msg.taskPlanStepId].push(msg);
+    }
+  });
+
+  // 3. Render
+  return (
+    <div className="flex flex-col gap-0.5">
+      {/* Pre-flow messages: greeting, user request */}
+      {preFlowMessages.map((msg) => {
+        if (msg.role === "user") {
+          return (
+            <div key={msg.id} className="flex justify-end px-4 py-2">
+              <div className="max-w-[80%] rounded-2xl px-4 py-2.5
+                bg-primary/15 text-sm text-foreground leading-relaxed">
+                {msg.content}
+              </div>
+            </div>
+          );
+        }
+        if (msg.taskPlan) {
+          return <TaskPlanCard key={msg.id} message={msg} />;
+        }
+        // Greeting or other pre-flow AI message
+        return <InsightMessage key={msg.id} message={msg} />;
+      })}
+
+      {/* Flow Nodes — the execution timeline */}
+      {taskPlanSteps.length > 0 && (
+        <div className="px-4 mt-3">
+          {taskPlanSteps.map((step, idx) => {
+            const msgs = stepMessages[step.id] || [];
+            const isLast = idx === taskPlanSteps.length - 1;
+
+            return (
+              <FlowNode key={step.id} step={step} isLast={isLast}>
+                {msgs.length > 0 && (
+                  <>
+                    {renderStepMessages(msgs)}
+                  </>
+                )}
+              </FlowNode>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Helper: render messages within a FlowNode
+function renderStepMessages(msgs) {
+  const rendered = [];
+  let i = 0;
+
+  while (i < msgs.length) {
+    const msg = msgs[i];
+    const level = msg.messageLevel || getDefaultLevel(msg);
+
+    if (level === "insight") {
+      rendered.push(<InsightMessage key={msg.id} message={msg} />);
+      i++;
+    } else if (level === "progress") {
+      rendered.push(<ProgressMessage key={msg.id} message={msg} />);
+      i++;
+    } else {
+      // level === "process" — group consecutive L3 from same agent
+      const group = [msg];
+      while (
+        i + 1 < msgs.length &&
+        (msgs[i + 1].messageLevel || getDefaultLevel(msgs[i + 1])) === "process" &&
+        msgs[i + 1].agentRole === msg.agentRole
+      ) {
+        i++;
+        group.push(msgs[i]);
+      }
+      rendered.push(
+        <ProcessMessage key={`proc-${msg.id}`} messages={group} />
+      );
+      i++;
+    }
+  }
+
+  return rendered;
+}
+
+function getDefaultLevel(msg) {
+  if (msg.taskPlan) return "plan";
+  if (msg.canvasLinkId) return "insight";
+  if (["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
+    return "insight";
+  }
+  if (msg.thoughtProcess) return "process";
+  return "progress";
+}
+```
+
+---
+
+## Updated Mock Data
+
+```js
+const DEMO_MESSAGES = [
+  // ── Greeting ──
+  {
+    id: "m1",
+    role: "ai",
+    agentRole: "scout",
+    content:
+      "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
+    messageLevel: "insight",
+  },
+
+  // ── User sends ONE complex request ──
+  {
+    id: "m2",
+    role: "user",
+    content:
+      "Analyze the new user signup and onboarding flow for competitor.com.",
+  },
+
+  // ── Agent acknowledges + shows Task Plan ──
+  {
+    id: "m3",
+    role: "ai",
+    agentRole: "scout",
+    content: "Got it. I'll analyze competitor.com's signup and onboarding experience.",
+    messageLevel: "plan",
+    taskPlan: [
+      { id: "t1", label: "Browse competitor.com homepage", status: "done", agentRole: "scout" },
+      { id: "t2", label: "Analyze pricing page", status: "done", agentRole: "analyst" },
+      { id: "t3", label: "Test signup flow", status: "active", agentRole: "scout" },
+      { id: "t4", label: "Evaluate onboarding experience", status: "pending", agentRole: "analyst" },
+      { id: "t5", label: "Generate analysis report", status: "pending", agentRole: "reporter" },
+    ],
+  },
+
+  // ── Step 1: Browse homepage (done) ──
+  // L3 process — collapsed under FlowNode t1
+  {
+    id: "m4",
+    role: "ai",
+    agentRole: "scout",
+    content: "Visiting competitor.com as a first-time user...",
+    messageLevel: "process",
+    taskPlanStepId: "t1",
+    thoughtProcess: {
+      steps: [
+        { label: "Preparing to visit competitor.com...", status: "done" },
+        { label: "Simulating a first-time visitor", status: "done" },
+        { label: "Scanning homepage layout", status: "done" },
+      ],
+    },
+  },
+  // L2 progress — milestone under FlowNode t1
+  {
+    id: "m5",
+    role: "ai",
+    agentRole: "scout",
+    content:
+      "Landed on homepage · Found navigation: Pricing, Features, Sign Up, Blog",
+    messageLevel: "progress",
+    taskPlanStepId: "t1",
+  },
+
+  // ── Step 2: Analyze pricing (done) ──
+  // L3 process — collapsed under FlowNode t2
+  {
+    id: "m6",
+    role: "ai",
+    agentRole: "scout",
+    content: "Navigating to pricing page...",
+    messageLevel: "process",
+    taskPlanStepId: "t2",
+    thoughtProcess: {
+      steps: [
+        { label: "Looking through the navigation...", status: "done" },
+        { label: "Found the pricing page", status: "done" },
+        { label: "Heading to pricing...", status: "done" },
+      ],
+    },
+  },
+  // L1 insight — PROMINENT under FlowNode t2
+  {
+    id: "m7",
+    role: "ai",
+    agentRole: "analyst",
+    content:
+      "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\n\n⚠️ The free trial requires a credit card — this is a potential friction point for new users.",
+    messageLevel: "insight",
+    taskPlanStepId: "t2",
+    canvasLinkId: "card-pricing",
+    canvasCardTitle: "Pricing Analysis",
+  },
+
+  // ── Step 3: Test signup (active — currently executing) ──
+  // L3 process — auto-expanded under FlowNode t3
+  {
+    id: "m8",
+    role: "ai",
+    agentRole: "scout",
+    content: "Testing the signup flow...",
+    messageLevel: "process",
+    taskPlanStepId: "t3",
+    thoughtProcess: {
+      steps: [
+        { label: "Clicking 'Start Free Trial'...", status: "done" },
+        { label: "Filling in registration form...", status: "active" },
+        { label: "Checking for friction points", status: "pending" },
+      ],
+    },
+  },
+
+  // Steps t4 and t5 have no messages yet (pending)
+];
+```
+
+**Key differences from v2 mock data:**
+1. **No `phase` field** — replaced with `taskPlanStepId`
+2. **Messages linked to steps** — each message has `taskPlanStepId: "t1"`, `"t2"`, etc.
+3. **Steps t4/t5 have no messages** — they appear as pending FlowNodes with no children
+
+---
+
+## Expected Visual Result
+
+```
+┌──────────────────────────────────────────┐
+│ Competitor Onboarding Analysis           │
+│ Last edited 2m ago              🕐  📋  │
+├──────────────────────────────────────────┤
+│                                          │
+│  🕵️ Scout                               │
+│  │ Your UX analysis team is ready.      │  ← L1 greeting
+│  │ Paste a URL or describe a user flow  │
+│  │ to get started.                      │
+│                                          │
+│         [Analyze the new user signup     │
+│          and onboarding flow for         │  ← User request
+│          competitor.com.]                │
+│                                          │
+│  ┌ Task Plan ─────────────── 2/5 ──┐    │
+│  │ ━━━━━━━━━━━━━━━━━━━━░░░░░ 40%  │    │  ← Task Plan card
+│  │  ✓ 🕵️ Browse competitor.com     │    │
+│  │  ✓ 📊 Analyze pricing page      │    │
+│  │  ● 🕵️ Test signup flow          │    │
+│  │  ○ 📊 Evaluate onboarding       │    │
+│  │  ○ 📝 Generate analysis report  │    │
+│  └──────────────────────────────────┘    │
+│                                          │
+│  ● 🕵️ Browse competitor.com homepage    │  ← FlowNode (done)
+│  │  ▸ 3 steps completed                 │  ← L3 collapsed
+│  │                                       │
+│  │  🕵️ Landed on homepage · Found nav:  │  ← L2 milestone
+│  │     Pricing, Features, Sign Up, Blog  │
+│  │                                       │
+│  ● 📊 Analyze pricing page              │  ← FlowNode (done)
+│  │  ▸ 3 steps completed                 │  ← L3 collapsed
+│  │                                       │
+│  │  📊 Analyst                           │
+│  │  │ Found 3 pricing tiers: Free, Pro  │  ← L1 insight
+│  │  │ ($29/mo), and Enterprise.         │     (PROMINENT)
+│  │  │                                   │
+│  │  │ ⚠️ Free trial requires credit    │
+│  │  │ card — potential friction point.  │
+│  │  │                                   │
+│  │  │ 📌 → Pricing Analysis            │
+│  │                                       │
+│  ◎ 🕵️ Test signup flow                  │  ← FlowNode (active)
+│  │  ▾ working...                         │  ← L3 auto-expanded
+│  │    • Clicking 'Start Free Trial'  ✓  │
+│  │    • Filling in registration...   ●  │
+│  │    • Checking friction points     ○  │
+│  │                                       │
+│  ○ 📊 Evaluate onboarding experience    │  ← FlowNode (pending)
+│  ┆                                       │  ← dashed line
+│  ○ 📝 Generate analysis report           │  ← FlowNode (pending)
+│                                          │
+├──────────────────────────────────────────┤
+│ [Compare with competitor] [Take screenshot]│ ← Suggestion chips
+│                                          │
+│ Ask a follow-up or redirect...           │
+│ 📎  @  ⚡  ⓘ            🌐  ➤          │
+└──────────────────────────────────────────┘
+```
+
+---
+
+## What NOT to Do
+
+- Do NOT use horizontal dividers (`──── LABEL ────`) between execution stages
+- Do NOT insert user messages between auto-executed steps
+- Do NOT show all AI messages as equal-weight cards
+- Do NOT keep the blue bubble background on AI messages
+- Do NOT change the Canvas panel
+- Do NOT add real AI functionality — this is mock data only
+
+---
+
+## Acceptance Criteria
+
+1. ✅ **FlowNode replaces PhaseDivider** — execution stages shown as vertical timeline nodes, not horizontal dividers
+2. ✅ FlowNodes show status dot (●/◎/○) + Agent icon + step label
+3. ✅ Vertical connecting line between FlowNodes (`border-left`)
+4. ✅ Done nodes: green dot, muted text, solid thin line
+5. ✅ Active node: blue pulsing dot, normal text, blue-tinted line
+6. ✅ Pending nodes: gray empty dot, very muted text, dashed line
+7. ✅ Child messages (L1/L2/L3) render indented under their parent FlowNode
+8. ✅ L1 Insight cards appear under their parent FlowNode (not as top-level messages)
+9. ✅ Task Plan card displays correctly (unchanged from v2)
+10. ✅ L3 process messages collapse/expand correctly within FlowNodes
+11. ✅ L3 auto-expands when parent FlowNode is active
+12. ✅ **No horizontal dividers anywhere in the execution flow**
+13. ✅ Only 1 user message in the demo (initial request)
+14. ✅ Dark theme styling consistent
+15. ✅ Conversation scrolls normally
+
+---
+
+*Document: 26-AIChat对话体验优化-Replit指令-v3.md*
+*Scope: Replace PhaseDivider with FlowNode vertical timeline + updated mock data*
+*Replaces: Doc 26-v2*
+*Related: Doc 32 (competitive research), Doc 31 (message layering analysis)*
