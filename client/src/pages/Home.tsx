@@ -115,6 +115,10 @@ import uxAvatar from '@/assets/avatars/ux.jpg';
 import marketingAvatar from '@/assets/avatars/marketing.jpg';
 import dataAvatar from '@/assets/avatars/data.jpg';
 
+import caseOnboardingImg from '@/assets/images/case-onboarding.jpg';
+import casePricingImg from '@/assets/images/case-pricing.jpg';
+import caseUxAuditImg from '@/assets/images/case-ux-audit.jpg';
+
 interface Persona {
   id: string;
   role: string;
@@ -1325,79 +1329,81 @@ export default function Home() {
                  </div>
               </div>
 
-              {/* Categorized Scenarios */}
-              <div className="w-full space-y-6 mt-8 md:mt-12 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-                 <div className="text-center space-y-2 mb-10">
-                    <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl font-heading opacity-90">
-                      See what FlowActs can do
+              {/* See what you'll get Section */}
+              <div className="w-full space-y-10 mt-16 md:mt-24 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 pb-20">
+                 <div className="text-center space-y-2">
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground font-heading">
+                      See what you'll get
                     </h2>
-                    <p className="text-muted-foreground text-sm max-w-lg mx-auto">
-                      Explore our curated templates to jumpstart your analysis and simulation workflows.
+                    <p className="text-muted-foreground text-sm">
+                      Real examples of AI team's work
                     </p>
                  </div>
 
-                 {/* Tabs */}
-                 <div className="flex items-center justify-center gap-1 p-1 bg-muted/30 rounded-xl overflow-x-auto no-scrollbar mx-auto w-full max-w-fit">
-                    {CATEGORIES.map(category => (
-                        <button
-                            key={category.id}
-                            onClick={() => setActiveCategory(category.id)}
-                            className={cn(
-                                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
-                                activeCategory === category.id 
-                                    ? "bg-background text-primary shadow-sm ring-1 ring-border" 
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                            )}
-                        >
-                            <category.icon className="w-4 h-4" />
-                            {category.label}
-                        </button>
-                    ))}
-                 </div>
-
-                 {/* Cards Grid */}
-                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
-                    {getFilteredScenarios().map((scenario, idx) => (
+                 {/* Case Studies Grid */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4">
+                    {[
+                      {
+                        id: 1,
+                        icon: "🔍",
+                        title: "Competitor Onboarding Analysis",
+                        description: "Analyzed Notion's 5-step signup flow, identified 3 UX friction points",
+                        image: caseOnboardingImg,
+                        link: "#"
+                      },
+                      {
+                        id: 2,
+                        icon: "💰",
+                        title: "Pricing Page Comparison",
+                        description: "Compared Stripe vs Square pricing strategies with visual breakdown",
+                        image: casePricingImg,
+                        link: "#"
+                      },
+                      {
+                        id: 3,
+                        icon: "🎯",
+                        title: "E-commerce UX Audit",
+                        description: "Audited checkout flow with 12 actionable insights",
+                        image: caseUxAuditImg,
+                        link: "#"
+                      }
+                    ].map((study) => (
                         <div 
-                            key={scenario.id}
-                            onClick={() => handleScenarioClick(scenario.id)}
-                            className="group relative bg-card hover:bg-muted/50 border border-border rounded-2xl cursor-pointer transition-all hover:border-primary/50 hover:shadow-lg hover:-translate-y-0.5 flex flex-col overflow-hidden h-[260px]"
+                            key={study.id}
+                            className="group rounded-xl border border-border bg-card overflow-hidden hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer"
                         >
-                            {/* Thumbnail Image */}
-                            <div className="h-[130px] w-full bg-muted/50 overflow-hidden relative">
-                                {scenario.thumbnail ? (
-                                    <img 
-                                        src={scenario.thumbnail} 
-                                        alt={scenario.name}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-muted">
-                                        <Layout className="w-8 h-8 text-muted-foreground/30" />
-                                    </div>
-                                )}
-                                <div className="absolute top-2 right-2">
-                                     <div className="bg-background/80 backdrop-blur-sm p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <ArrowRight className="w-3.5 h-3.5 text-primary" />
-                                    </div>
-                                </div>
+                            {/* Image Area */}
+                            <div className="aspect-video bg-muted overflow-hidden relative">
+                                <img 
+                                    src={study.image} 
+                                    alt={study.title}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                             </div>
-                            
-                            <div className="p-4 flex flex-col gap-2 flex-1">
-                                <h3 className="font-semibold text-base text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-1">
-                                    {scenario.name}
-                                </h3>
-                                <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed flex-1">
-                                    {scenario.goal}
-                                </p>
 
-                                <div className="pt-2 flex items-center gap-2 text-xs font-medium text-muted-foreground/80 mt-auto">
-                                    <Play className="w-3 h-3 fill-current" />
-                                    <span>Start Simulation</span>
+                            {/* Content Area */}
+                            <div className="p-5">
+                                <h3 className="font-semibold text-base mb-2 flex items-center gap-2 text-foreground group-hover:text-primary transition-colors">
+                                    <span>{study.icon}</span>
+                                    <span>{study.title}</span>
+                                </h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                                    {study.description}
+                                </p>
+                                <div className="inline-flex items-center gap-1 text-xs font-medium text-primary mt-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                                    View Report
+                                    <ArrowRight className="w-3 h-3" />
                                 </div>
                             </div>
                         </div>
                     ))}
+                 </div>
+
+                 <div className="text-center mt-6">
+                    <Button variant="outline" className="gap-2">
+                        View more examples <ArrowRight className="w-4 h-4" />
+                    </Button>
                  </div>
               </div>
             </div>
