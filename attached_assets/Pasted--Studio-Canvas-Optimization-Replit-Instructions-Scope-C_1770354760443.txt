@@ -1,0 +1,634 @@
+# Studio Canvas Optimization — Replit Instructions
+
+> Scope: Canvas area ONLY. Do NOT modify the AI Chat panel in this round.
+> Reference: Document 21 (Studio综合优化方案-整合版)
+> Tech stack: React + Tailwind CSS + Radix UI + Framer Motion
+
+---
+
+## Important: What NOT to Change
+
+The following components are in the **Chat panel** and must NOT be modified now:
+- AgentMessage / AgentStatusBar / AgentProgress (Chat-side AI role visualization)
+- BrowserPreview (embedded in Chat messages)
+- TaskControlBar (Pause/Skip/Stop controls above Chat input)
+- ContextSuggestions (suggestion chips above Chat input)
+- ChatInput placeholder text
+- TaskDivider (Chat-side task separators)
+- ChatCanvasLink (the "View on Canvas" link inside Chat messages)
+
+---
+
+## Task 1: Replace "Page 1 < >" with Semantic Tab Navigation
+
+### Current State
+```
+Page 1  < >
+```
+A bare "Page 1" label with left/right arrows. No semantic meaning, no quick jump, no progress info.
+
+### Target State
+```
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐ [+]
+│ 🔍 Signup    │ │ 💰 Pricing   │ │ 📊 Features  │
+│ Flow         │ │ Comparison   │ │ Audit        │
+│ ●●●●○ 4/5   │ │ ●●●○○ 3/5   │ │ ○○○○○ 0/5   │
+└──────────────┘ └──────────────┘ └──────────────┘
+```
+
+### Requirements
+
+1. **Create `PageTabNav` component** — placed at the TOP of the Canvas panel, replacing the current "Page 1 < >" navigation.
+
+2. **Each tab shows:**
+   - An icon (emoji) representing the task type
+   - A short task title (e.g. "Signup Flow", "Pricing Comparison")
+   - A progress indicator: small dots showing completed/total steps (e.g. ●●●○○ = 3 of 5)
+
+3. **Active tab** has a highlighted background (`bg-primary/10` + `border border-primary/20`). Inactive tabs show `hover:bg-muted/50`.
+
+4. **[+] button** at the end of the tab row for manually creating a new Page/Task.
+
+5. **Overflow behavior:** When there are more than 6 tabs, switch to a **breadcrumb + dropdown** mode:
+   ```
+   Notion Research > 🔍 Signup Flow Analysis  [▼]
+   ```
+   Clicking [▼] opens a dropdown listing all Pages with their icons and completion status.
+
+6. **Data model** — each Page object should have:
+   ```ts
+   interface PageTab {
+     id: string;
+     icon: string;        // emoji like "🔍", "💰", "📊"
+     title: string;       // e.g. "Signup Flow"
+     completedSteps: number;
+     totalSteps: number;
+   }
+   ```
+
+### Reference Code
+
+```jsx
+function PageTabNav({ pages, activePageId, onSwitch, onAdd }) {
+  if (pages.length > 6) {
+    return (
+      <PageBreadcrumbNav
+        pages={pages}
+        activePageId={activePageId}
+        onSwitch={onSwitch}
+        onAdd={onAdd}
+      />
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1 px-2 py-1 border-b border-border overflow-x-auto">
+      {pages.map((page) => {
+        const isActive = page.id === activePageId;
+        return (
+          <button
+            key={page.id}
+            onClick={() => onSwitch(page.id)}
+            className={`flex flex-col items-start px-3 py-2 rounded-lg
+              text-left min-w-[120px] transition-colors ${
+              isActive
+                ? "bg-primary/10 border border-primary/20"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            <span className="text-xs font-medium flex items-center gap-1">
+              <span>{page.icon}</span>
+              <span className={isActive ? "text-foreground" : "text-muted-foreground"}>
+                {page.title}
+              </span>
+            </span>
+            <div className="flex gap-0.5 mt-1">
+              {Array.from({ length: page.totalSteps }).map((_, i) => (
+                <span
+                  key={i}
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    i < page.completedSteps ? "bg-primary" : "bg-muted"
+                  }`}
+                />
+              ))}
+            </div>
+          </button>
+        );
+      })}
+      <button
+        onClick={onAdd}
+        className="w-8 h-8 flex items-center justify-center rounded-lg
+          hover:bg-muted text-muted-foreground"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+```
+
+### Mock Data for Demo
+
+```js
+const DEMO_PAGES = [
+  { id: "p1", icon: "🔍", title: "Signup Flow", completedSteps: 4, totalSteps: 5 },
+  { id: "p2", icon: "💰", title: "Pricing Compare", completedSteps: 3, totalSteps: 5 },
+  { id: "p3", icon: "📊", title: "Features Audit", completedSteps: 0, totalSteps: 5 },
+];
+```
+
+---
+
+## Task 2: Enhance ScreenshotCard with Status Indicator Tags
+
+### Current State
+Each card in Canvas shows a screenshot with basic info (URL, load time, AI insight text). There are no visual status indicators.
+
+### Target State
+Each ScreenshotCard should have:
+- A **step number + title** header (e.g. "Step 1 · Homepage")
+- The **screenshot image** (4:3 aspect ratio)
+- **Status indicator tags** at the bottom — small colored pills showing pass/warning/issue
+
+### Status Tag Styles
+
+| Status | Icon | Text Color | Background |
+|--------|------|-----------|------------|
+| good | ✓ | `text-green-400` | `bg-green-400/10` |
+| warning | ⚠ | `text-yellow-400` | `bg-yellow-400/10` |
+| issue | ✗ | `text-red-400` | `bg-red-400/10` |
+
+### Requirements
+
+1. **Replace or enhance** the existing Canvas card component with the `ScreenshotCard` below.
+2. Card width: `w-[240px]`, with `rounded-lg border border-border bg-card`.
+3. On hover: `hover:border-primary/50 hover:shadow-lg`, and the screenshot scales slightly (`group-hover:scale-105`).
+4. The bottom area shows metric tags as small rounded pills.
+
+### Reference Code
+
+```jsx
+function ScreenshotCard({ step, title, screenshot, metrics, onClick }) {
+  const statusStyles = {
+    good:    { icon: "✓", color: "text-green-400", bg: "bg-green-400/10" },
+    warning: { icon: "⚠", color: "text-yellow-400", bg: "bg-yellow-400/10" },
+    issue:   { icon: "✗", color: "text-red-400",   bg: "bg-red-400/10" }
+  };
+  return (
+    <div
+      className="w-[240px] rounded-lg border border-border bg-card
+        overflow-hidden cursor-pointer hover:border-primary/50
+        hover:shadow-lg transition-all group"
+      onClick={onClick}
+    >
+      {/* Header */}
+      <div className="px-3 py-2 border-b border-border flex items-center gap-2">
+        <span className="text-xs font-mono text-muted-foreground">{step}</span>
+        <span className="text-sm font-medium truncate">{title}</span>
+      </div>
+      {/* Screenshot */}
+      <div className="aspect-[4/3] bg-muted overflow-hidden">
+        <img
+          src={screenshot}
+          alt={title}
+          className="w-full h-full object-cover
+            group-hover:scale-105 transition-transform duration-300"
+        />
+      </div>
+      {/* Status Tags */}
+      <div className="px-3 py-2 flex flex-wrap gap-1.5">
+        {metrics.map((m, i) => {
+          const s = statusStyles[m.status] || statusStyles.good;
+          return (
+            <span
+              key={i}
+              className={`inline-flex items-center gap-1 text-xs
+                px-2 py-0.5 rounded-full ${s.bg} ${s.color}`}
+            >
+              <span>{s.icon}</span>
+              <span>{m.label}</span>
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+```
+
+### Mock Data for Demo
+
+```js
+const DEMO_CARDS = [
+  {
+    step: "Step 1",
+    title: "Homepage",
+    screenshot: "/screenshots/homepage.png",  // use placeholder if needed
+    metrics: [
+      { status: "good", label: "Load 1.2s" },
+      { status: "good", label: "CTA visible" }
+    ]
+  },
+  {
+    step: "Step 2",
+    title: "Signup Page",
+    screenshot: "/screenshots/signup.png",
+    metrics: [
+      { status: "warning", label: "7 fields" },
+      { status: "issue", label: "No progress bar" }
+    ]
+  },
+  {
+    step: "Step 3",
+    title: "Email Verification",
+    screenshot: "/screenshots/verify.png",
+    metrics: [
+      { status: "issue", label: "8s delay" },
+      { status: "warning", label: "No resend" }
+    ]
+  }
+];
+```
+
+---
+
+## Task 3: Add FlowConnector Between Cards
+
+### Current State
+Cards are placed on the Canvas without visual connections. The user cannot see the flow/sequence between steps.
+
+### Target State
+Between adjacent ScreenshotCards, show a **connector line with an arrow** indicating the flow direction.
+
+```
+┌────┐  →  ┌────┐  →  ┌────┐
+│Home│     │Sign│     │Veri│
+│[截图]│     │[截图]│     │[截图]│
+│ ✓  │     │ ⚠  │     │ ✗  │
+└────┘     └────┘     └────┘
+      ↓
+┌────┐  →  ┌────┐
+│Set │     │Dash│
+│[截图]│     │[截图]│
+│ ✓  │     │ ✓  │
+└────┘     └────┘
+```
+
+### Requirements
+
+1. Support both **horizontal** (`→`) and **vertical** (`↓`) connectors.
+2. Horizontal: a short line + arrow between cards in the same row.
+3. Vertical: a short line + arrow between rows (when cards wrap to next row).
+4. Styling: `bg-border` for the line, `text-muted-foreground` for the arrow.
+
+### Reference Code
+
+```jsx
+function FlowConnector({ direction = "horizontal" }) {
+  if (direction === "horizontal") {
+    return (
+      <div className="flex items-center px-2">
+        <div className="w-8 h-px bg-border" />
+        <div className="text-muted-foreground text-xs">→</div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col items-center py-1">
+      <div className="h-4 w-px bg-border" />
+      <div className="text-muted-foreground text-xs">↓</div>
+    </div>
+  );
+}
+```
+
+### Layout Pattern
+
+Arrange cards in a flex-wrap layout. Between each card in a row, insert a horizontal `FlowConnector`. Between rows, insert a vertical `FlowConnector`. Example layout:
+
+```jsx
+<div className="flex flex-wrap items-start gap-y-4 p-4">
+  <ScreenshotCard {...card1} />
+  <FlowConnector direction="horizontal" />
+  <ScreenshotCard {...card2} />
+  <FlowConnector direction="horizontal" />
+  <ScreenshotCard {...card3} />
+  {/* row break + vertical connector */}
+  <div className="w-full flex justify-start pl-[120px]">
+    <FlowConnector direction="vertical" />
+  </div>
+  <ScreenshotCard {...card4} />
+  <FlowConnector direction="horizontal" />
+  <ScreenshotCard {...card5} />
+</div>
+```
+
+---
+
+## Task 4: Add SummaryCard Component
+
+### Current State
+No summary/overview card exists. After all steps are captured, the user has to mentally aggregate the findings.
+
+### Target State
+At the end of the card flow (after the last ScreenshotCard + FlowConnector), display a **SummaryCard** that aggregates key metrics.
+
+```
+┌─────────────────────────┐
+│ Summary                 │  ← primary color header
+├─────────────────────────┤
+│   5        3        12  │
+│  pages   issues  insights│
+├─────────────────────────┤
+│ ⚠ 7 form fields on...  │
+│ ✗ 8s email verification │
+│ ✓ Clean visual design   │
+└─────────────────────────┘
+```
+
+### Requirements
+
+1. Width: `w-[240px]`, same as ScreenshotCard for visual consistency.
+2. Border: `border-primary/30`, background: `bg-primary/5` — slightly highlighted to stand out.
+3. Top section: 3-column grid showing `totalPages`, `totalIssues`, `totalInsights`.
+4. Bottom section: a list of key findings, each with an icon.
+5. Connect to the last ScreenshotCard via a `FlowConnector`.
+
+### Reference Code
+
+```jsx
+function SummaryCard({ totalPages, totalIssues, totalInsights, findings }) {
+  return (
+    <div className="w-[240px] rounded-lg border border-primary/30 bg-primary/5 overflow-hidden">
+      <div className="px-3 py-2 border-b border-primary/20">
+        <span className="text-sm font-semibold text-primary">Summary</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2 p-3">
+        <div className="text-center">
+          <div className="text-lg font-bold">{totalPages}</div>
+          <div className="text-xs text-muted-foreground">pages</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-bold text-yellow-400">{totalIssues}</div>
+          <div className="text-xs text-muted-foreground">issues</div>
+        </div>
+        <div className="text-center">
+          <div className="text-lg font-bold text-green-400">{totalInsights}</div>
+          <div className="text-xs text-muted-foreground">insights</div>
+        </div>
+      </div>
+      <div className="px-3 pb-3">
+        <ul className="space-y-1">
+          {findings.map((f, i) => (
+            <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+              <span className="mt-0.5">{f.icon}</span>
+              <span>{f.text}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+```
+
+### Mock Data for Demo
+
+```js
+const DEMO_SUMMARY = {
+  totalPages: 5,
+  totalIssues: 3,
+  totalInsights: 12,
+  findings: [
+    { icon: "⚠", text: "7 form fields on signup (industry avg: 4)" },
+    { icon: "✗", text: "Email verification takes 8 seconds" },
+    { icon: "✗", text: "No progress indicator during onboarding" },
+    { icon: "✓", text: "Clean visual design, consistent branding" },
+    { icon: "✓", text: "Mobile-responsive layout" }
+  ]
+};
+```
+
+---
+
+## Task 5: Add Canvas Zoom Controls
+
+### Current State
+No zoom controls. The Canvas content is at a fixed scale.
+
+### Target State
+A small floating control bar at the **bottom-left** of the Canvas area (above the [Canvas][Files] tabs) with:
+- **[−]** button: zoom out (min 25%)
+- **Percentage display**: e.g. "75%"
+- **[+]** button: zoom in (max 200%)
+- **[⊞]** button: reset to 100%
+
+```
+[🔍 75%] [⊞]
+```
+
+### Requirements
+
+1. Zoom range: 25% to 200%, in 25% increments.
+2. The zoom value controls a CSS `transform: scale(zoom)` on the Canvas content area.
+3. The zoom controls float at the bottom-left of the Canvas, always visible.
+4. Reset button [⊞] sets zoom back to 100%.
+
+### Reference Code
+
+```jsx
+function CanvasZoomControls({ zoom, onZoomChange }) {
+  return (
+    <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+      <button
+        onClick={() => onZoomChange(Math.max(0.25, zoom - 0.25))}
+        className="w-7 h-7 flex items-center justify-center rounded
+          hover:bg-background text-sm"
+      >
+        −
+      </button>
+      <span className="text-xs w-12 text-center text-muted-foreground">
+        {Math.round(zoom * 100)}%
+      </span>
+      <button
+        onClick={() => onZoomChange(Math.min(2, zoom + 0.25))}
+        className="w-7 h-7 flex items-center justify-center rounded
+          hover:bg-background text-sm"
+      >
+        +
+      </button>
+      <button
+        onClick={() => onZoomChange(1)}
+        className="w-7 h-7 flex items-center justify-center rounded
+          hover:bg-background text-xs"
+        title="Reset zoom"
+      >
+        ⊞
+      </button>
+    </div>
+  );
+}
+```
+
+### Integration
+
+Apply zoom to the Canvas content wrapper:
+
+```jsx
+function CanvasContent({ zoom, children }) {
+  return (
+    <div className="flex-1 overflow-auto relative">
+      <div
+        className="origin-top-left transition-transform duration-200"
+        style={{ transform: `scale(${zoom})` }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Task 6: Canvas Performance Optimizations
+
+### Requirements
+
+These are important for maintaining smooth interaction as card count grows:
+
+| Measure | Description |
+|---------|-------------|
+| **Lazy-load screenshots** | Only load images visible in the viewport. Use `loading="lazy"` on `<img>` tags or Intersection Observer. Cards outside viewport show a gray placeholder. |
+| **Thumbnail compression** | In Canvas view, use compressed thumbnails (~200KB). Load full-resolution only when user clicks to expand. |
+| **Drag throttling** | If Canvas supports drag/pan, throttle with `requestAnimationFrame`. |
+| **Zoom degradation** | When zoom < 50%, hide text content inside cards and show only the screenshot thumbnail. This reduces DOM rendering cost. |
+
+### Implementation Hint
+
+```jsx
+// Lazy image with placeholder
+function LazyScreenshot({ src, alt }) {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      className="w-full h-full object-cover"
+      onError={(e) => {
+        e.target.src = "/placeholder-screenshot.png";
+      }}
+    />
+  );
+}
+```
+
+---
+
+## Updated Canvas Component Hierarchy
+
+After all tasks are implemented, the Canvas panel structure should be:
+
+```
+CanvasPanel
+├── PageTabNav / PageBreadcrumbNav   ← Task 1 (replaces "Page 1 < >")
+├── CanvasContent                     ← Zoomable/pannable area
+│   ├── ScreenshotCard[]             ← Task 2 (with status tags)
+│   ├── FlowConnector[]              ← Task 3 (between cards)
+│   └── SummaryCard                  ← Task 4 (at end of flow)
+├── CanvasZoomControls               ← Task 5 (bottom-left floating)
+└── CanvasFooter
+    └── [Canvas] [Files]             ← Keep existing tabs
+```
+
+---
+
+## Implementation Checklist
+
+Execute in this order:
+
+### Step 1: PageTabNav
+- [ ] Create `PageTabNav` component
+- [ ] Create `PageBreadcrumbNav` component (for >6 pages fallback)
+- [ ] Replace current "Page 1 < >" with `PageTabNav`
+- [ ] Wire up page switching logic
+- [ ] Add mock data (3 demo pages with icons, titles, progress)
+
+### Step 2: ScreenshotCard
+- [ ] Create `ScreenshotCard` component with step/title/screenshot/metrics
+- [ ] Implement status tag pills (good/warning/issue)
+- [ ] Replace existing card rendering with `ScreenshotCard`
+- [ ] Add hover effects (border highlight, image scale)
+
+### Step 3: FlowConnector
+- [ ] Create `FlowConnector` component (horizontal + vertical)
+- [ ] Insert connectors between ScreenshotCards in the layout
+- [ ] Handle row wrapping with vertical connectors
+
+### Step 4: SummaryCard
+- [ ] Create `SummaryCard` component
+- [ ] Place at end of card flow, connected via FlowConnector
+- [ ] Populate with aggregated mock data
+
+### Step 5: CanvasZoomControls
+- [ ] Create `CanvasZoomControls` component
+- [ ] Add zoom state management
+- [ ] Apply `transform: scale()` to Canvas content wrapper
+- [ ] Position controls at bottom-left of Canvas
+
+### Step 6: Performance
+- [ ] Add `loading="lazy"` to all screenshot images
+- [ ] Add placeholder/fallback for failed image loads
+- [ ] Implement zoom degradation (hide text at <50%)
+
+---
+
+## Visual Reference: Complete Canvas After Optimization
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ [+]      │ ← PageTabNav
+│ │ 🔍 Signup    │ │ 💰 Pricing   │ │ 📊 Features  │          │
+│ │ Flow         │ │ Comparison   │ │ Audit        │          │
+│ │ ●●●●○       │ │ ●●●○○       │ │ ○○○○○       │          │
+│ └──────────────┘ └──────────────┘ └──────────────┘          │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌────────┐      ┌────────┐      ┌────────┐                │
+│  │Step 1  │  →   │Step 2  │  →   │Step 3  │                │
+│  │Homepage│      │Signup  │      │Verify  │                │
+│  │[截图]   │      │[截图]   │      │[截图]   │                │
+│  │✓Load   │      │⚠7fields│      │✗8s wait│                │
+│  └────────┘      └────────┘      └────────┘                │
+│       ↓                                                      │
+│  ┌────────┐      ┌────────┐      ┌─────────────┐           │
+│  │Step 4  │  →   │Step 5  │  →   │  Summary    │           │
+│  │Settings│      │Dashbrd │      │ 5pg 3iss 12i│           │
+│  │[截图]   │      │[截图]   │      │ ⚠ 7 fields  │           │
+│  │✓Clean  │      │✓Fast   │      │ ✗ 8s verify │           │
+│  └────────┘      └────────┘      └─────────────┘           │
+│                                                              │
+│  [🔍 75%] [⊞]                                               │ ← ZoomControls
+│  [Canvas] [Files]                                            │ ← Existing tabs
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Notes
+
+1. **Dark theme**: All components use the existing dark theme tokens (`bg-card`, `border-border`, `text-foreground`, `text-muted-foreground`, `bg-muted`, `bg-primary/10`, etc.). Do NOT introduce light-theme colors.
+
+2. **Fonts**: Continue using Plus Jakarta Sans for headings and Inter for body text, consistent with the rest of the app.
+
+3. **No Chat changes**: This instruction set covers Canvas only. The Chat panel (left side in the current layout, or right side depending on config) should remain unchanged.
+
+4. **Existing Canvas features**: Keep all existing Canvas functionality (drag, pan, card creation, etc.). These tasks ADD to the existing Canvas, they don't replace its core mechanics.
+
+5. **Responsive**: The PageTabNav should handle overflow with horizontal scroll (`overflow-x-auto`). Cards should wrap naturally in the flex layout.
+
+---
+
+*Document created: 2026-02-06*
+*Source: Document 21 (Studio综合优化方案-整合版), Canvas-only extraction*
+*Scope: Canvas panel only — AI Chat panel excluded per instruction*
