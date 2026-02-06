@@ -1,0 +1,449 @@
+# AI Chat 消息分层与信息密度优化方案
+
+## 一、问题诊断
+
+### 当前状态（Doc 26 实现后）
+
+截图中的对话流包含 7 条消息，信息价值分布极不均匀：
+
+| # | 角色 | 内容摘要 | 信息价值 |
+|---|------|---------|---------|
+| 1 | Scout | "Landed on the homepage..." | 🔸 低 — 过程描述 |
+| 2 | 用户 | "Find their pricing..." | — 用户指令 |
+| 3 | Scout | What's happening + "Searching for pricing..." | 🔸 低 — 过程描述 |
+| 4 | Analyst | "Found 3 pricing tiers... credit card friction" | 🔴 **高 — 分析结论** |
+| 5 | Scout | What's happening + "Now proceeding to sign up..." | 🔸 低 — 过程描述 |
+
+**5 条 AI 消息中，只有 1 条（Analyst 的定价分析）是用户真正关心的高价值信息。**
+
+### 核心问题
+
+当前设计将所有 AI 消息以 **同等权重、同等视觉尺寸** 呈现：
+
+- 每条 Scout 过程消息都占据一个完整的消息卡片（蓝色气泡 + Agent 标签 + What's happening 展开区）
+- Analyst 的高价值分析结论与 Scout 的"正在前往定价页..."在视觉上没有任何区分
+- 用户需要在大量过程性信息中"寻找"真正有价值的结论
+
+**类比：** 这就像一个项目经理向 CEO 汇报时，把"我打开了电脑"、"我登录了系统"、"我点击了报表按钮"和"本季度营收增长 30%"放在同一份报告里，每条占同样篇幅。
+
+---
+
+## 二、交互模型修正
+
+### 之前的错误理解
+
+之前的 mock data 将对话设计为多轮对话模式：用户说一句 → AI 执行一步 → 用户再说一句 → AI 再执行一步。这是 **chatbot 模式**，不是 Agent 模式。
+
+### 正确的交互模型
+
+Upliftly 是 **任务执行类 Agent**，正确的流程是：
+
+```
+用户发出一个复杂需求
+  "Analyze the new user signup and onboarding flow for competitor.com"
+     ↓
+Agent 意图识别 → 自动拆解为 Task Plan（todo 列表）
+  ┌ Task Plan ──────────────────────┐
+  │ 1. ✓ Browse competitor.com      │
+  │ 2. ● Analyze pricing page       │
+  │ 3. ○ Test signup flow            │
+  │ 4. ○ Evaluate onboarding        │
+  │ 5. ○ Generate analysis report    │
+  └─────────────────────────────────┘
+     ↓
+Agent 自动连续执行所有步骤（无需用户推动）
+  Step 1 → Step 2 → Step 3 → Step 4 → Step 5
+     ↓
+用户仅在需要调整方向时才介入（可选）
+  "Skip pricing, focus on the signup form"
+     ↓
+完成后，建议芯片引导下一步操作
+  [Compare with another competitor] [Generate report]
+```
+
+**关键区别：** 用户不需要在每个步骤后发消息。Agent 自主运行直到任务完成或用户主动中断。
+
+---
+
+## 三、设计原则：消息分层 + Task Plan
+
+### 消息四层分级
+
+| 层级 | 名称 | 典型内容 | 视觉权重 | 占比 |
+|------|------|---------|---------|------|
+| **Task Plan** | 任务计划 | Agent 拆解后的 todo 列表，实时更新进度 | **结构性** — 带进度条的清单卡片 | 1条 |
+| **L1 结果层** | Insight / Finding | 分析结论、发现的问题、对比结果、报告摘要 | **最高** — 完整卡片，醒目样式 | ~20% |
+| **L2 进展层** | Progress | 关键里程碑（"已到达定价页"、"注册完成"） | **中等** — 紧凑单行 | ~30% |
+| **L3 过程层** | Process | 浏览器操作细节、导航步骤、表单填写 | **最低** — 折叠/聚合 | ~50% |
+
+**核心理念：Task Plan 提供全局进度感，L1 突出结果，L2 标记里程碑，L3 按需展开。**
+
+---
+
+## 四、视觉设计
+
+### Task Plan — 任务计划卡片（用户请求后立即展示）
+
+Agent 理解用户意图后，展示自动拆解的任务清单，并随执行进度实时更新：
+
+```
+┌ Task Plan ──────────────── 2/5 ──┐
+│ ━━━━━━━━━━━━━━━━━━━━░░░░░ 40%   │
+│                                   │
+│  ✓ 🕵️ Browse competitor.com      │
+│  ✓ 📊 Analyze pricing page       │
+│  ● 🕵️ Test signup flow           │
+│  ○ 📊 Evaluate onboarding        │
+│  ○ 📝 Generate analysis report   │
+└───────────────────────────────────┘
+```
+
+**视觉特征：**
+- 带边框的卡片（`border border-border/30`），区别于 L1 的彩色左边条
+- 顶部进度条 + 完成计数
+- 每步显示：状态图标（✓/●/○）+ Agent emoji + 步骤描述
+- 已完成步骤灰色 + 删除线
+- 当前执行步骤高亮 + 脉冲动画
+- 随 Agent 执行自动更新
+
+### L1 结果层 — Insight Card（完整展示）
+
+这是用户最关心的内容，给予最高视觉权重：
+
+```
+📊 Analyst
+┌─────────────────────────────────────────┐
+│ Found 3 pricing tiers: Free, Pro        │
+│ ($29/mo), and Enterprise.               │
+│                                         │
+│ ⚠️ The free trial requires a credit    │
+│ card — potential friction point for      │
+│ new users.                              │
+│                                         │
+│ 📌 → Pricing Analysis                  │
+└─────────────────────────────────────────┘
+```
+
+**视觉特征：**
+- 完整的 Agent 标签 + 消息内容
+- 关键发现可用 `⚠️` 或加粗标注
+- 有 Canvas 关联锚点（📌）
+- 背景：`bg-muted/10` 带左侧彩色边条（Agent 对应色）
+- 这是唯一需要"占据完整空间"的消息类型
+
+### L2 进展层 — Progress Line（紧凑单行）
+
+关键里程碑，用一行紧凑文本表示：
+
+```
+🕵️ Scout landed on the homepage · Found Pricing, Features, Sign Up links
+```
+
+```
+🕵️ Scout reached the pricing page
+```
+
+```
+🕵️ Scout started the signup flow
+```
+
+**视觉特征：**
+- 单行，无卡片/气泡包裹
+- `text-xs text-muted-foreground`，与阶段分隔线类似的轻量级
+- Agent 图标 + 名称 + 简短描述，全部在一行内
+- 不展开 What's happening，不显示详细步骤
+- 可点击展开查看 L3 详情（可选）
+
+### L3 过程层 — Collapsed Process（默认折叠）
+
+多个过程步骤聚合为一 个可展开的紧凑块：
+
+```
+  ▸ 🕵️ Scout · 3 steps completed                    [点击展开]
+```
+
+展开后：
+```
+  ▾ 🕵️ Scout · 3 steps completed
+    • Preparing to visit competitor.com...     ✓
+    • Simulating a first-time visitor          ✓
+    • Loading homepage                         ✓
+```
+
+**视觉特征：**
+- 默认折叠为单行
+- `text-xs text-muted-foreground/60`，最低视觉权重
+- 展开后显示步骤列表（即当前的 What's happening 内容）
+- 多个连续的 L3 消息自动聚合为一个折叠块
+
+---
+
+## 五、优化前后对比
+
+### 优化前（当前实现，截图所示）
+
+```
+┌──────────────────────────────────────┐
+│ 🕵️ Scout                            │  ← 完整卡片
+│ Landed on the homepage. I can see    │
+│ a navigation bar with Pricing,       │
+│ Features, and Sign Up links.         │
+└──────────────────────────────────────┘
+
+     [用户消息：find their pricing...]    ← 不应出现在自动执行流中
+
+──── ANALYZING PRICING ────
+
+┌──────────────────────────────────────┐
+│ 🕵️ Scout                            │  ← 完整卡片
+│ ▾ What's happening                   │
+│   • Looking through navigation...    │
+│   • Found the pricing page           │
+│   • Heading to pricing...            │
+│                                      │
+│ Searching for pricing... Found it.   │
+│ Heading to the pricing page.         │
+└──────────────────────────────────────┘
+
+┌──────────────────────────────────────┐
+│ 📊 Analyst                           │  ← 完整卡片
+│ Found 3 pricing tiers: Free, Pro     │
+│ ($29/mo), and Enterprise.            │
+│ The free trial requires a credit     │
+│ card — potential friction point.     │
+└──────────────────────────────────────┘
+
+──── SIGNING UP ────
+
+┌──────────────────────────────────────┐
+│ 🕵️ Scout                            │  ← 完整卡片
+│ ▾ What's happening                   │
+│   • Clicking 'Start Free Trial'...   │
+│   • Filling in registration form...  │
+│   • Checking for friction points     │
+│                                      │
+│ Now proceeding to sign up for the    │
+│ free trial...                        │
+└──────────────────────────────────────┘
+```
+
+**问题：**
+1. 5 个等权重卡片，视觉空间约 40 行，高价值信息占比 ~20%
+2. 中间插入了不必要的用户消息（Agent 应自动执行）
+3. 没有全局任务进度感
+
+### 优化后（Task Plan + 三层分级 + 自动执行）
+
+```
+     [用户：Analyze the new user signup
+      and onboarding flow for competitor.com.]
+
+┌ Task Plan ──────────────── 2/5 ──┐
+│ ━━━━━━━━━━━━━━━━━━━━░░░░░ 40%   │    ← 全局进度
+│  ✓ 🕵️ Browse competitor.com      │
+│  ✓ 📊 Analyze pricing page       │
+│  ● 🕵️ Test signup flow           │
+│  ○ 📊 Evaluate onboarding        │
+│  ○ 📝 Generate analysis report   │
+└───────────────────────────────────┘
+
+──── BROWSING COMPETITOR.COM ────
+
+  ▸ 🕵️ Scout · 3 steps completed        [L3 折叠]
+
+  🕵️ Landed on homepage. Found nav:      [L2 单行]
+     Pricing, Features, Sign Up, Blog.
+
+──── ANALYZING PRICING ────
+
+  ▸ 🕵️ Scout · 3 steps completed        [L3 折叠]
+
+┌──────────────────────────────────────┐
+│ 📊 Analyst                           │  [L1 完整]
+│ Found 3 pricing tiers: Free, Pro     │
+│ ($29/mo), and Enterprise.            │
+│                                      │
+│ ⚠️ The free trial requires a credit │
+│ card — potential friction point for  │
+│ new users.                           │
+│                                      │
+│ 📌 → Pricing Analysis               │
+└──────────────────────────────────────┘
+
+──── TESTING SIGNUP FLOW ────
+
+  ▾ 🕵️ Scout · working...               [L3 自动展开]
+    • Clicking 'Start Free Trial'...  ✓
+    • Filling in registration form... ●
+    • Checking for friction points    ○
+```
+
+**效果：**
+- 视觉空间约 22 行（含 Task Plan），高价值信息占比 ~50%
+- 全局 Task Plan 提供进度感，用户随时知道"做到哪了"
+- 无中间用户消息 — Agent 自动连续执行
+- 结论突出，过程按需查看
+
+---
+
+## 五、消息分级规则
+
+### 自动分级逻辑
+
+```
+规则 1：Analyst / Comparator / Reporter 的消息 → 默认 L1（结果层）
+规则 2：Scout / Capturer 的"到达"类消息 → L2（进展层）
+规则 3：Scout / Capturer 的过程操作消息 → L3（过程层）
+规则 4：带 canvasLinkId 的消息 → 强制 L1（产生了 Canvas 内容 = 高价值）
+规则 5：带 thoughtProcess 但无实质结论的消息 → L3
+```
+
+### 数据模型扩展
+
+```ts
+interface TaskPlanStep {
+  id: string;
+  label: string;
+  status: "done" | "active" | "pending";
+  agentRole: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "ai";
+  agentRole?: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  content: string;
+  thoughtProcess?: ThoughtProcess;
+  phase?: string;
+  canvasLinkId?: string;
+
+  // 分层字段
+  messageLevel?: "insight" | "progress" | "process" | "plan";
+  taskPlan?: TaskPlanStep[];  // 仅 messageLevel "plan" 时使用
+}
+```
+
+### 各 Agent 角色的默认层级
+
+| Agent | 默认层级 | 说明 |
+|-------|---------|------|
+| Scout 🕵️ | L3 (process) | 浏览操作为主，除非是关键里程碑 |
+| Capturer 📸 | L2 (progress) | 截图完成是里程碑，但截图过程是 L3 |
+| Analyst 📊 | **L1 (insight)** | 分析结论是核心价值 |
+| Comparator ⚖️ | **L1 (insight)** | 对比结果是核心价值 |
+| Reporter 📝 | **L1 (insight)** | 报告摘要是核心价值 |
+
+---
+
+## 六、交互细节
+
+### 6.1 L3 折叠块的展开/收起
+
+```
+默认状态（折叠）：
+  ▸ 🕵️ Scout · 3 steps completed
+
+点击展开：
+  ▾ 🕵️ Scout · 3 steps completed
+    • Preparing to visit competitor.com...     ✓
+    • Simulating a first-time visitor          ✓
+    • Loading homepage                         ✓
+
+    "Landed on the homepage. I can see a navigation
+     bar with Pricing, Features, and Sign Up links."
+```
+
+- 展开后显示原始的 What's happening 步骤 + 完整消息文本
+- 收起时只显示一行摘要
+- 动画：`max-height` 过渡，150ms ease-out
+
+### 6.2 L3 连续消息自动聚合
+
+当多条连续的 L3 消息来自同一 Agent 时，自动聚合为一个折叠块：
+
+```
+原始消息序列：
+  [Scout L3] Preparing to visit...
+  [Scout L3] Landed on homepage...
+  [Scout L3] Found navigation links...
+
+聚合后：
+  ▸ 🕵️ Scout · 3 steps completed
+```
+
+### 6.3 实时执行中的 L3 显示
+
+当 Agent 正在执行时（有 `status: "active"` 的步骤），L3 块自动展开显示进度：
+
+```
+  ▾ 🕵️ Scout · working...
+    • Clicking 'Start Free Trial'...           ✓
+    • Filling in registration form...          ● (进行中)
+    • Checking for friction points             ○ (待执行)
+```
+
+执行完成后自动折叠为：
+```
+  ▸ 🕵️ Scout · 3 steps completed
+```
+
+### 6.4 L2 进展行的信息密度
+
+L2 单行需要在有限空间内传达关键信息：
+
+```
+格式：[Agent图标] [Agent名] [动作描述] · [关键发现（可选）]
+
+示例：
+🕵️ Scout reached the pricing page · 3 tiers found
+📸 Capturer took screenshot of signup form
+🕵️ Scout completed registration · 4 form fields, no SSO option
+```
+
+---
+
+## 八、与现有文档的关系
+
+### 对 Doc 26 的修订
+
+Doc 26-v2 已根据本文档的分析进行了全面修订：
+- 修正了交互模型：从多轮对话改为 **单次请求 → 自动执行**
+- 新增 TaskPlanCard 组件：用户请求后展示自动拆解的任务清单
+- mock data 中只有 1 条用户消息（初始请求），Agent 自动连续执行所有步骤
+- 完整的组件代码和 Replit 实现指令见 Doc 26-v2
+
+### 对 Doc 28 的影响
+
+Doc 28（消息布局简洁化）的"去气泡"方案与本文档的分层方案互补：
+- Doc 28 解决的是 **视觉样式** 问题（去掉蓝色气泡背景）
+- 本文档解决的是 **信息架构** 问题（哪些消息该突出、哪些该折叠）
+- 两者应同时实施，效果叠加
+
+### 实施建议
+
+建议将本文档（Doc 31）与 Doc 26 合并为一个 Replit 指令执行，因为：
+1. Doc 26 已经实现但效果不理想（信息冗余）
+2. 本文档是对 Doc 26 的 **修正和升级**，不是独立功能
+3. 同时实施可避免两次重构
+
+---
+
+## 九、总结
+
+| 维度 | 优化前 | 优化后 |
+|------|-------|-------|
+| 交互模型 | 多轮对话（每步需用户推动） | 单次请求 → Agent 自动执行全部步骤 |
+| 任务进度感 | 无 — 用户不知道整体进度 | Task Plan 卡片实时显示全局进度 |
+| 消息展示方式 | 所有消息等权重完整展示 | 四层分级（Plan + L1完整 / L2单行 / L3折叠） |
+| 视觉空间占用 | ~40 行 | ~22 行（含 Task Plan） |
+| 高价值信息占比 | ~20% | ~50% |
+| 用户认知负担 | 高 — 需要在过程信息中寻找结论 | 低 — 结论突出，过程按需查看 |
+| 过程信息可达性 | 始终展示（冗余） | 折叠可展开（按需） |
+
+**核心改变：从"chatbot 式多轮对话"到"Agent 式自动执行 + 结果优先呈现"。**
+
+---
+
+*文档版本：v2 — 2026-02-06*
+*v2 修订：修正交互模型（单次请求→自动执行），新增 Task Plan 概念，更新前后对比*
+*关联文档：Doc 25（问题分析）、Doc 26-v2（Replit 指令）、Doc 28（消息布局简洁化）*

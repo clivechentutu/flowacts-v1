@@ -259,7 +259,6 @@ function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
   );
 
   const expanded = isExpanded || hasActiveStep;
-  const totalSteps = allSteps.length || messages.length;
   const doneSteps = allSteps.filter((s) => s.status === "done").length;
 
   return (
@@ -305,16 +304,27 @@ function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
   );
 }
 
-  // Default level helper
-  function getDefaultLevel(msg: StoryEvent) {
-    if (msg.taskPlan) return "plan";
-    if (msg.canvasLinkId) return "insight";
-    if (msg.agentRole && ["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
-      return "insight";
-    }
-    if (msg.thoughtProcess) return "process";
-    return "progress";
+// Default level helper
+function getDefaultLevel(msg: StoryEvent) {
+  if (msg.taskPlan) return "plan";
+  if (msg.canvasLinkId) return "insight";
+  if (msg.agentRole && ["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
+    return "insight";
   }
+  // Scout/Capturer default logic
+  if (msg.agentRole === 'scout' || msg.agentRole === 'capturer') {
+     if (msg.thoughtProcess && !msg.thoughtProcess.steps.some(s => s.status === 'active')) {
+         return "process"; // Default collapsed for finished processes
+     }
+     if (msg.content.includes("landed") || msg.content.includes("reached") || msg.content.includes("started")) {
+         return "progress"; // Milestones
+     }
+     return "process"; // Everything else is process
+  }
+  
+  if (msg.thoughtProcess) return "process";
+  return "progress";
+}
   
   // Main List Renderer
   function ChatMessageList({ messages }: { messages: StoryEvent[] }) {

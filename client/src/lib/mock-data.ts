@@ -82,17 +82,6 @@ export const SCENARIOS: Scenario[] = [
     thumbnail: '/thumbnails/dashboard.jpg',
     events: [
         {
-          id: "m1",
-          type: "ai",
-          role: "ai",
-          agentRole: "scout",
-          content:
-            "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
-          messageLevel: "insight",
-          phase: undefined,
-          timestamp: '10:00 AM'
-        },
-        {
           id: "m2",
           type: "user",
           role: "user",
@@ -108,13 +97,13 @@ export const SCENARIOS: Scenario[] = [
           agentRole: "scout",
           content: "I've created a plan to analyze the onboarding flow.",
           messageLevel: "plan",
-          phase: "Planning",
+          phase: undefined, // Remove phase for Task Plan to sit at top
           taskPlan: [
             { id: "tp1", label: "Browse competitor.com homepage", status: "done", agentRole: "scout" },
             { id: "tp2", label: "Navigate to Pricing & Sign Up", status: "done", agentRole: "scout" },
             { id: "tp3", label: "Analyze Pricing Strategy", status: "done", agentRole: "analyst" },
-            { id: "tp4", label: "Complete Signup Process", status: "active", agentRole: "scout" },
-            { id: "tp5", label: "Generate UX Audit Report", status: "pending", agentRole: "reporter" }
+            { id: "tp4", label: "Test signup flow", status: "active", agentRole: "scout" },
+            { id: "tp5", label: "Generate analysis report", status: "pending", agentRole: "reporter" }
           ],
           timestamp: '10:01 AM'
         },
@@ -124,13 +113,14 @@ export const SCENARIOS: Scenario[] = [
           role: "ai",
           agentRole: "scout",
           content:
-            "Understood. Simulating a new user signing up for competitor.com...",
+            "Simulating a new user signing up for competitor.com...",
           messageLevel: "process",
           phase: "Browsing competitor.com",
           thoughtProcess: {
             steps: [
               { label: "Preparing to visit competitor.com...", status: "done" },
               { label: "Simulating a first-time visitor", status: "done" },
+              { label: "Loading homepage", status: "done" },
             ],
           },
           timestamp: '10:01 AM'
@@ -141,31 +131,22 @@ export const SCENARIOS: Scenario[] = [
           role: "ai",
           agentRole: "scout",
           content:
-            "Landed on the homepage. Found navigation with Pricing, Features, and Sign Up links.",
+            "Landed on homepage. Found navigation with Pricing, Features, and Sign Up links.",
           messageLevel: "progress",
           phase: "Browsing competitor.com",
           timestamp: '10:02 AM'
-        },
-        {
-          id: "m5",
-          type: "user",
-          role: "user",
-          content:
-            "Okay, find their pricing and then sign up for the free trial.",
-          phase: "Browsing competitor.com",
-          timestamp: '10:03 AM'
         },
         {
           id: "m6",
           type: "ai",
           role: "ai",
           agentRole: "scout",
-          content: "Reached the pricing page.",
+          content: "Reaching the pricing page...",
           messageLevel: "process",
           phase: "Analyzing Pricing",
           thoughtProcess: {
             steps: [
-              { label: "Looking through the navigation...", status: "done" },
+              { label: "Looking through navigation...", status: "done" },
               { label: "Found the pricing page", status: "done" },
               { label: "Heading to pricing...", status: "done" },
             ],
@@ -178,7 +159,7 @@ export const SCENARIOS: Scenario[] = [
           role: "ai",
           agentRole: "analyst",
           content:
-            "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\n\nThe free trial requires a credit card — this is a potential friction point for new users.",
+            "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\n\n⚠️ The free trial requires a credit card — this is a potential friction point for new users.",
           messageLevel: "insight",
           phase: "Analyzing Pricing",
           canvasLinkId: "card-pricing",
@@ -192,7 +173,7 @@ export const SCENARIOS: Scenario[] = [
           agentRole: "scout",
           content: "Now proceeding to sign up for the free trial...",
           messageLevel: "process",
-          phase: "Signing Up",
+          phase: "Testing Signup Flow",
           thoughtProcess: {
             steps: [
               { label: "Clicking 'Start Free Trial'...", status: "done" },
