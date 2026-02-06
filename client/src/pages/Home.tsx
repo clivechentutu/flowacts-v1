@@ -647,29 +647,29 @@ const CATEGORIES = [
   { id: 'fact', label: 'Fact Verification', icon: CheckCircle },
 ];
 
-const AI_ROLES: Record<string, { icon: string; name: string; description: string }> = {
+const AI_ROLES: Record<string, { avatar: string; name: string; description: string }> = {
   scout: {
-    icon: "🕵️",
+    avatar: uxAvatar,
     name: "Scout",
     description: "Browses websites and navigates through pages"
   },
   analyst: {
-    icon: "📊",
+    avatar: analystAvatar,
     name: "Analyst",
     description: "Analyzes data, patterns, and strategies"
   },
   reporter: {
-    icon: "📝",
+    avatar: marketingAvatar,
     name: "Reporter",
     description: "Synthesizes findings into clear reports"
   },
   capturer: {
-    icon: "📸",
+    avatar: pmAvatar,
     name: "Capturer",
     description: "Takes screenshots and captures visual evidence"
   },
   comparator: {
-    icon: "⚖️",
+    avatar: dataAvatar,
     name: "Comparator",
     description: "Compares and contrasts multiple sources"
   }
@@ -683,10 +683,11 @@ function RoleMention({ role }: { role: string }) {
     <TooltipProvider delayDuration={200}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span className="inline-flex items-center cursor-default hover:bg-primary/10 rounded px-1 py-0.5 transition-colors -ml-1 first:ml-0">
-            <span className="text-muted-foreground text-xs mr-0.5 opacity-70">@</span>
-            <span className="text-lg leading-none filter drop-shadow-sm">{roleData.icon}</span>
-          </span>
+          <div className="inline-flex items-center justify-center -ml-2 first:ml-0 transition-all hover:scale-110 hover:z-10 relative cursor-default">
+            <div className="w-6 h-6 rounded-full ring-2 ring-background overflow-hidden bg-muted">
+              <img src={roleData.avatar} alt={roleData.name} className="w-full h-full object-cover" />
+            </div>
+          </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg max-w-[200px]">
           <p className="font-semibold text-sm text-foreground">{roleData.name}</p>
@@ -1168,10 +1169,13 @@ export default function Home() {
                 )}
 
                 <div className="relative flex flex-col bg-card border border-border shadow-xl rounded-2xl focus-within:ring-2 focus-within:ring-primary/20 transition-all overflow-hidden">
-                  {/* AI Roles Display Area */}
+                  {/* AI Roles Display Area - Positioned absolutely to appear inline */}
                   {activeRoles.length > 0 && (
-                     <div className="px-6 pt-5 pb-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        {activeRoles.map(role => <RoleMention key={role} role={role} />)}
+                     <div className="absolute top-6 left-6 flex items-center pointer-events-none z-10 animate-in fade-in duration-300 select-none">
+                        <span className="text-muted-foreground/60 mr-1.5 text-sm font-medium">@</span>
+                        <div className="flex items-center pointer-events-auto">
+                            {activeRoles.map(role => <RoleMention key={role} role={role} />)}
+                        </div>
                      </div>
                   )}
 
@@ -1180,9 +1184,9 @@ export default function Home() {
                     value={homeInput}
                     onChange={handleInputChange}
                     placeholder={activeRoles.length > 0 ? "" : "Enter a URL or describe what you'd like to explore..."}
+                    style={{ textIndent: activeRoles.length > 0 ? `${(activeRoles.length * 18) + 24}px` : '0px' }}
                     className={cn(
-                        "w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none px-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium shadow-none ring-0 selection:bg-primary/20",
-                        activeRoles.length > 0 ? "pt-2" : "pt-6"
+                        "w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none px-6 py-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium shadow-none ring-0 selection:bg-primary/20",
                     )}
                     data-testid="input-home-primary"
                   />
