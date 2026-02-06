@@ -99,6 +99,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 interface PromptCard {
   id: string;
   title: string;
@@ -645,7 +647,58 @@ const CATEGORIES = [
   { id: 'fact', label: 'Fact Verification', icon: CheckCircle },
 ];
 
+const AI_ROLES: Record<string, { icon: string; name: string; description: string }> = {
+  scout: {
+    icon: "🕵️",
+    name: "Scout",
+    description: "Browses websites and navigates through pages"
+  },
+  analyst: {
+    icon: "📊",
+    name: "Analyst",
+    description: "Analyzes data, patterns, and strategies"
+  },
+  reporter: {
+    icon: "📝",
+    name: "Reporter",
+    description: "Synthesizes findings into clear reports"
+  },
+  capturer: {
+    icon: "📸",
+    name: "Capturer",
+    description: "Takes screenshots and captures visual evidence"
+  },
+  comparator: {
+    icon: "⚖️",
+    name: "Comparator",
+    description: "Compares and contrasts multiple sources"
+  }
+};
+
+function RoleMention({ role }: { role: string }) {
+  const roleData = AI_ROLES[role];
+  if (!roleData) return null;
+
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center cursor-default hover:bg-primary/10 rounded px-1 py-0.5 transition-colors -ml-1 first:ml-0">
+            <span className="text-muted-foreground text-xs mr-0.5 opacity-70">@</span>
+            <span className="text-lg leading-none filter drop-shadow-sm">{roleData.icon}</span>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg max-w-[200px]">
+          <p className="font-semibold text-sm text-foreground">{roleData.name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{roleData.description}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 export default function Home() {
+  const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'home' | 'project' | 'library' | 'projects-list'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -1115,12 +1168,22 @@ export default function Home() {
                 )}
 
                 <div className="relative flex flex-col bg-card border border-border shadow-xl rounded-2xl focus-within:ring-2 focus-within:ring-primary/20 transition-all overflow-hidden">
+                  {/* AI Roles Display Area */}
+                  {activeRoles.length > 0 && (
+                     <div className="px-6 pt-5 pb-1 flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {activeRoles.map(role => <RoleMention key={role} role={role} />)}
+                     </div>
+                  )}
+
                   <textarea 
                     ref={inputRef}
                     value={homeInput}
                     onChange={handleInputChange}
-                    placeholder="Enter a URL or describe what you'd like to explore..."
-                    className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none p-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium shadow-none ring-0 selection:bg-primary/20"
+                    placeholder={activeRoles.length > 0 ? "" : "Enter a URL or describe what you'd like to explore..."}
+                    className={cn(
+                        "w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none px-6 min-h-[120px] text-lg placeholder:text-muted-foreground/50 font-medium shadow-none ring-0 selection:bg-primary/20",
+                        activeRoles.length > 0 ? "pt-2" : "pt-6"
+                    )}
                     data-testid="input-home-primary"
                   />
 
@@ -1186,26 +1249,31 @@ export default function Home() {
                       {
                         icon: "🔍",
                         label: "Onboarding Analysis",
+                        roles: ["scout", "capturer", "analyst", "reporter"],
                         prompt: "Walk through the signup and onboarding flow of [competitor.com], identify UX strengths and friction points.",
                       },
                       {
                         icon: "💰",
                         label: "Pricing Comparison",
+                        roles: ["scout", "analyst", "comparator", "reporter"],
                         prompt: "Compare the pricing pages of [company A] and [company B], analyze their pricing strategies and positioning.",
                       },
                       {
                         icon: "🎯",
                         label: "UX Audit",
+                        roles: ["scout", "capturer", "analyst", "reporter"],
                         prompt: "Audit the user experience of [website.com], focusing on navigation, clarity, and conversion paths.",
                       },
                       {
                         icon: "📊",
                         label: "Feature Comparison",
+                        roles: ["scout", "analyst", "comparator", "reporter"],
                         prompt: "Compare the feature sets of [product A] and [product B], create a visual comparison.",
                       },
                       {
                         icon: "📱",
                         label: "Mobile UX",
+                        roles: ["scout", "capturer", "analyst", "reporter"],
                         prompt: "Explore the mobile experience of [website.com], test responsiveness and mobile interactions.",
                       },
                     ].map((s) => (
@@ -1214,6 +1282,7 @@ export default function Home() {
                         type="button"
                         onClick={() => {
                           setHomeInput(s.prompt);
+                          setActiveRoles(s.roles);
                           requestAnimationFrame(() => inputRef.current?.focus());
                         }}
                         className="px-4 py-2 rounded-full bg-muted hover:bg-muted/80 text-sm transition-colors flex items-center gap-2 border border-border/50"

@@ -1,0 +1,354 @@
+# Quick Start Card Enhancement: AI Team Role Mentions
+
+## Overview
+
+When a user clicks a Quick Start card (e.g., "Pricing Comparison"), the input box should display a prompt that begins with AI team role mentions using `@` symbols + cartoon role icons. This visually communicates which AI agents will be involved in the task, reinforcing the "AI team" concept.
+
+Hovering over each role icon shows a tooltip explaining the role's name and function.
+
+---
+
+## Current Behavior
+
+When clicking "Pricing Comparison", the input shows:
+```
+Compare the pricing pages of [company A] and [company B], analyze their pricing strategies and positioning.
+```
+
+## Desired Behavior
+
+When clicking "Pricing Comparison", the input shows:
+```
+@🕵️ @📊 @📝  Compare the pricing pages of [company A] and [company B], analyze their pricing strategies and positioning.
+```
+
+Where each `@icon` is a hoverable element with a tooltip.
+
+---
+
+## AI Team Roles Definition
+
+Define the following AI agent roles. Each role has an icon, name, and description:
+
+```jsx
+const AI_ROLES = {
+  scout: {
+    icon: "🕵️",
+    name: "Scout",
+    description: "Browses websites and navigates through pages"
+  },
+  analyst: {
+    icon: "📊",
+    name: "Analyst",
+    description: "Analyzes data, patterns, and strategies"
+  },
+  reporter: {
+    icon: "📝",
+    name: "Reporter",
+    description: "Synthesizes findings into clear reports"
+  },
+  capturer: {
+    icon: "📸",
+    name: "Capturer",
+    description: "Takes screenshots and captures visual evidence"
+  },
+  comparator: {
+    icon: "⚖️",
+    name: "Comparator",
+    description: "Compares and contrasts multiple sources"
+  }
+};
+```
+
+---
+
+## Role Assignment Per Quick Start Card
+
+Each Quick Start card should specify which AI roles will be called:
+
+```jsx
+const quickStartScenarios = [
+  {
+    icon: "🔍",
+    label: "Onboarding Analysis",
+    roles: ["scout", "capturer", "analyst", "reporter"],
+    promptText: "Walk through the signup and onboarding flow of [competitor.com], identify UX strengths and friction points."
+  },
+  {
+    icon: "💰",
+    label: "Pricing Comparison",
+    roles: ["scout", "analyst", "comparator", "reporter"],
+    promptText: "Compare the pricing pages of [company A] and [company B], analyze their pricing strategies and positioning."
+  },
+  {
+    icon: "🎯",
+    label: "UX Audit",
+    roles: ["scout", "capturer", "analyst", "reporter"],
+    promptText: "Audit the user experience of [website.com], focusing on navigation, clarity, and conversion paths."
+  },
+  {
+    icon: "📊",
+    label: "Feature Comparison",
+    roles: ["scout", "analyst", "comparator", "reporter"],
+    promptText: "Compare the feature sets of [product A] and [product B], create a visual comparison."
+  },
+  {
+    icon: "📱",
+    label: "Mobile UX",
+    roles: ["scout", "capturer", "analyst", "reporter"],
+    promptText: "Explore the mobile experience of [website.com], test responsiveness and mobile interactions."
+  }
+];
+```
+
+---
+
+## Implementation
+
+### Step 1: RoleMention Component
+
+Create a component that renders a single `@icon` with a tooltip on hover:
+
+```jsx
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+function RoleMention({ role }) {
+  const roleData = AI_ROLES[role];
+  if (!roleData) return null;
+
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex items-center cursor-default hover:bg-primary/10 rounded px-0.5 transition-colors">
+            <span className="text-muted-foreground text-sm">@</span>
+            <span className="text-base">{roleData.icon}</span>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[200px]">
+          <p className="font-semibold text-sm">{roleData.name}</p>
+          <p className="text-xs text-muted-foreground">{roleData.description}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+```
+
+### Step 2: RoleMentionsGroup Component
+
+Renders all role mentions for a given scenario:
+
+```jsx
+function RoleMentionsGroup({ roles }) {
+  return (
+    <span className="inline-flex items-center gap-1 mr-2">
+      {roles.map((role, index) => (
+        <RoleMention key={index} role={role} />
+      ))}
+    </span>
+  );
+}
+```
+
+### Step 3: Modify Input Display
+
+The input area needs to support rendering both the role mention icons and the text prompt. Since a standard `<input>` element cannot render rich content (icons with tooltips), you have two options:
+
+#### Option A: Use a contentEditable div (Recommended)
+
+Replace the text input with a contentEditable div that can render both the role icons and text:
+
+```jsx
+function EnhancedInput({ roles, promptText, onChange }) {
+  const inputRef = useRef(null);
+
+  return (
+    <div className="relative w-full">
+      <div
+        ref={inputRef}
+        className="w-full px-6 py-4 text-lg rounded-xl border-2 border-border bg-background focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all min-h-[60px] flex items-start flex-wrap gap-1"
+      >
+        {/* Role mentions - rendered as interactive icons */}
+        {roles && roles.length > 0 && (
+          <RoleMentionsGroup roles={roles} />
+        )}
+
+        {/* Editable text area */}
+        <span
+          contentEditable
+          suppressContentEditableWarning
+          className="flex-1 outline-none min-w-[200px]"
+          onInput={(e) => onChange(e.target.textContent)}
+        >
+          {promptText}
+        </span>
+      </div>
+    </div>
+  );
+}
+```
+
+#### Option B: Display roles above the input text (Simpler)
+
+If modifying the input is too complex, display the role icons as a row just above or at the beginning of the input area:
+
+```jsx
+function InputWithRoles({ roles, promptText, setInputValue }) {
+  return (
+    <div className="input-wrapper">
+      {/* Input box */}
+      <div className="relative border-2 border-border rounded-xl bg-background p-4">
+        {/* Role mentions row - displayed at top of input */}
+        {roles && roles.length > 0 && (
+          <div className="flex items-center gap-1 mb-2">
+            {roles.map((role, index) => (
+              <RoleMention key={index} role={role} />
+            ))}
+            <span className="text-xs text-muted-foreground ml-1">
+              will work on this
+            </span>
+          </div>
+        )}
+
+        {/* Text input */}
+        <textarea
+          value={promptText}
+          onChange={(e) => setInputValue(e.target.value)}
+          className="w-full bg-transparent outline-none text-lg resize-none"
+          rows={2}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+### Step 4: Update Quick Start Card Click Handler
+
+When a Quick Start card is clicked, set both the roles and the prompt text:
+
+```jsx
+function HomePage() {
+  const [inputValue, setInputValue] = useState("");
+  const [activeRoles, setActiveRoles] = useState([]);
+
+  const handleQuickStartClick = (scenario) => {
+    setActiveRoles(scenario.roles);
+    setInputValue(scenario.promptText);
+  };
+
+  const handleStart = () => {
+    // When starting, pass both roles and prompt to Studio
+    // router.push(`/studio?roles=${activeRoles.join(',')}&task=${encodeURIComponent(inputValue)}`);
+  };
+
+  return (
+    <main>
+      {/* ... slogan ... */}
+
+      {/* Input with role mentions */}
+      <InputWithRoles
+        roles={activeRoles}
+        promptText={inputValue}
+        setInputValue={setInputValue}
+      />
+
+      {/* Quick Start cards */}
+      <div className="flex flex-wrap justify-center gap-2 mt-4">
+        {quickStartScenarios.map((scenario, index) => (
+          <button
+            key={index}
+            onClick={() => handleQuickStartClick(scenario)}
+            className="px-4 py-2 rounded-full bg-muted hover:bg-muted/80 text-sm transition-colors flex items-center gap-2 border border-border/50"
+          >
+            <span>{scenario.icon}</span>
+            <span>{scenario.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Start button */}
+      <button onClick={handleStart}>Start</button>
+    </main>
+  );
+}
+```
+
+---
+
+## Visual Example
+
+### Before clicking Quick Start card:
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  Tell your AI team what to explore...                  [→]  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### After clicking "Pricing Comparison":
+```
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  @🕵️ @📊 @⚖️ @📝                                          │
+│  Compare the pricing pages of [company A] and              │
+│  [company B], analyze their pricing strategies             │
+│  and positioning.                                     [→]  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Hovering over @🕵️:
+```
+┌─────────────────────────────────────────────────────────────┐
+│              ┌──────────────────────┐                       │
+│              │ Scout                │                       │
+│              │ Browses websites and │                       │
+│              │ navigates through    │                       │
+│              │ pages                │                       │
+│              └──────────────────────┘                       │
+│  @🕵️ @📊 @⚖️ @📝                                          │
+│  Compare the pricing pages of [company A] and              │
+│  [company B], analyze their pricing strategies             │
+│  and positioning.                                     [→]  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Tooltip Styling
+
+Use the existing Radix UI Tooltip component (already in the project). Style the tooltip to match the dark theme:
+
+```jsx
+<TooltipContent
+  side="top"
+  className="bg-popover border border-border rounded-lg px-3 py-2 shadow-lg"
+>
+  <p className="font-semibold text-sm text-foreground">{roleData.name}</p>
+  <p className="text-xs text-muted-foreground mt-0.5">{roleData.description}</p>
+</TooltipContent>
+```
+
+---
+
+## Summary of Changes
+
+1. **Define AI_ROLES** - A map of role IDs to icon, name, and description
+2. **Update quickStartScenarios** - Add `roles` array to each scenario
+3. **Create RoleMention component** - Renders `@icon` with hover tooltip
+4. **Modify input area** - Support displaying role mentions before the prompt text
+5. **Update click handler** - Set both roles and prompt text when a card is clicked
+
+---
+
+## Notes
+
+- The role icons should use the existing Radix Tooltip component already in the project
+- Keep the existing input toolbar (attachment, @, globe, Fast toggle) unchanged
+- Keep the existing Start (arrow) button unchanged
+- The `@` symbol + icon pattern is consistent with the existing `@` mentions feature in the chat
+- When the user manually types in the input (without clicking a Quick Start card), no role mentions are shown — the AI team will be auto-assigned
