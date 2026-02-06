@@ -67,6 +67,7 @@ function TaskPlanCard({ message }: { message: StoryEvent }) {
   const steps = message.taskPlan || [];
   const doneCount = steps.filter((s) => s.status === "done").length;
   // const activeStep = steps.find((s) => s.status === "active"); // Unused
+  const [showActions, setShowActions] = useState(false);
 
   const agentIcons: Record<string, string> = {
     scout: "🕵️", capturer: "📸", analyst: "📊",
@@ -74,7 +75,11 @@ function TaskPlanCard({ message }: { message: StoryEvent }) {
   };
 
   return (
-    <div className="px-4 py-3 my-2 rounded-lg bg-muted/10 border border-border/30">
+    <div 
+        className="group relative px-4 py-3 my-2 rounded-lg bg-muted/10 border border-border/30 hover:bg-muted/20 transition-colors"
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
@@ -127,6 +132,11 @@ function TaskPlanCard({ message }: { message: StoryEvent }) {
           </div>
         ))}
       </div>
+
+      {/* Hover action buttons */}
+      {showActions && (
+        <MessageActions messageId={message.id} role="ai" />
+      )}
     </div>
   );
 }
@@ -141,9 +151,14 @@ function InsightMessage({ message }: { message: StoryEvent }) {
     reporter: "border-pink-400/50",
   };
   const borderColor = agentColors[message.agentRole || ''] || "border-border";
+  const [showActions, setShowActions] = useState(false);
 
   return (
-    <div className={`relative px-4 py-3 my-2 rounded-lg bg-muted/10 border-l-2 ${borderColor}`}>
+    <div 
+        className={`group relative px-4 py-3 my-2 rounded-lg bg-muted/10 border-l-2 ${borderColor} hover:bg-muted/20 transition-colors`}
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
+    >
       {message.agentRole && <AgentLabel role={message.agentRole} />}
       <div className="text-sm text-foreground leading-relaxed mt-1.5 whitespace-pre-wrap">
         {message.content}
@@ -153,6 +168,11 @@ function InsightMessage({ message }: { message: StoryEvent }) {
           <span>📌</span>
           <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
         </div>
+      )}
+
+      {/* Hover action buttons */}
+      {showActions && (
+        <MessageActions messageId={message.id} role="ai" />
       )}
     </div>
   );

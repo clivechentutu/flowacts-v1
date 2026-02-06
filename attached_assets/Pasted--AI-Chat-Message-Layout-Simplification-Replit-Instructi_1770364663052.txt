@@ -1,0 +1,276 @@
+# AI Chat Message Layout Simplification — Replit Instruction
+
+> Simplify the Chat message layout: remove heavy bubbles from AI messages, adopt a clean text-flow style for AI responses, keep lightweight visual distinction for user messages, and make message action buttons appear on hover only. This follows the "task-execution agent" design pattern used by products like Manus and Operator.
+
+---
+
+## Current State
+
+Currently the Chat uses a traditional chat-bubble layout:
+- **User messages**: Right-aligned blue bubble with user avatar icon
+- **AI messages**: Left-aligned with AI robot avatar, bubble background
+- **Action icons**: Small icons always visible at bottom-right of AI messages (unclear function)
+
+---
+
+## What to Change
+
+Three changes to the message rendering:
+
+1. **AI messages**: Remove bubble → clean left-aligned text flow with Agent label
+2. **User messages**: Simplify bubble → right-aligned with subtle background, no heavy avatar
+3. **Message actions**: Always-visible icons → hover-only action buttons with tooltips
+
+---
+
+## Change 1: AI Message Layout
+
+### Before
+```
+🤖 [bubble background]
+    Understood. Simulating a new user
+    signing up for competitor.com...
+                              [grid][copy]
+```
+
+### After
+```
+🕵️ Scout
+Understood. Simulating a new user
+signing up for competitor.com...
+```
+
+### AI Message Component
+
+```jsx
+function AIMessage({ message }) {
+  const [showActions, setShowActions] = React.useState(false);
+
+  return (
+    <div
+      className="group relative px-4 py-2 hover:bg-muted/20
+        transition-colors rounded-lg"
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      {/* Agent label (from Doc 26) */}
+      {message.agentRole && (
+        <AgentLabel role={message.agentRole} />
+      )}
+
+      {/* Message text — NO bubble, NO background */}
+      <div className="text-sm text-foreground leading-relaxed">
+        {message.content}
+      </div>
+
+      {/* Thought Process card (if present) */}
+      {message.thoughtProcess && (
+        <ThoughtProcess
+          steps={message.thoughtProcess.steps}
+          isExpanded={true}
+          onToggle={() => {}}
+        />
+      )}
+
+      {/* Canvas link (if present) */}
+      {message.canvasLinkId && (
+        <CanvasLink linkId={message.canvasLinkId} />
+      )}
+
+      {/* Hover action buttons */}
+      {showActions && (
+        <MessageActions messageId={message.id} role="ai" />
+      )}
+    </div>
+  );
+}
+```
+
+### Key Design Rules for AI Messages
+- **No bubble background** — text sits directly on the chat panel background
+- **No AI avatar/icon** — replaced by the Agent label (`🕵️ Scout`) from Doc 26
+- **Subtle hover highlight** — `hover:bg-muted/20` on the entire message area
+- **Left-aligned** — standard left alignment, full width
+
+---
+
+## Change 2: User Message Layout
+
+### Before
+```
+                    [heavy blue bubble]  👤
+  Analyze the new user signup and
+  onboarding flow for competitor.com.
+```
+
+### After
+```
+                              Analyze the new user signup and
+                              onboarding flow for competitor.com.
+```
+
+### User Message Component
+
+```jsx
+function UserMessage({ message }) {
+  const [showActions, setShowActions] = React.useState(false);
+
+  return (
+    <div
+      className="group relative flex justify-end px-4 py-2"
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+    >
+      <div className="max-w-[80%] rounded-2xl px-4 py-2.5
+        bg-primary/15 text-sm text-foreground leading-relaxed">
+        {message.content}
+      </div>
+
+      {/* Hover action buttons */}
+      {showActions && (
+        <MessageActions messageId={message.id} role="user" />
+      )}
+    </div>
+  );
+}
+```
+
+### Key Design Rules for User Messages
+- **Right-aligned** with `max-w-[80%]`
+- **Subtle background** — `bg-primary/15` (light tint of primary color, not a heavy solid bubble)
+- **Rounded corners** — `rounded-2xl` for a soft pill shape
+- **No user avatar** — remove the 👤 icon
+- **No heavy border** — just the subtle background tint
+
+---
+
+## Change 3: Hover Action Buttons
+
+### Before
+Small always-visible icons at bottom-right of AI messages (unclear function).
+
+### After
+Action buttons appear **only on hover**, positioned at the top-right corner of the message.
+
+### MessageActions Component
+
+```jsx
+function MessageActions({ messageId, role }) {
+  const actions = role === "ai"
+    ? [
+        { icon: "📋", label: "Copy", tooltip: "Copy message" },
+        { icon: "📌", label: "Pin", tooltip: "Pin to Canvas" },
+        { icon: "🔄", label: "Retry", tooltip: "Retry this step" },
+      ]
+    : [
+        { icon: "📋", label: "Copy", tooltip: "Copy message" },
+        { icon: "✏️", label: "Edit", tooltip: "Edit message" },
+      ];
+
+  return (
+    <div className={`absolute top-1 ${
+      role === "ai" ? "right-2" : "left-2"
+    } flex items-center gap-0.5 bg-background/90 backdrop-blur-sm
+      border border-border/50 rounded-lg px-1 py-0.5 shadow-sm`}
+    >
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          title={action.tooltip}
+          onClick={() => console.log(action.label, messageId)}
+          className="w-7 h-7 flex items-center justify-center
+            rounded hover:bg-muted text-muted-foreground
+            hover:text-foreground transition-colors text-xs"
+        >
+          {action.icon}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+### Key Design Rules for Actions
+- **Hover only** — `opacity-0 group-hover:opacity-100` or conditional render
+- **Floating bar** — positioned absolute at top-right (AI) or top-left (user)
+- **Backdrop blur** — `bg-background/90 backdrop-blur-sm` so it doesn't obscure text
+- **Small icons** — `w-7 h-7` with tooltips via `title` attribute
+- **AI messages get**: Copy, Pin to Canvas, Retry
+- **User messages get**: Copy, Edit
+
+---
+
+## Visual Summary
+
+### Before
+```
+┌──────────────────────────────────────┐
+│                                      │
+│  🤖 [AI bubble with background]     │
+│     Message text here...             │
+│                          [📊][📋]   │
+│                                      │
+│        [Heavy blue user bubble] 👤   │
+│        User message here...          │
+│                                      │
+│  🤖 [AI bubble with background]     │
+│     Another AI message...            │
+│                          [📊][📋]   │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+### After
+```
+┌──────────────────────────────────────┐
+│                                      │
+│  🕵️ Scout                           │
+│  Message text here, no bubble,       │
+│  clean text flow...                  │
+│                                      │
+│           User message here,         │
+│           subtle tinted background   │
+│                                      │
+│  📊 Analyst                          │
+│  Another AI message, clean flow...   │
+│                                      │
+│  ┌─ What's happening ──────────┐    │
+│  │ • Step one done              │    │
+│  │ • Step two in progress...    │    │
+│  └──────────────────────────────┘    │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+---
+
+## What NOT to Do
+
+- Do NOT change the input box area (that's Doc 27)
+- Do NOT change the Chat header/title bar (that's Doc 29)
+- Do NOT change the Canvas panel
+- Do NOT remove the Thought Process component — just ensure it renders as a card within the new layout
+- Do NOT add any new message types
+- Do NOT change the scroll behavior
+
+---
+
+## Acceptance Criteria
+
+1. ✅ AI messages display as clean left-aligned text (no bubble background)
+2. ✅ AI messages show Agent label above the text (`🕵️ Scout`, `📊 Analyst`)
+3. ✅ User messages are right-aligned with subtle `bg-primary/15` background
+4. ✅ User avatar icon (👤) is removed
+5. ✅ AI robot avatar (🤖) is removed — replaced by Agent labels
+6. ✅ Message action buttons only appear on hover
+7. ✅ AI hover actions: Copy, Pin to Canvas, Retry
+8. ✅ User hover actions: Copy, Edit
+9. ✅ All action buttons have tooltips
+10. ✅ Dark theme styling consistent with the rest of the app
+
+---
+
+*Document: 28-AIChat消息布局简洁化-Replit指令.md*
+*Scope: AI message de-bubble + User message simplification + Hover actions*
+*Depends on: Doc 26 (Agent labels must exist first)*
+*Next step: Doc 29 (Chat header bar optimization)*
