@@ -30,62 +30,6 @@ interface ChatPanelProps {
   persona: string;
 }
 
-// Flow Node Component (NEW - replaces PhaseDivider)
-function FlowNode({ step, children, isLast }: { step: TaskPlanStep; children?: React.ReactNode; isLast: boolean }) {
-  const agentIcons: Record<string, string> = {
-    scout: "🕵️", capturer: "📸", analyst: "📊",
-    comparator: "⚖️", reporter: "📝",
-  };
-  const icon = agentIcons[step.agentRole] || "🤖";
-
-  // Status-based styles
-  const dotStyles = {
-    done: "bg-green-400/60",
-    active: "bg-blue-400 animate-pulse",
-    pending: "bg-muted-foreground/20",
-  };
-  const textStyles = {
-    done: "text-muted-foreground",
-    active: "text-foreground font-medium",
-    pending: "text-muted-foreground/40",
-  };
-  const lineStyles = {
-    done: "border-border/20",
-    active: "border-blue-400/30",
-    pending: "border-border/10 border-dashed",
-  };
-
-  return (
-    <div className="relative">
-      {/* Node header: dot + agent icon + label */}
-      <div className={`flex items-center gap-2.5 py-1.5 ${textStyles[step.status]}`}>
-        {/* Status dot */}
-        <span className={`w-2 h-2 rounded-full shrink-0 ${dotStyles[step.status]}`} />
-        {/* Agent icon */}
-        <span className="text-sm shrink-0">{icon}</span>
-        {/* Step label */}
-        <span className="text-xs">{step.label}</span>
-      </div>
-
-      {/* Connecting line + children content */}
-      {(children || !isLast) && (
-        <div className={`ml-[3px] pl-5 border-l ${lineStyles[step.status]} ${
-          isLast && step.status === "pending" ? "border-none" : ""
-        }`}>
-          {/* Child messages (L3 process, L2 progress, L1 insight) */}
-          {children && (
-            <div className="pb-3 space-y-1">
-              {children}
-            </div>
-          )}
-          {/* Spacing when no children but not last */}
-          {!children && !isLast && <div className="h-2" />}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Agent Label Component
 function AgentLabel({ role }: { role: string }) {
   const agents: Record<string, { icon: string; name: string; color: string }> = {
@@ -140,87 +84,8 @@ function MessageActions({ messageId, role }: { messageId: string, role: 'user' |
   );
 }
 
-// TaskPlan Component (NEW)
-function TaskPlanCard({ message }: { message: StoryEvent }) {
-  const steps = message.taskPlan || [];
-  const doneCount = steps.filter((s) => s.status === "done").length;
-  // const activeStep = steps.find((s) => s.status === "active"); // Unused
-  const [showActions, setShowActions] = useState(false);
-
-  const agentIcons: Record<string, string> = {
-    scout: "🕵️", capturer: "📸", analyst: "📊",
-    comparator: "⚖️", reporter: "📝",
-  };
-
-  return (
-    <div 
-        className="group relative px-4 py-3 my-2 rounded-lg bg-muted/10 border border-border/30 hover:bg-muted/20 transition-colors"
-        onMouseEnter={() => setShowActions(true)}
-        onMouseLeave={() => setShowActions(false)}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">
-          Task Plan
-        </span>
-        <span className="text-[10px] text-muted-foreground">
-          {doneCount}/{steps.length} completed
-        </span>
-      </div>
-
-      {/* Progress bar */}
-      <div className="h-1 rounded-full bg-muted/30 mb-3 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-primary/60 transition-all duration-500 ease-out"
-          style={{ width: `${(doneCount / steps.length) * 100}%` }}
-        />
-      </div>
-
-      {/* Step list */}
-      <div className="space-y-1.5">
-        {steps.map((step) => (
-          <div key={step.id}
-            className={`flex items-center gap-2.5 text-xs py-0.5 ${
-              step.status === "active"
-                ? "text-foreground"
-                : step.status === "done"
-                ? "text-muted-foreground/50"
-                : "text-muted-foreground/40"
-            }`}>
-            {/* Status indicator */}
-            <span className="w-4 text-center shrink-0">
-              {step.status === "done" && "✓"}
-              {step.status === "active" && (
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              )}
-              {step.status === "pending" && "○"}
-            </span>
-            {/* Agent icon */}
-            <span className="shrink-0">
-              {agentIcons[step.agentRole || ''] || "🤖"}
-            </span>
-            {/* Step label */}
-            <span className={
-              step.status === "done"
-                ? "line-through decoration-muted-foreground/30"
-                : ""
-            }>
-              {step.label}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Hover action buttons */}
-      {showActions && (
-        <MessageActions messageId={message.id} role="ai" />
-      )}
-    </div>
-  );
-}
-
 // Insight Message Component (L1)
-function InsightMessage({ message }: { message: StoryEvent }) {
+function InsightMessage({ message, insideTimeline = false }: { message: StoryEvent, insideTimeline?: boolean }) {
   const agentColors: Record<string, string> = {
     scout: "border-blue-400/50",
     capturer: "border-purple-400/50",
@@ -228,9 +93,37 @@ function InsightMessage({ message }: { message: StoryEvent }) {
     comparator: "border-green-400/50",
     reporter: "border-pink-400/50",
   };
-  const borderColor = agentColors[message.agentRole || ''] || "border-border";
+  
   const [showActions, setShowActions] = useState(false);
 
+  // Inside timeline: simplified card (no agent label, no left border)
+  if (insideTimeline) {
+    return (
+      <div 
+        className="group relative px-3.5 py-3 rounded-lg bg-muted/8 hover:bg-muted/15 transition-colors"
+        onMouseEnter={() => setShowActions(true)}
+        onMouseLeave={() => setShowActions(false)}
+      >
+        <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+          {message.content}
+        </div>
+        {message.canvasLinkId && (
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary cursor-pointer transition-colors">
+            <span>📌</span>
+            <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
+          </div>
+        )}
+        
+        {/* Hover action buttons */}
+        {showActions && (
+          <MessageActions messageId={message.id} role="ai" />
+        )}
+      </div>
+    );
+  }
+
+  // Outside timeline (e.g., greeting): full card with agent label + left border
+  const borderColor = agentColors[message.agentRole || ''] || "border-border";
   return (
     <div 
         className={`group relative px-4 py-3 my-2 rounded-lg bg-muted/10 border-l-2 ${borderColor} hover:bg-muted/20 transition-colors`}
@@ -258,19 +151,9 @@ function InsightMessage({ message }: { message: StoryEvent }) {
 
 // Progress Message Component (L2)
 function ProgressMessage({ message }: { message: StoryEvent }) {
-  const agentIcons: Record<string, string> = {
-    scout: "🕵️",
-    capturer: "📸",
-    analyst: "📊",
-    comparator: "⚖️",
-    reporter: "📝",
-  };
-  const icon = agentIcons[message.agentRole || ''] || "🤖";
-
   return (
-    <div className="flex items-center gap-2 px-4 py-1.5 my-0.5">
-      <span className="text-xs">{icon}</span>
-      <span className="text-xs text-muted-foreground">
+    <div className="py-0.5">
+      <span className="text-xs text-muted-foreground/60 leading-relaxed">
         {message.content}
       </span>
     </div>
@@ -280,8 +163,6 @@ function ProgressMessage({ message }: { message: StoryEvent }) {
 // Process Message Component (L3)
 function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const agent = messages[0];
-  // Note: Agent icon and name removed from ProcessMessage since parent FlowNode shows it
 
   const hasActiveStep = messages.some(
     (m) => m.thoughtProcess?.steps?.some((s) => s.status === "active")
@@ -295,12 +176,12 @@ function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
   const doneSteps = allSteps.filter((s) => s.status === "done").length;
 
   return (
-    <div className="py-0.5 my-0.5">
+    <div className="py-0.5">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors w-full text-left"
+        className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors"
       >
-        <span>{expanded ? "▾" : "▸"}</span>
+        <span className="text-[9px]">{expanded ? "▾" : "▸"}</span>
         <span>
           {hasActiveStep
             ? "working..."
@@ -309,26 +190,19 @@ function ProcessMessage({ messages }: { messages: StoryEvent[] }) {
       </button>
 
       {expanded && (
-        <div className="mt-1.5 ml-3 pl-3 border-l border-border/30 space-y-1">
+        <div className="mt-1 ml-2.5 space-y-0.5">
           {allSteps.map((step, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground/60">
+            <div key={i} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40">
               <span className={cn(
-                "w-1.5 h-1.5 rounded-full shrink-0",
+                "w-1 h-1 rounded-full shrink-0",
                 step.status === "done"
-                  ? "bg-green-400/60"
+                  ? "bg-muted-foreground/25"
                   : step.status === "active"
                   ? "bg-blue-400 animate-pulse"
-                  : "bg-muted-foreground/20"
+                  : "bg-muted-foreground/15"
               )} />
               <span>{step.label}</span>
             </div>
-          ))}
-          {messages.map((m, i) => (
-             m.content ? (
-                <div key={i} className="text-xs text-muted-foreground/50 mt-1 italic">
-                {m.content}
-                </div>
-            ) : null
           ))}
         </div>
       )}
@@ -357,6 +231,125 @@ function getDefaultLevel(msg: StoryEvent) {
   if (msg.thoughtProcess) return "process";
   return "progress";
 }
+
+// Unified Timeline Component (NEW - replaces TaskPlanCard & FlowNode)
+function UnifiedTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
+  const doneCount = steps.filter((s) => s.status === "done").length;
+
+  const agentIcons: Record<string, string> = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  const renderStepMessages = (msgs: StoryEvent[]) => {
+      const rendered = [];
+      let i = 0;
+      while (i < msgs.length) {
+          const msg = msgs[i];
+          const level = msg.messageLevel || getDefaultLevel(msg);
+
+          if (level === "insight") {
+              rendered.push(<InsightMessage key={msg.id} message={msg} insideTimeline={true} />);
+              i++;
+          } else if (level === "progress") {
+              rendered.push(<ProgressMessage key={msg.id} message={msg} />);
+              i++;
+          } else {
+              // Process messages - group them
+              const group = [msg];
+              while (
+                  i + 1 < msgs.length &&
+                  (msgs[i + 1].messageLevel || getDefaultLevel(msgs[i + 1])) === "process"
+              ) {
+                  i++;
+                  group.push(msgs[i + 1]);
+              }
+              rendered.push(<ProcessMessage key={`proc-${msg.id}`} messages={group} />);
+              i += group.length; // Correct increment: if group has 1, i increments by 1 total in loop
+          }
+      }
+      return rendered;
+  };
+
+  return (
+    <div className="mt-3 px-2">
+      {/* Compact progress header — just text, no card */}
+      <div className="flex items-center gap-2 mb-4 px-1">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium">
+          Progress
+        </span>
+        <div className="flex-1 h-px bg-border/20" />
+        <span className="text-[10px] text-muted-foreground/50">
+          {doneCount}/{steps.length}
+        </span>
+      </div>
+
+      {/* Timeline nodes */}
+      <div className="relative">
+        {steps.map((step, idx) => {
+          const msgs = stepMessages[step.id] || [];
+          const isLast = idx === steps.length - 1;
+          const icon = agentIcons[step.agentRole] || "🤖";
+          const hasContent = msgs.length > 0;
+
+          return (
+            <div key={step.id} className="relative flex gap-3">
+              {/* Left column: dot + connecting line */}
+              <div className="flex flex-col items-center shrink-0 w-5">
+                {/* Status dot */}
+                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                  step.status === "done"
+                    ? "bg-muted-foreground/30"
+                    : step.status === "active"
+                    ? "bg-blue-400 animate-pulse ring-4 ring-blue-400/10"
+                    : "bg-muted-foreground/15"
+                }`} />
+                {/* Connecting line */}
+                {!isLast && (
+                  <div className={`w-px flex-1 mt-1.5 ${
+                    step.status === "done"
+                      ? "bg-border/15"
+                      : step.status === "active"
+                      ? "bg-blue-400/20"
+                      : "bg-border/10 border-l border-dashed border-border/15"
+                  }`} />
+                )}
+              </div>
+
+              {/* Right column: label + child content */}
+              <div className={`flex-1 pb-5 ${
+                isLast && step.status === "pending" ? "pb-2" : ""
+              }`}>
+                {/* Node label */}
+                <div className={`flex items-center gap-1.5 ${
+                  step.status === "done"
+                    ? "text-muted-foreground/50"
+                    : step.status === "active"
+                    ? "text-foreground"
+                    : "text-muted-foreground/30"
+                }`}>
+                  <span className="text-xs">{icon}</span>
+                  <span className={`text-xs ${
+                    step.status === "active" ? "font-medium" : ""
+                  }`}>
+                    {step.label}
+                  </span>
+                </div>
+
+                {/* Child messages — only if step has content */}
+                {hasContent && (
+                  <div className="mt-2 space-y-1.5">
+                    {renderStepMessages(msgs)}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
   
   // Main List Renderer
 function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
@@ -374,7 +367,10 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
   
     messages.forEach((msg) => {
       if (msg.taskPlan || msg.role === "user" || (!msg.taskPlanStepId && msg.messageLevel === "insight" && !taskPlanMsg)) {
-        preFlowMessages.push(msg);
+        // If it's a task plan, we skip rendering it as a card, but we use it to define the timeline steps
+        if (!msg.taskPlan) {
+            preFlowMessages.push(msg);
+        }
       } else if (msg.taskPlanStepId && stepMessages[msg.taskPlanStepId]) {
         stepMessages[msg.taskPlanStepId].push(msg);
       } else {
@@ -404,13 +400,13 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
             continue;
           }
 
-          // Plan or unlinked messages
+          // Unlinked messages (Plan is skipped here as it's handled by UnifiedTimeline)
           const level = msg.messageLevel || getDefaultLevel(msg);
           if (level === "plan") {
-             renderedPreFlow.push(<TaskPlanCard key={msg.id} message={msg} />);
+             // Should not happen as we filtered it out above, but just in case
              i++;
           } else if (level === "insight") {
-             renderedPreFlow.push(<InsightMessage key={msg.id} message={msg} />);
+             renderedPreFlow.push(<InsightMessage key={msg.id} message={msg} insideTimeline={false} />);
              i++;
           } else if (level === "progress") {
              renderedPreFlow.push(<ProgressMessage key={msg.id} message={msg} />);
@@ -430,56 +426,20 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
               renderedPreFlow.push(
                 <ProcessMessage key={`proc-${msg.id}`} messages={group} />
               );
-              i += group.length; // Correct increment: if group has 1, i increments by 1 total in loop
+              i += group.length; 
           }
     }
   
-    // 3. Render Flow
+    // 3. Render
     return (
       <div className="flex flex-col gap-0.5">
         {/* Pre-flow messages */}
         {renderedPreFlow}
 
-        {/* Flow Nodes */}
-        {taskPlanSteps.map((step, index) => {
-            const children = stepMessages[step.id];
-            const hasChildren = children && children.length > 0;
-            const isLast = index === taskPlanSteps.length - 1;
-
-            // Render children inside the node
-            const renderedChildren = [];
-            let j = 0;
-            while (j < children.length) {
-                const msg = children[j];
-                const level = msg.messageLevel || getDefaultLevel(msg);
-
-                if (level === "insight") {
-                    renderedChildren.push(<InsightMessage key={msg.id} message={msg} />);
-                    j++;
-                } else if (level === "progress") {
-                    renderedChildren.push(<ProgressMessage key={msg.id} message={msg} />);
-                    j++;
-                } else {
-                    // Process messages - group them
-                    const group = [msg];
-                    while (
-                        j + 1 < children.length &&
-                        (children[j + 1].messageLevel || getDefaultLevel(children[j + 1])) === "process"
-                    ) {
-                        j++;
-                        group.push(children[j + 1]);
-                    }
-                    renderedChildren.push(<ProcessMessage key={`proc-${msg.id}`} messages={group} />);
-                    j += group.length; // Correct increment
-                }
-            }
-
-            return (
-                <FlowNode key={step.id} step={step} isLast={isLast}>
-                    {hasChildren ? renderedChildren : null}
-                </FlowNode>
-            );
-        })}
+        {/* Unified Timeline */}
+        {taskPlanSteps.length > 0 && (
+             <UnifiedTimeline steps={taskPlanSteps} stepMessages={stepMessages} />
+        )}
       </div>
     );
   }

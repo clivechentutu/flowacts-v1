@@ -1,0 +1,668 @@
+# AI Chat Unified Timeline — Replit Instruction (v4)
+
+> **This replaces Doc 26-v3.** Core change: merge Task Plan card and FlowNode timeline into a **single Unified Timeline** component. This eliminates the visual redundancy where step labels and status dots appeared twice (once in Task Plan, once in FlowNodes).
+
+---
+
+## Problem with v3 (current implementation)
+
+Looking at the v3 screenshot, these issues are visible:
+
+1. **Double information**: "Browse competitor.com homepage" appears in Task Plan AND as a FlowNode label
+2. **Double status dots**: Task Plan has ✓/●/○ dots, FlowNodes have colored ●/◎/○ dots — two dot systems
+3. **Too many nesting levels**: FlowNode line → L3 indent → L3 sub-steps = 3 layers of indentation
+4. **Parallel vertical lines**: FlowNode connecting line + L1 Insight colored left border = two lines side by side
+5. **Repeated Agent icons**: FlowNode header shows Agent icon, L1 Insight card inside also shows Agent label
+6. **Lack of breathing room**: nodes are packed too tightly
+
+## Solution: Unified Timeline
+
+**Merge Task Plan + FlowNodes into one component.** The Task Plan steps ARE the timeline nodes. No separate card above + timeline below.
+
+---
+
+## What Changed from v3
+
+| v3 (current) | v4 (this update) |
+|--------------|-------------------|
+| Separate TaskPlanCard + FlowNode components | **Single `UnifiedTimeline`** component |
+| Step labels appear twice | Step labels appear **once** as timeline nodes |
+| Status dots appear twice (two systems) | **One** status dot system |
+| FlowNode connecting line + Insight left border | Insight card has **no** left border inside timeline (uses background only) |
+| Agent icon on FlowNode + Agent label in Insight | Agent icon on timeline node only; Insight shows **no** redundant Agent label |
+| Progress bar in Task Plan card | **Compact progress indicator** at timeline top |
+| 7 components | **5 components** (removed TaskPlanCard, FlowNode; added UnifiedTimeline) |
+
+**What stays the same:** Data model (taskPlanStepId), L1/L2/L3 message levels, interaction model, AgentLabel utility.
+
+---
+
+## Interaction Model (unchanged)
+
+Upliftly is a **task-execution Agent**. User sends ONE complex request → Agent auto-decomposes → auto-executes all steps → user intervenes only when needed.
+
+---
+
+## Data Model (unchanged from v3)
+
+```ts
+interface TaskPlanStep {
+  id: string;
+  label: string;
+  status: "done" | "active" | "pending";
+  agentRole: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "ai";
+  agentRole?: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  content: string;
+  messageLevel?: "insight" | "progress" | "process" | "plan";
+  thoughtProcess?: {
+    steps: Array<{ label: string; status: "done" | "active" | "pending" }>;
+  };
+  taskPlan?: TaskPlanStep[];
+  taskPlanStepId?: string;
+  canvasLinkId?: string;
+  canvasCardTitle?: string;
+}
+```
+
+---
+
+## Component 1: UnifiedTimeline (NEW — replaces both TaskPlanCard and FlowNode)
+
+This is the core component. It renders the task plan steps as a vertical timeline, with child messages (L1/L2/L3) expanding inline under each step.
+
+**Design principles:**
+- Each step appears ONCE as a timeline node (no separate Task Plan card)
+- Compact progress summary at the top (not a full card)
+- Done steps with no child content collapse to a single line
+- Done steps WITH child content show children with minimal chrome
+- Active step is visually prominent
+- Pending steps are ghosted
+- Generous vertical spacing between nodes for breathing room
+
+```jsx
+function UnifiedTimeline({ steps, stepMessages }) {
+  const doneCount = steps.filter((s) => s.status === "done").length;
+
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  return (
+    <div className="mt-3 px-2">
+      {/* Compact progress header — just text, no card */}
+      <div className="flex items-center gap-2 mb-4 px-1">
+        <span className="text-[10px] uppercase tracking-wider
+          text-muted-foreground/50 font-medium">
+          Progress
+        </span>
+        <div className="flex-1 h-px bg-border/20" />
+        <span className="text-[10px] text-muted-foreground/50">
+          {doneCount}/{steps.length}
+        </span>
+      </div>
+
+      {/* Timeline nodes */}
+      <div className="relative">
+        {steps.map((step, idx) => {
+          const msgs = stepMessages[step.id] || [];
+          const isLast = idx === steps.length - 1;
+          const icon = agentIcons[step.agentRole] || "🤖";
+          const hasContent = msgs.length > 0;
+
+          return (
+            <div key={step.id} className="relative flex gap-3">
+              {/* Left column: dot + connecting line */}
+              <div className="flex flex-col items-center shrink-0 w-5">
+                {/* Status dot */}
+                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
+                  step.status === "done"
+                    ? "bg-muted-foreground/30"
+                    : step.status === "active"
+                    ? "bg-blue-400 animate-pulse ring-4 ring-blue-400/10"
+                    : "bg-muted-foreground/15"
+                }`} />
+                {/* Connecting line */}
+                {!isLast && (
+                  <div className={`w-px flex-1 mt-1.5 ${
+                    step.status === "done"
+                      ? "bg-border/15"
+                      : step.status === "active"
+                      ? "bg-blue-400/20"
+                      : "bg-border/10 border-l border-dashed border-border/15"
+                  }`} />
+                )}
+              </div>
+
+              {/* Right column: label + child content */}
+              <div className={`flex-1 pb-5 ${
+                isLast && step.status === "pending" ? "pb-2" : ""
+              }`}>
+                {/* Node label */}
+                <div className={`flex items-center gap-1.5 ${
+                  step.status === "done"
+                    ? "text-muted-foreground/50"
+                    : step.status === "active"
+                    ? "text-foreground"
+                    : "text-muted-foreground/30"
+                }`}>
+                  <span className="text-xs">{icon}</span>
+                  <span className={`text-xs ${
+                    step.status === "active" ? "font-medium" : ""
+                  }`}>
+                    {step.label}
+                  </span>
+                </div>
+
+                {/* Child messages — only if step has content */}
+                {hasContent && (
+                  <div className="mt-2 space-y-1.5">
+                    {renderStepMessages(msgs)}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+```
+
+**Key visual traits:**
+- **No card border** around the timeline — it flows naturally in the chat
+- **Minimal dots**: small `w-2 h-2` circles, not large status indicators
+- **Active node ring**: `ring-4 ring-blue-400/10` gives a subtle glow without being heavy
+- **Done nodes are very muted**: `text-muted-foreground/50` — they fade into background
+- **Generous `pb-5`** between nodes for breathing room
+- **Single connecting line**: thin `w-px` line, not a border-left on a container
+- **No redundant Agent label** in child content — the timeline node already shows who
+
+---
+
+## Component 2: InsightMessage (L1 — SIMPLIFIED for timeline context)
+
+When inside the timeline, Insight cards drop the Agent label and colored left border (the parent timeline node already provides that context). Uses a subtle background card instead.
+
+```jsx
+function InsightMessage({ message, insideTimeline = false }) {
+  const agentColors = {
+    scout: "border-blue-400/40",
+    capturer: "border-purple-400/40",
+    analyst: "border-orange-400/40",
+    comparator: "border-green-400/40",
+    reporter: "border-pink-400/40",
+  };
+
+  // Inside timeline: simplified card (no agent label, no left border)
+  if (insideTimeline) {
+    return (
+      <div className="px-3.5 py-3 rounded-lg bg-muted/8">
+        <div className="text-sm text-foreground leading-relaxed">
+          {message.content}
+        </div>
+        {message.canvasLinkId && (
+          <div className="mt-2 flex items-center gap-1.5 text-xs
+            text-primary/70 hover:text-primary cursor-pointer
+            transition-colors">
+            <span>📌</span>
+            <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Outside timeline (e.g., greeting): full card with agent label + left border
+  const borderColor = agentColors[message.agentRole] || "border-border";
+  return (
+    <div className={`relative px-4 py-3 my-1.5 rounded-lg bg-muted/10
+      border-l-2 ${borderColor}`}>
+      {message.agentRole && <AgentLabel role={message.agentRole} />}
+      <div className="text-sm text-foreground leading-relaxed mt-1.5">
+        {message.content}
+      </div>
+      {message.canvasLinkId && (
+        <div className="mt-2 flex items-center gap-1.5 text-xs
+          text-primary/70 hover:text-primary cursor-pointer
+          transition-colors">
+          <span>📌</span>
+          <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Key change:** `insideTimeline` prop controls whether to show the simplified version (no agent label, no left border, just subtle background) or the full version (for greeting messages outside the timeline).
+
+---
+
+## Component 3: ProgressMessage (L2 — compact, unchanged logic)
+
+```jsx
+function ProgressMessage({ message }) {
+  return (
+    <div className="py-0.5">
+      <span className="text-xs text-muted-foreground/60 leading-relaxed">
+        {message.content}
+      </span>
+    </div>
+  );
+}
+```
+
+**Key change:** Removed the Agent icon from L2 messages — the parent timeline node already shows which Agent. This makes L2 even more compact.
+
+---
+
+## Component 4: ProcessMessage (L3 — collapsible steps)
+
+```jsx
+function ProcessMessage({ messages }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  const hasActiveStep = messages.some(
+    (m) => m.thoughtProcess?.steps?.some((s) => s.status === "active")
+  );
+  const allSteps = messages.flatMap(
+    (m) => m.thoughtProcess?.steps || []
+  );
+  const expanded = isExpanded || hasActiveStep;
+  const doneSteps = allSteps.filter((s) => s.status === "done").length;
+
+  return (
+    <div className="py-0.5">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-1.5 text-[11px]
+          text-muted-foreground/40 hover:text-muted-foreground/60
+          transition-colors"
+      >
+        <span className="text-[9px]">{expanded ? "▾" : "▸"}</span>
+        <span>
+          {hasActiveStep
+            ? "working..."
+            : `${doneSteps} step${doneSteps !== 1 ? "s" : ""} completed`}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="mt-1 ml-2.5 space-y-0.5">
+          {allSteps.map((step, i) => (
+            <div key={i} className="flex items-center gap-1.5 text-[11px]
+              text-muted-foreground/40">
+              <span className={`w-1 h-1 rounded-full shrink-0 ${
+                step.status === "done"
+                  ? "bg-muted-foreground/25"
+                  : step.status === "active"
+                  ? "bg-blue-400 animate-pulse"
+                  : "bg-muted-foreground/15"
+              }`} />
+              <span>{step.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Key changes from v3:**
+- Removed Agent icon and name (parent timeline node shows this)
+- Smaller text: `text-[11px]` instead of `text-xs`
+- Smaller dots: `w-1 h-1` instead of `w-1.5 h-1.5`
+- Less indentation: `ml-2.5` instead of `ml-3 pl-3 border-l`
+- **No nested border-left** — eliminates the double-line problem
+- Overall much lighter visual weight
+
+---
+
+## Component 5: ChatMessageList (REWRITTEN)
+
+```jsx
+function ChatMessageList({ messages }) {
+  const taskPlanMsg = messages.find((m) => m.taskPlan);
+  const taskPlanSteps = taskPlanMsg?.taskPlan || [];
+
+  // Group messages by taskPlanStepId
+  const stepMessages = {};
+  taskPlanSteps.forEach((step) => {
+    stepMessages[step.id] = [];
+  });
+
+  const preFlowMessages = [];
+
+  messages.forEach((msg) => {
+    if (msg.taskPlan || msg.role === "user" ||
+        (!msg.taskPlanStepId && !taskPlanMsg)) {
+      preFlowMessages.push(msg);
+    } else if (msg.taskPlanStepId && stepMessages[msg.taskPlanStepId]) {
+      stepMessages[msg.taskPlanStepId].push(msg);
+    }
+  });
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {/* Pre-flow: greeting + user request */}
+      {preFlowMessages.map((msg) => {
+        if (msg.role === "user") {
+          return (
+            <div key={msg.id} className="flex justify-end px-4 py-2">
+              <div className="max-w-[80%] rounded-2xl px-4 py-2.5
+                bg-primary/15 text-sm text-foreground leading-relaxed">
+                {msg.content}
+              </div>
+            </div>
+          );
+        }
+        if (msg.taskPlan) {
+          // Don't render TaskPlanCard — UnifiedTimeline handles it
+          return null;
+        }
+        return <InsightMessage key={msg.id} message={msg} />;
+      })}
+
+      {/* Unified Timeline */}
+      {taskPlanSteps.length > 0 && (
+        <UnifiedTimeline
+          steps={taskPlanSteps}
+          stepMessages={stepMessages}
+        />
+      )}
+    </div>
+  );
+}
+
+// Helper: render messages within a timeline node
+function renderStepMessages(msgs) {
+  const rendered = [];
+  let i = 0;
+
+  while (i < msgs.length) {
+    const msg = msgs[i];
+    const level = msg.messageLevel || getDefaultLevel(msg);
+
+    if (level === "insight") {
+      rendered.push(
+        <InsightMessage key={msg.id} message={msg} insideTimeline={true} />
+      );
+      i++;
+    } else if (level === "progress") {
+      rendered.push(<ProgressMessage key={msg.id} message={msg} />);
+      i++;
+    } else {
+      const group = [msg];
+      while (
+        i + 1 < msgs.length &&
+        (msgs[i + 1].messageLevel || getDefaultLevel(msgs[i + 1])) === "process" &&
+        msgs[i + 1].agentRole === msg.agentRole
+      ) {
+        i++;
+        group.push(msgs[i]);
+      }
+      rendered.push(
+        <ProcessMessage key={`proc-${msg.id}`} messages={group} />
+      );
+      i++;
+    }
+  }
+
+  return rendered;
+}
+
+function getDefaultLevel(msg) {
+  if (msg.taskPlan) return "plan";
+  if (msg.canvasLinkId) return "insight";
+  if (["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
+    return "insight";
+  }
+  if (msg.thoughtProcess) return "process";
+  return "progress";
+}
+```
+
+**Key change:** `taskPlan` message returns `null` — no separate TaskPlanCard. The `UnifiedTimeline` component handles everything.
+
+---
+
+## AgentLabel utility (unchanged, used only for greeting)
+
+```jsx
+function AgentLabel({ role }) {
+  const agents = {
+    scout:      { icon: "🕵️", name: "Scout",      color: "text-blue-400" },
+    capturer:   { icon: "📸", name: "Capturer",   color: "text-purple-400" },
+    analyst:    { icon: "📊", name: "Analyst",    color: "text-orange-400" },
+    comparator: { icon: "⚖️", name: "Comparator", color: "text-green-400" },
+    reporter:   { icon: "📝", name: "Reporter",   color: "text-pink-400" },
+  };
+  const agent = agents[role] || agents.scout;
+  return (
+    <div className={`flex items-center gap-1.5 ${agent.color}`}>
+      <span className="text-sm">{agent.icon}</span>
+      <span className="text-xs font-semibold">{agent.name}</span>
+    </div>
+  );
+}
+```
+
+---
+
+## Mock Data (unchanged from v3)
+
+```js
+const DEMO_MESSAGES = [
+  {
+    id: "m1",
+    role: "ai",
+    agentRole: "scout",
+    content:
+      "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
+    messageLevel: "insight",
+  },
+  {
+    id: "m2",
+    role: "user",
+    content:
+      "Analyze the new user signup and onboarding flow for competitor.com.",
+  },
+  {
+    id: "m3",
+    role: "ai",
+    agentRole: "scout",
+    content: "Got it. I'll analyze competitor.com's signup and onboarding experience.",
+    messageLevel: "plan",
+    taskPlan: [
+      { id: "t1", label: "Browse competitor.com homepage", status: "done", agentRole: "scout" },
+      { id: "t2", label: "Analyze pricing page", status: "done", agentRole: "analyst" },
+      { id: "t3", label: "Test signup flow", status: "active", agentRole: "scout" },
+      { id: "t4", label: "Evaluate onboarding experience", status: "pending", agentRole: "analyst" },
+      { id: "t5", label: "Generate analysis report", status: "pending", agentRole: "reporter" },
+    ],
+  },
+  {
+    id: "m4",
+    role: "ai",
+    agentRole: "scout",
+    content: "Visiting competitor.com as a first-time user...",
+    messageLevel: "process",
+    taskPlanStepId: "t1",
+    thoughtProcess: {
+      steps: [
+        { label: "Preparing to visit competitor.com...", status: "done" },
+        { label: "Simulating a first-time visitor", status: "done" },
+        { label: "Scanning homepage layout", status: "done" },
+      ],
+    },
+  },
+  {
+    id: "m5",
+    role: "ai",
+    agentRole: "scout",
+    content:
+      "Landed on homepage · Found navigation: Pricing, Features, Sign Up, Blog",
+    messageLevel: "progress",
+    taskPlanStepId: "t1",
+  },
+  {
+    id: "m6",
+    role: "ai",
+    agentRole: "scout",
+    content: "Navigating to pricing page...",
+    messageLevel: "process",
+    taskPlanStepId: "t2",
+    thoughtProcess: {
+      steps: [
+        { label: "Looking through the navigation...", status: "done" },
+        { label: "Found the pricing page", status: "done" },
+        { label: "Heading to pricing...", status: "done" },
+      ],
+    },
+  },
+  {
+    id: "m7",
+    role: "ai",
+    agentRole: "analyst",
+    content:
+      "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\n\n⚠️ The free trial requires a credit card — this is a potential friction point for new users.",
+    messageLevel: "insight",
+    taskPlanStepId: "t2",
+    canvasLinkId: "card-pricing",
+    canvasCardTitle: "Pricing Analysis",
+  },
+  {
+    id: "m8",
+    role: "ai",
+    agentRole: "scout",
+    content: "Testing the signup flow...",
+    messageLevel: "process",
+    taskPlanStepId: "t3",
+    thoughtProcess: {
+      steps: [
+        { label: "Clicking 'Start Free Trial'...", status: "done" },
+        { label: "Filling in registration form...", status: "active" },
+        { label: "Checking for friction points", status: "pending" },
+      ],
+    },
+  },
+];
+```
+
+---
+
+## Expected Visual Result
+
+```
+┌──────────────────────────────────────────┐
+│ Competitor Onboarding Analysis           │
+│ Last edited 2m ago              🕐  📋  │
+├──────────────────────────────────────────┤
+│                                          │
+│  🕵️ Scout                               │
+│  │ Your UX analysis team is ready.      │  ← greeting (full style)
+│  │ Paste a URL or describe a user flow  │
+│  │ to get started.                      │
+│                                          │
+│         [Analyze the new user signup     │
+│          and onboarding flow for         │  ← user request
+│          competitor.com.]                │
+│                                          │
+│  Progress ─────────────────── 2/5       │  ← compact header (no card)
+│                                          │
+│  ●  🕵️ Browse competitor.com homepage   │  ← done (muted)
+│  │   ▸ 3 steps completed                │  ← L3 collapsed (very light)
+│  │   Landed on homepage · Found nav:    │  ← L2 inline (light)
+│  │   Pricing, Features, Sign Up, Blog   │
+│  │                                       │
+│  │                                       │  ← breathing room
+│  ●  📊 Analyze pricing page             │  ← done (muted)
+│  │   ▸ 3 steps completed                │  ← L3 collapsed
+│  │                                       │
+│  │   ┌──────────────────────────────┐   │
+│  │   │ Found 3 pricing tiers: Free, │   │  ← L1 insight (NO agent label,
+│  │   │ Pro ($29/mo), and Enterprise.│   │     NO left border — just
+│  │   │                              │   │     subtle bg card)
+│  │   │ ⚠️ Free trial requires      │   │
+│  │   │ credit card — potential      │   │
+│  │   │ friction point.              │   │
+│  │   │                              │   │
+│  │   │ 📌 → Pricing Analysis       │   │
+│  │   └──────────────────────────────┘   │
+│  │                                       │
+│  │                                       │  ← breathing room
+│  ◎  🕵️ Test signup flow                 │  ← active (bright, ring glow)
+│  │   ▾ working...                        │  ← L3 auto-expanded
+│  │     · Clicking 'Start Free Trial' ✓  │
+│  │     · Filling in registration...  ●  │
+│  │     · Checking friction points    ○  │
+│  │                                       │
+│  ○  📊 Evaluate onboarding experience   │  ← pending (ghosted)
+│  ┆                                       │
+│  ○  📝 Generate analysis report          │  ← pending (ghosted)
+│                                          │
+├──────────────────────────────────────────┤
+│ [Focus on pricing] [Skip to signup]      │
+│ [Take a screenshot here]                 │
+│                                          │
+│ Ask a follow-up or redirect...           │
+│ 📎  @  ⚡  ⓘ            🌐  ➤          │
+└──────────────────────────────────────────┘
+```
+
+**Visual improvements over v3:**
+1. **No duplicate step labels** — each step appears once
+2. **No duplicate dots** — one dot system
+3. **No double vertical lines** — Insight card uses bg only, no left border
+4. **No redundant Agent labels** — timeline node shows Agent, Insight card doesn't repeat
+5. **More breathing room** — `pb-5` between nodes
+6. **Lighter L3 blocks** — no nested border-left, smaller text
+7. **Compact progress header** — just "Progress ——— 2/5", not a full card
+
+---
+
+## What NOT to Do
+
+- Do NOT render a separate TaskPlanCard — the UnifiedTimeline replaces it
+- Do NOT show Agent labels inside Insight cards when they're inside the timeline
+- Do NOT use colored left borders on Insight cards inside the timeline
+- Do NOT use horizontal dividers between stages
+- Do NOT add nested border-left inside L3 process blocks
+- Do NOT insert user messages between auto-executed steps
+- Do NOT add real AI functionality — this is mock data only
+
+---
+
+## Acceptance Criteria
+
+1. ✅ **UnifiedTimeline replaces both TaskPlanCard and FlowNode** — single component
+2. ✅ Each step label appears **exactly once** (as a timeline node)
+3. ✅ Status dots appear **exactly once** per step
+4. ✅ Compact progress header at top ("Progress ——— 2/5"), not a bordered card
+5. ✅ Done nodes: small muted dot, muted text, thin connecting line
+6. ✅ Active node: blue pulsing dot with ring glow, normal-weight text
+7. ✅ Pending nodes: very faint dot, ghosted text, dashed line
+8. ✅ L1 Insight inside timeline: subtle bg card, **no** Agent label, **no** colored left border
+9. ✅ L2 Progress inside timeline: plain text, **no** Agent icon
+10. ✅ L3 Process inside timeline: collapsible, **no** nested border-left, **no** Agent icon
+11. ✅ Generous spacing between nodes (`pb-5`)
+12. ✅ **No horizontal dividers** anywhere
+13. ✅ **No double vertical lines** (timeline line + insight border)
+14. ✅ Only 1 user message in demo
+15. ✅ Dark theme consistent
+16. ✅ Greeting message outside timeline uses full InsightMessage style (with Agent label + left border)
+
+---
+
+*Document: 26-AIChat对话体验优化-Replit指令-v4.md*
+*Scope: Merge TaskPlanCard + FlowNode into UnifiedTimeline; eliminate visual redundancy*
+*Replaces: Doc 26-v3*
+*Related: Doc 32 (competitive research), Doc 31 (message layering analysis)*
