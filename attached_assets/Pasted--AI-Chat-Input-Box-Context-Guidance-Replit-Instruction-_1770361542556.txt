@@ -1,0 +1,260 @@
+# AI Chat Input Box Context Guidance — Replit Instruction
+
+> Add context-aware suggestion chips above the input box, make the placeholder text dynamic based on task state, and add tooltips to all toolbar icons. No backend changes — use mock state to demonstrate the three scenarios.
+
+---
+
+## Current State
+
+The Chat input area currently shows:
+```
+┌──────────────────────────────────────┐
+│ Ask Upliftly to analyze a flow...   │
+│ 📎  @  ⚡  ⓘ        🌐  ➤         │
+└──────────────────────────────────────┘
+```
+
+Problems:
+- Static placeholder regardless of task state
+- Toolbar icons have no tooltips — users don't know what they do
+- No suggested actions — users (especially new ones) don't know what to type
+
+---
+
+## What to Change
+
+Three changes to the Chat input area:
+
+1. **Context Suggestion Chips** above the input box
+2. **Dynamic placeholder** text based on task state
+3. **Tooltips** on all toolbar icons
+
+---
+
+## Change 1: Context Suggestion Chips
+
+### Design
+
+Add a row of clickable suggestion chips **above** the input box, **below** the conversation:
+
+```
+┌──────────────────────────────────────┐
+│         [conversation area]          │
+│                                      │
+│ [Compare with competitor B]          │
+│ [Focus on pricing page]             │
+│ [Generate report]                    │
+├──────────────────────────────────────┤
+│ Ask a follow-up or redirect...      │
+│ 📎  @  ⚡  ⓘ        🌐  ➤         │
+└──────────────────────────────────────┘
+```
+
+### Three Scenarios (use mock state to switch)
+
+**Scenario 1: Empty project (no messages yet)**
+```js
+const CHIPS_EMPTY = [
+  "Analyze competitor.com signup flow",
+  "Compare two products' pricing",
+  "Audit my landing page UX",
+];
+```
+
+**Scenario 2: Task in progress (AI is working)**
+```js
+const CHIPS_IN_PROGRESS = [
+  "Focus on the pricing page",
+  "Skip to the signup flow",
+  "Take a screenshot here",
+];
+```
+
+**Scenario 3: Task completed (results delivered)**
+```js
+const CHIPS_COMPLETED = [
+  "Compare with another competitor",
+  "Generate a report",
+  "Dig deeper into signup friction",
+];
+```
+
+### SuggestionChips Component
+
+```jsx
+function SuggestionChips({ chips, onSelect }) {
+  if (!chips || chips.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 px-4 py-2">
+      {chips.map((chip, i) => (
+        <button
+          key={i}
+          onClick={() => onSelect(chip)}
+          className="rounded-full px-3 py-1.5 text-xs
+            bg-muted/50 hover:bg-muted
+            text-muted-foreground hover:text-foreground
+            border border-border/50 hover:border-border
+            transition-colors cursor-pointer"
+        >
+          {chip}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+### Behavior
+
+- Clicking a chip fills the input box with the chip text and auto-sends it (simulating a user message)
+- After clicking, the chips update to the next scenario's set
+- Maximum 3-4 chips visible at a time
+- Chips sit in a `flex-wrap` container — if they overflow, they wrap to a second line
+
+---
+
+## Change 2: Dynamic Placeholder
+
+### Rules
+
+The input box placeholder changes based on task state:
+
+| Task State | Placeholder Text |
+|-----------|-----------------|
+| `empty` (no messages) | `"Paste a URL or describe what you'd like to analyze..."` |
+| `in_progress` (AI working) | `"Ask a follow-up or redirect the analysis..."` |
+| `completed` (results done) | `"Compare, dig deeper, or generate a report..."` |
+| `thinking` (AI processing) | `"Type to redirect or wait for results..."` |
+
+### Implementation
+
+```jsx
+function getPlaceholder(taskState) {
+  switch (taskState) {
+    case "empty":
+      return "Paste a URL or describe what you'd like to analyze...";
+    case "in_progress":
+      return "Ask a follow-up or redirect the analysis...";
+    case "completed":
+      return "Compare, dig deeper, or generate a report...";
+    case "thinking":
+      return "Type to redirect or wait for results...";
+    default:
+      return "Ask Upliftly to analyze a flow...";
+  }
+}
+```
+
+For the demo, use the `in_progress` state as default (matching the current mock conversation).
+
+---
+
+## Change 3: Toolbar Icon Tooltips
+
+### Current Icons
+
+Add a `title` attribute (native tooltip) to each toolbar icon button:
+
+| Icon | Tooltip Text |
+|------|-------------|
+| 📎 | `"Attach a file or screenshot"` |
+| @ | `"Mention a specific agent"` |
+| ⚡ | `"Quick commands"` |
+| ⓘ | `"What can Upliftly do?"` |
+| 🌐 | `"Enter a URL to analyze"` |
+| ➤ | `"Send message"` |
+
+### Implementation
+
+Simply add `title="..."` to each existing icon button. Example:
+
+```jsx
+<button title="Attach a file or screenshot" className="...">
+  📎
+</button>
+<button title="Mention a specific agent" className="...">
+  @
+</button>
+<button title="Quick commands" className="...">
+  ⚡
+</button>
+<button title="What can Upliftly do?" className="...">
+  ⓘ
+</button>
+<button title="Enter a URL to analyze" className="...">
+  🌐
+</button>
+<button title="Send message" className="...">
+  ➤
+</button>
+```
+
+---
+
+## Layout Structure
+
+The full input area should be structured as:
+
+```jsx
+<div className="border-t border-border">
+  {/* Suggestion chips */}
+  <SuggestionChips chips={currentChips} onSelect={handleChipClick} />
+
+  {/* Input row */}
+  <div className="px-4 py-3">
+    <div className="flex items-end gap-2 bg-muted/30 rounded-xl
+      border border-border/50 px-3 py-2">
+      <textarea
+        placeholder={getPlaceholder(taskState)}
+        className="flex-1 bg-transparent resize-none outline-none
+          text-sm text-foreground placeholder:text-muted-foreground
+          min-h-[20px] max-h-[120px]"
+        rows={1}
+      />
+      <button title="Send message" className="...">➤</button>
+    </div>
+
+    {/* Toolbar */}
+    <div className="flex items-center gap-1 mt-2 px-1">
+      <button title="Attach a file or screenshot">📎</button>
+      <button title="Mention a specific agent">@</button>
+      <button title="Quick commands">⚡</button>
+      <button title="What can Upliftly do?">ⓘ</button>
+      <div className="flex-1" />
+      <button title="Enter a URL to analyze">🌐</button>
+    </div>
+  </div>
+</div>
+```
+
+---
+
+## What NOT to Do
+
+- Do NOT change the conversation message area (that's Doc 26)
+- Do NOT change the Chat header/title bar (that's Doc 29)
+- Do NOT remove any existing toolbar icons
+- Do NOT add real AI-powered chip generation — use static mock arrays
+- Do NOT change the send button behavior
+- Do NOT change the overall Chat panel layout
+
+---
+
+## Acceptance Criteria
+
+1. ✅ Suggestion chips appear above the input box
+2. ✅ Chips are clickable and fill the input with the chip text
+3. ✅ Chips use `rounded-full` pill style with subtle border
+4. ✅ Placeholder text matches the current task state
+5. ✅ All 6 toolbar icons have native tooltips (hover to see)
+6. ✅ Chips wrap gracefully if they overflow one line
+7. ✅ Dark theme styling consistent with the rest of the app
+8. ✅ Input box still functions normally (type, send, clear)
+
+---
+
+*Document: 27-AIChat输入框引导优化-Replit指令.md*
+*Scope: Context Suggestion Chips + Dynamic Placeholder + Toolbar Tooltips*
+*Depends on: Current AI Chat input area implementation*
+*Next step: Doc 28 (Message layout simplification)*

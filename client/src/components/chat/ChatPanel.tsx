@@ -152,17 +152,89 @@ function AIMessageContent({ msg }: { msg: StoryEvent }) {
   );
 }
 
+// Suggestion Chips Component
+function SuggestionChips({ chips, onSelect }: { chips: string[], onSelect: (chip: string) => void }) {
+  if (!chips || chips.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 px-4 py-2 border-b border-border/40 bg-background/30">
+      {chips.map((chip, i) => (
+        <button
+          key={i}
+          onClick={() => onSelect(chip)}
+          className="rounded-full px-3 py-1.5 text-xs bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50 hover:border-border transition-colors cursor-pointer"
+        >
+          {chip}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [isThinkingMode, setIsThinkingMode] = useState(false);
   const [title, setTitle] = useState("Competitor Onboarding Analysis");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  
+  // Mock Task State
+  const [taskState, setTaskState] = useState<'empty' | 'in_progress' | 'completed' | 'thinking'>('in_progress');
+
+  const CHIPS_EMPTY = [
+    "Analyze competitor.com signup flow",
+    "Compare two products' pricing",
+    "Audit my landing page UX",
+  ];
+
+  const CHIPS_IN_PROGRESS = [
+    "Focus on the pricing page",
+    "Skip to the signup flow",
+    "Take a screenshot here",
+  ];
+
+  const CHIPS_COMPLETED = [
+    "Compare with another competitor",
+    "Generate a report",
+    "Dig deeper into signup friction",
+  ];
+
+  const getCurrentChips = () => {
+      switch (taskState) {
+          case 'empty': return CHIPS_EMPTY;
+          case 'in_progress': return CHIPS_IN_PROGRESS;
+          case 'completed': return CHIPS_COMPLETED;
+          default: return [];
+      }
+  };
+
+  const getPlaceholder = () => {
+    switch (taskState) {
+      case "empty":
+        return "Paste a URL or describe what you'd like to analyze...";
+      case "in_progress":
+        return "Ask a follow-up or redirect the analysis...";
+      case "completed":
+        return "Compare, dig deeper, or generate a report...";
+      case "thinking":
+        return "Type to redirect or wait for results...";
+      default:
+        return "Ask Upliftly to analyze a flow...";
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     onSendMessage(input);
     setInput("");
+    
+    // Cycle mock state for demo purposes if needed, or just keep in_progress
+    // setTaskState(prev => prev === 'empty' ? 'in_progress' : prev === 'in_progress' ? 'completed' : 'empty');
+  };
+
+  const handleChipClick = (chip: string) => {
+      onSendMessage(chip);
+      // Optional: cycle state on chip click to show dynamic nature
   };
 
   const handleTitleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -256,97 +328,106 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
         </div>
       </ScrollArea>
 
-      {/* Input */}
-      <div className="p-4 border-t border-border bg-[var(--chat-background)]">
-        <form 
-          onSubmit={handleSubmit} 
-          className="relative flex flex-col bg-background border border-border shadow-sm rounded-xl focus-within:ring-1 focus-within:ring-primary/20 focus-within:shadow-md transition-all duration-300"
-        >
-          <TextareaAutosize
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Upliftly to analyze a flow..."
-            minRows={3}
-            maxRows={6}
-            className="w-full resize-none border-0 bg-transparent focus:outline-none shadow-none px-4 py-3 text-foreground placeholder:text-muted-foreground text-sm leading-relaxed"
-            data-testid="input-chat"
-          />
-          
-          <div className="flex justify-between items-center px-2 pb-2">
-             <div className="flex gap-1">
+      {/* Input Area */}
+      <div className="border-t border-border bg-[var(--chat-background)] flex flex-col">
+        <SuggestionChips chips={getCurrentChips()} onSelect={handleChipClick} />
+        
+        <div className="p-4 pt-2">
+            <form 
+            onSubmit={handleSubmit} 
+            className="flex flex-col gap-2"
+            >
+            {/* Input Row */}
+            <div className="flex items-end gap-2 bg-muted/30 rounded-xl border border-border/50 px-3 py-2 focus-within:ring-1 focus-within:ring-primary/20 focus-within:shadow-sm transition-all duration-300">
+                <TextareaAutosize
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={getPlaceholder()}
+                    minRows={1}
+                    maxRows={6}
+                    className="flex-1 bg-transparent resize-none outline-none text-sm text-foreground placeholder:text-muted-foreground min-h-[24px] py-1"
+                    data-testid="input-chat"
+                />
                 <Button 
-                  type="button"
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-                  title="Attach"
+                    type="submit" 
+                    size="icon" 
+                    className="h-7 w-7 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors shrink-0 mb-0.5"
+                    disabled={!input.trim()}
+                    title="Send message"
                 >
-                  <Paperclip className="w-4 h-4" />
+                    <Send className="w-3.5 h-3.5" />
                 </Button>
-                
-                <Button 
-                  type="button"
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-                  title="Call Roles"
-                >
-                  <AtSign className="w-4 h-4" />
-                </Button>
-                
-                <div 
-                   role="button"
-                   onClick={() => setIsThinkingMode(!isThinkingMode)}
-                   className="h-8 bg-muted/30 hover:bg-muted/50 border border-border/30 rounded-lg p-0.5 flex items-center relative cursor-pointer select-none ml-1"
-                   title={isThinkingMode ? "Switch to Fast Mode" : "Switch to Thinking Mode"}
-                >
-                   {/* Active Indicator Background */}
-                   <div 
-                      className={cn(
-                        "absolute top-0.5 bottom-0.5 w-[28px] bg-background shadow-sm border border-border/40 rounded-[6px] transition-all duration-300 ease-out",
-                        isThinkingMode ? "translate-x-[28px]" : "translate-x-0"
-                      )} 
-                   />
-                   
-                   {/* Fast Icon */}
-                   <div className={cn(
-                      "w-7 h-full flex items-center justify-center relative z-10 transition-colors duration-300",
-                      !isThinkingMode ? "text-amber-500" : "text-muted-foreground/60"
-                   )}>
-                      <Zap className={cn("w-3.5 h-3.5", !isThinkingMode && "fill-current")} />
-                   </div>
-                   
-                   {/* Thinking Icon */}
-                   <div className={cn(
-                      "w-7 h-full flex items-center justify-center relative z-10 transition-colors duration-300",
-                      isThinkingMode ? "text-indigo-500" : "text-muted-foreground/60"
-                   )}>
-                      <Brain className="w-3.5 h-3.5" />
-                   </div>
+            </div>
+            
+            {/* Toolbar Row */}
+            <div className="flex justify-between items-center px-1">
+                <div className="flex gap-1">
+                    <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+                        title="Attach a file or screenshot"
+                    >
+                        <Paperclip className="w-4 h-4" />
+                    </Button>
+                    
+                    <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+                        title="Mention a specific agent"
+                    >
+                        <AtSign className="w-4 h-4" />
+                    </Button>
+                    
+                    <div 
+                        role="button"
+                        onClick={() => setIsThinkingMode(!isThinkingMode)}
+                        className="h-8 bg-muted/30 hover:bg-muted/50 border border-border/30 rounded-lg p-0.5 flex items-center relative cursor-pointer select-none ml-1"
+                        title={isThinkingMode ? "Switch to Fast Mode" : "Switch to Thinking Mode"}
+                    >
+                        {/* Active Indicator Background */}
+                        <div 
+                            className={cn(
+                                "absolute top-0.5 bottom-0.5 w-[28px] bg-background shadow-sm border border-border/40 rounded-[6px] transition-all duration-300 ease-out",
+                                isThinkingMode ? "translate-x-[28px]" : "translate-x-0"
+                            )} 
+                        />
+                        
+                        {/* Fast Icon */}
+                        <div className={cn(
+                            "w-7 h-full flex items-center justify-center relative z-10 transition-colors duration-300",
+                            !isThinkingMode ? "text-amber-500" : "text-muted-foreground/60"
+                        )}>
+                            <Zap className={cn("w-3.5 h-3.5", !isThinkingMode && "fill-current")} />
+                        </div>
+                        
+                        {/* Thinking Icon */}
+                        <div className={cn(
+                            "w-7 h-full flex items-center justify-center relative z-10 transition-colors duration-300",
+                            isThinkingMode ? "text-indigo-500" : "text-muted-foreground/60"
+                        )}>
+                            <Brain className="w-3.5 h-3.5" />
+                        </div>
+                    </div>
                 </div>
-             </div>
-             
-             <div className="flex gap-1">
-                <Button 
-                  type="button"
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-                  title="Search"
-                >
-                  <Globe className="w-4 h-4" />
-                </Button>
-                <Button 
-                  type="submit" 
-                  size="icon" 
-                  className="h-8 w-8 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors"
-                  disabled={!input.trim()}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-             </div>
-          </div>
-        </form>
+                
+                <div className="flex gap-1">
+                    <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+                        title="Enter a URL to analyze"
+                    >
+                        <Globe className="w-4 h-4" />
+                    </Button>
+                </div>
+            </div>
+            </form>
+        </div>
       </div>
     </div>
   );
