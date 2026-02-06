@@ -130,7 +130,7 @@ function toRenderNodes(actionEvents: StoryEvent[]): RenderNode[] {
 const Controls = ({ onScreenshot }: { onScreenshot: () => void }) => {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   return (
-    <div className="absolute bottom-8 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
+    <div className="absolute bottom-20 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
       <button 
         onClick={() => zoomIn()} 
         className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
