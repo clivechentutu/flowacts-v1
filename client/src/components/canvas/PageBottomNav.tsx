@@ -109,11 +109,6 @@ export function PageBottomNav({
                         </span>
                     )}
                     
-                    {page.totalSteps > 0 && (
-                        <span className={cn("text-[10px] tabular-nums ml-1", isActive ? "text-foreground opacity-80" : "text-muted-foreground opacity-60")}>
-                            {page.completedSteps}/{page.totalSteps}
-                        </span>
-                    )}
                 </button>
             );
         })}
