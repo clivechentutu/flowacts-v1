@@ -23,6 +23,7 @@ export interface TaskPlanStep {
   label: string;
   status: "done" | "active" | "pending";
   agentRole: AgentRole;
+  summary?: string; // NEW: one-line result summary shown when collapsed
 }
 
 export interface StoryEvent {
@@ -37,6 +38,7 @@ export interface StoryEvent {
   thoughtProcess?: ThoughtProcess; // New structured thinking
   taskPlan?: TaskPlanStep[]; // For messageLevel="plan"
   taskPlanStepId?: string; // Links message to a Task Plan step
+  intentSummary?: string; // NEW: intent recognition text
   actions?: string[]; // Legacy List of actions taken by AI
   image?: string; // For action cards
   timestamp: string;
@@ -96,10 +98,11 @@ export const SCENARIOS: Scenario[] = [
           agentRole: "scout",
           content: "I've created a plan to analyze the onboarding flow.",
           messageLevel: "plan",
+          intentSummary: "I understand you want to analyze the signup flow for competitor.com to identify friction points.",
           taskPlan: [
-            { id: "tp1", label: "Browse competitor.com homepage", status: "done", agentRole: "scout" },
-            { id: "tp2", label: "Navigate to Pricing & Sign Up", status: "done", agentRole: "scout" },
-            { id: "tp3", label: "Analyze Pricing Strategy", status: "done", agentRole: "analyst" },
+            { id: "tp1", label: "Browse competitor.com homepage", status: "done", agentRole: "scout", summary: "Homepage analyzed" },
+            { id: "tp2", label: "Navigate to Pricing & Sign Up", status: "done", agentRole: "scout", summary: "Found 3 pricing tiers" },
+            { id: "tp3", label: "Analyze Pricing Strategy", status: "done", agentRole: "analyst", summary: "Detailed pricing analysis complete" },
             { id: "tp4", label: "Test signup flow", status: "active", agentRole: "scout" },
             { id: "tp5", label: "Generate analysis report", status: "pending", agentRole: "reporter" }
           ],
