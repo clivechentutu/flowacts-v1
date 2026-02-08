@@ -471,13 +471,16 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       {/* History toggle header */}
       <button
         onClick={() => setHistoryExpanded(!historyExpanded)}
-        className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-muted/8 transition-colors group"
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/8 transition-colors group"
       >
-        <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3">
+        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+          <span className="text-xs font-medium text-foreground/80 truncate">
+            {doneCount} step{doneCount !== 1 ? "s" : ""} completed
+          </span>
+        </div>
+        
+        <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3 text-right">
             {historyExpanded ? "▾" : "▸"}
-        </span>
-        <span className="text-[11px] text-muted-foreground/40 font-normal group-hover:text-muted-foreground/60 transition-colors">
-          {doneCount} step{doneCount !== 1 ? "s" : ""} completed
         </span>
       </button>
 
