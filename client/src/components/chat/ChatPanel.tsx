@@ -927,9 +927,9 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
             {/* Zone 1: Intent & Plan Card */}
             {taskPlanMsg && taskPlanMsg.taskPlan && (
                 <div className="relative mb-8">
-                    {/* Dot 1 - Orange (Planning) */}
+                    {/* Dot 1 - Neutral (Planning) */}
                     <div className="absolute -left-[22px] top-[50px] flex items-center justify-center w-5 h-5 bg-background ring-[6px] ring-background rounded-full z-10">
-                        <div className="w-2.5 h-2.5 rounded-full bg-orange-400 shadow-sm" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground shadow-sm" />
                     </div>
 
                     <div className="px-1 py-1 mb-2">
@@ -956,9 +956,9 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
             {/* Zone 2: Execution Card */}
             {taskPlanSteps.length > 0 && (
                  <div className="relative mb-8">
-                    {/* Dot 2 - Blue (Processing) */}
+                    {/* Dot 2 - Neutral Active (Processing) */}
                     <div className="absolute -left-[22px] top-[22px] flex items-center justify-center w-5 h-5 bg-background ring-[6px] ring-background rounded-full z-10">
-                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm animate-pulse" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-foreground shadow-sm animate-pulse" />
                     </div>
 
                      <DynamicExecutionCard 
@@ -973,7 +973,7 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
             {/* Zone 3: Completed History Card */}
             {taskPlanSteps.length > 0 && (
                  <div className="relative">
-                     {/* Dot 3 - Grey (History) */}
+                     {/* Dot 3 - Neutral Dim (History) */}
                      <div className="absolute -left-[22px] top-[22px] flex items-center justify-center w-5 h-5 bg-background ring-[6px] ring-background rounded-full z-10">
                         <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/40 shadow-sm" />
                      </div>
