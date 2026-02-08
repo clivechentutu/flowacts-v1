@@ -958,7 +958,7 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
                  <div className="relative mb-8">
                     {/* Dot 2 - Neutral Active (Processing) */}
                     <div className="absolute -left-[22px] top-[22px] flex items-center justify-center w-5 h-5 bg-background ring-[6px] ring-background rounded-full z-10">
-                        <div className="w-2.5 h-2.5 rounded-full bg-foreground shadow-sm animate-pulse" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-foreground shadow-sm" />
                     </div>
 
                      <DynamicExecutionCard 
