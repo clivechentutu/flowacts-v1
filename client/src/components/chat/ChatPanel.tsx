@@ -408,6 +408,7 @@ function ProcessTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepM
 // Execution Card (Zone 2 - "DynamicExecutionCard" - v8 Single Dynamic Title + Unified Process)
 function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
   const [historyExpanded, setHistoryExpanded] = useState(true);
+  const [isTitleExpanded, setIsTitleExpanded] = useState(true);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
 
   const doneCount = steps.filter((s) => s.status === "done").length;
@@ -469,7 +470,10 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
     <div className="mx-1 mt-2 rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
       
       {/* ── Dynamic Title Bar ── */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 bg-card/50">
+      <div 
+        className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 bg-card/50 cursor-pointer hover:bg-card/70 transition-colors"
+        onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+      >
         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
           <AnimatePresence mode="wait">
             {activeStep ? (
@@ -504,24 +508,29 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
           </AnimatePresence>
         </div>
         
-        {/* Progress counter with scale animation on change */}
-        <AnimatePresence mode="wait">
-            <motion.span
-                key={doneCount}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.2 }}
-                className="text-[10px] text-muted-foreground/40 tabular-nums shrink-0 ml-3"
-            >
-                {doneCount}/{steps.length}
-            </motion.span>
-        </AnimatePresence>
+        <div className="flex items-center gap-3 shrink-0 ml-3">
+          {/* Progress counter with scale animation on change */}
+          <AnimatePresence mode="wait">
+              <motion.span
+                  key={doneCount}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-[10px] text-muted-foreground/40 tabular-nums font-mono"
+              >
+                  {doneCount}/{steps.length}
+              </motion.span>
+          </AnimatePresence>
+          <span className="text-[10px] text-muted-foreground/30 w-3">
+            {isTitleExpanded ? "▾" : "▸"}
+          </span>
+        </div>
       </div>
 
       {/* ── Active Content Area (current step's L1/L2 results) ── */}
-      {activeStep && (
-        <div className="px-4 py-3 bg-background/30">
+      {isTitleExpanded && activeStep && (
+        <div className="px-4 py-3 bg-background/30 animate-in slide-in-from-top-1 duration-200">
           <div className="space-y-1.5">
             {renderStepContent(
               (stepMessages[activeStep.id] || []).filter((m) => {
@@ -534,11 +543,11 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       )}
 
       {/* ── Unified Process Timeline (ALL steps) ── */}
-      <ProcessTimeline steps={steps} stepMessages={stepMessages} />
+      {isTitleExpanded && <ProcessTimeline steps={steps} stepMessages={stepMessages} />}
 
       {/* ── Collapsible History Section ── */}
       {doneCount > 0 && (
-        <div className={activeStep ? "border-t border-border/10" : ""}>
+        <div className={(activeStep && isTitleExpanded) ? "border-t border-border/10" : ""}>
           {/* History toggle header */}
           <button
             onClick={() => setHistoryExpanded(!historyExpanded)}
