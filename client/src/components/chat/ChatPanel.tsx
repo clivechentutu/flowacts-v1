@@ -728,14 +728,28 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
             </>
         )}
 
+        {/* Connector Line 1-2 */}
+        {taskPlanMsg && taskPlanMsg.taskPlan && taskPlanSteps.length > 0 && (
+          <div className="flex justify-start px-6">
+            <div className="w-0.5 h-1.5 bg-border/20 ml-1"></div>
+          </div>
+        )}
+
         {/* Zone 2: Execution Card */}
         {taskPlanSteps.length > 0 && (
              <DynamicExecutionCard steps={taskPlanSteps} stepMessages={stepMessages} />
         )}
 
+        {/* Connector Line 2-3 */}
+        {taskPlanSteps.length > 0 && (
+          <div className="flex justify-start px-6">
+             <div className="w-0.5 h-1.5 bg-border/20 ml-1"></div>
+          </div>
+        )}
+
         {/* Zone 3: Completed History Card */}
         {taskPlanSteps.length > 0 && (
-             <div className="mt-4 border-t border-border/10 pt-3">
+             <div className="mt-0">
                  <CompletedHistoryCard steps={taskPlanSteps} stepMessages={stepMessages} />
              </div>
         )}
