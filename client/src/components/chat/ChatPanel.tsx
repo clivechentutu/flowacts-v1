@@ -240,7 +240,7 @@ function getDefaultLevel(msg: StoryEvent) {
 }
 
 // Intent & Plan Card (Zone 1 - "Pre-positioned" - v6 Compact)
-function IntentPlanCard({ intentSummary, steps, isUpdate }: { intentSummary: string, steps: TaskPlanStep[], isUpdate?: boolean }) {
+function IntentPlanCard({ steps, isUpdate }: { steps: TaskPlanStep[], isUpdate?: boolean }) {
   const agentIcons: Record<string, string> = {
     scout: "🕵️", capturer: "📸", analyst: "📊",
     comparator: "⚖️", reporter: "📝",
@@ -253,13 +253,6 @@ function IntentPlanCard({ intentSummary, steps, isUpdate }: { intentSummary: str
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
           {isUpdate ? "Update To Do" : "To Do"}
         </span>
-      </div>
-
-      {/* Intent summary */}
-      <div className="px-4 py-3 border-b border-border/10">
-        <p className="text-sm text-foreground/90 leading-relaxed">
-          {intentSummary}
-        </p>
       </div>
 
       {/* Step list — always visible, very compact */}
@@ -722,11 +715,17 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
 
         {/* Zone 1: Intent & Plan Card */}
         {taskPlanMsg && taskPlanMsg.taskPlan && (
-            <IntentPlanCard 
-                intentSummary={taskPlanMsg.intentSummary || "I've created a plan."} 
-                steps={taskPlanMsg.taskPlan} 
-                isUpdate={messages.filter(m => m.role === 'user').length > 1}
-            />
+            <>
+                <div className="px-4 py-2">
+                    <p className="text-xs text-foreground/80 leading-relaxed">
+                        {taskPlanMsg.intentSummary || "I've created a plan."}
+                    </p>
+                </div>
+                <IntentPlanCard 
+                    steps={taskPlanMsg.taskPlan} 
+                    isUpdate={messages.filter(m => m.role === 'user').length > 1}
+                />
+            </>
         )}
 
         {/* Zone 2: Execution Card */}
