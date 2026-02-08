@@ -439,17 +439,28 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       );
   };
 
+  const allCompleted = doneCount === steps.length;
+
   return (
-    <div className="mx-1 mt-2 rounded-xl border border-border/20 bg-muted/10 overflow-hidden">
+    <div className="mx-1 mt-2 rounded-xl border border-border/40 bg-card shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)] overflow-hidden">
       {/* History toggle header */}
       <button
         onClick={() => setHistoryExpanded(!historyExpanded)}
-        className="w-full flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/10 hover:bg-muted/30 transition-colors group"
+        className="w-full flex items-center justify-between px-4 py-2 bg-gradient-to-r from-muted/30 to-transparent border-b border-border/10 hover:bg-muted/40 transition-colors group"
       >
         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
-            {doneCount} step{doneCount !== 1 ? "s" : ""} completed
-          </span>
+          <div className="flex items-center gap-1.5">
+              {allCompleted ? (
+                 <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+              ) : (
+                 <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center">
+                     <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+                 </div>
+              )}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
+                {doneCount} step{doneCount !== 1 ? "s" : ""} completed
+              </span>
+          </div>
         </div>
         
         <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3 text-right">
@@ -457,10 +468,13 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
         </span>
       </button>
 
-      {/* History List */}
+      {/* History List - Timeline Style */}
       {historyExpanded && (
-          <div className="px-4 pb-3 space-y-2 animate-in slide-in-from-top-1 duration-200">
-              {doneSteps.map(step => {
+          <div className="relative px-4 pb-4 pt-4 space-y-4 animate-in slide-in-from-top-1 duration-200">
+              {/* Continuous vertical line connecting the steps */}
+              <div className="absolute left-[29px] top-6 bottom-6 w-px bg-border/40" />
+
+              {doneSteps.map((step, index) => {
                   const icon = agentIcons[step.agentRole] || "🤖";
                   const dotColor = agentDotColors[step.agentRole] || "bg-muted-foreground/40";
                   const isExpanded = expandedSteps.has(step.id);
@@ -468,36 +482,42 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
                   const summaryText = step.resultSummary || step.summary;
 
                   return (
-                      <div key={step.id} className="rounded-lg border border-border/10 bg-card/40 overflow-hidden">
+                      <div key={step.id} className="relative z-10">
                           <div 
-                              className="flex flex-col cursor-pointer hover:bg-muted/5 transition-colors p-2.5"
+                              className="flex flex-col cursor-pointer group"
                               onClick={() => toggleStepResults(step.id)}
                           >
-                              <div className="flex items-center gap-2.5">
-                                  {/* Agent color dot */}
-                                  <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                              <div className="flex items-start gap-3">
+                                  {/* Agent color dot with background mask for line gap effect */}
+                                  <div className="relative flex items-center justify-center w-4 h-4 mt-0.5 bg-card shrink-0 rounded-full z-10 ring-4 ring-card">
+                                      <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                                  </div>
                                   
-                                  <span className="text-[12px] text-foreground/60 font-medium truncate flex-1">
-                                      {icon} {step.label}
-                                  </span>
-                                  
-                                  {/* Level 1 Summary (Result Penetration) */}
-                                  {!isExpanded && summaryText && (
-                                      <span className="text-[10px] text-muted-foreground/70 bg-muted/10 px-1.5 py-0.5 rounded max-w-[150px] truncate">
-                                          {summaryText}
-                                      </span>
-                                  )}
-                                  <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3">
-                                    {isExpanded ? "▾" : "▸"}
-                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                          <span className="text-[12px] text-foreground/80 font-medium truncate">
+                                              {icon} {step.label}
+                                          </span>
+                                          <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              {isExpanded ? "▾" : "▸"}
+                                          </span>
+                                      </div>
+
+                                      {/* Level 1 Summary (Result Penetration) */}
+                                      {!isExpanded && summaryText && (
+                                          <div className="mt-1 text-[11px] text-muted-foreground/80 leading-snug line-clamp-2">
+                                              {summaryText}
+                                          </div>
+                                      )}
+                                  </div>
                               </div>
                           </div>
 
                           {/* Level 2 Drill Down */}
                           {isExpanded && (
-                              <div className="px-3 pb-3 pt-0 pl-8 space-y-2 border-t border-border/5 pt-2">
+                              <div className="mt-3 ml-7 space-y-2 border-l border-border/10 pl-3">
                                    {summaryText && (
-                                       <div className="text-xs font-medium text-foreground/80 mb-2">
+                                       <div className="text-xs font-medium text-foreground/90 mb-2">
                                            {summaryText}
                                        </div>
                                    )}
