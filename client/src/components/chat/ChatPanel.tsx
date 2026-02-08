@@ -763,9 +763,6 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
         {/* Zone 3: Completed History Card */}
         {taskPlanSteps.length > 0 && (
              <div className="mt-6 border-t border-border/10 pt-4">
-                 <div className="px-4 pb-2 text-[10px] font-semibold text-muted-foreground/40 uppercase tracking-widest">
-                    History
-                 </div>
                  <CompletedHistoryCard steps={taskPlanSteps} stepMessages={stepMessages} />
              </div>
         )}
