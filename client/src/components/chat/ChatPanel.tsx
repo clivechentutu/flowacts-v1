@@ -407,7 +407,7 @@ function ProcessTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepM
 
 // Execution Card (Zone 2 - "DynamicExecutionCard" - v8 Single Dynamic Title + Unified Process)
 function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
-  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
 
   const doneCount = steps.filter((s) => s.status === "done").length;
