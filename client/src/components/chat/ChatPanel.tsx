@@ -918,60 +918,72 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
         {/* Pre-flow messages */}
         {renderedPreFlow}
 
-        {/* Zone 1: Intent & Plan Card */}
-        {taskPlanMsg && taskPlanMsg.taskPlan && (
-            <>
-                <div className="px-4 py-2">
-                    <p className="text-xs text-foreground/80 leading-relaxed">
-                        {taskPlanMsg.intentSummary || "I've created a plan."}
-                    </p>
+        {/* Main Process Timeline Container */}
+        <div className="relative pl-6 mt-4">
+            {/* The Continuous Vertical Line */}
+            {/* Starts from top dot, ends at bottom dot. calculated via absolute positioning */}
+            <div className="absolute left-[11px] top-6 bottom-10 w-0.5 bg-border/40" />
+
+            {/* Zone 1: Intent & Plan Card */}
+            {taskPlanMsg && taskPlanMsg.taskPlan && (
+                <div className="relative mb-8">
+                    {/* Dot 1 - Orange (Planning) */}
+                    <div className="absolute -left-[22px] top-[50px] flex items-center justify-center w-5 h-5 bg-background ring-[6px] ring-background rounded-full z-10">
+                        <div className="w-2.5 h-2.5 rounded-full bg-orange-400 shadow-sm" />
+                    </div>
+
+                    <div className="px-1 py-1 mb-2">
+                        <p className="text-xs text-foreground/80 leading-relaxed">
+                            {taskPlanMsg.intentSummary || "I've created a plan."}
+                        </p>
+                    </div>
+                    <IntentPlanCard 
+                        steps={taskPlanMsg.taskPlan} 
+                        isUpdate={messages.filter(m => m.role === 'user').length > 1}
+                    />
                 </div>
-                <IntentPlanCard 
-                    steps={taskPlanMsg.taskPlan} 
-                    isUpdate={messages.filter(m => m.role === 'user').length > 1}
-                />
-            </>
-        )}
+            )}
 
-        {/* Connector Line 1-2 */}
-        {taskPlanMsg && taskPlanMsg.taskPlan && taskPlanSteps.length > 0 && (
-          <div className="flex justify-start px-6">
-            <div className="w-0.5 h-1.5 bg-border/40 ml-1"></div>
-          </div>
-        )}
-
-        {/* AI Transition Message (between Plan and Execution) */}
-        {taskPlanMsg && taskPlanMsg.taskPlan && taskPlanSteps.length > 0 && (
-            <div className="px-4 py-1">
-                <div className="text-xs text-foreground/70 leading-relaxed pl-1 border-l-2 border-primary/30">
-                    Plan approved. Initiating execution sequence...
+            {/* AI Transition Message */}
+            {taskPlanMsg && taskPlanMsg.taskPlan && taskPlanSteps.length > 0 && (
+                <div className="relative mb-8 ml-1">
+                    <div className="text-xs text-foreground/60 leading-relaxed pl-3 border-l-2 border-primary/20 italic">
+                        Plan approved. Initiating execution sequence...
+                    </div>
                 </div>
-            </div>
-        )}
+            )}
 
-        {/* Zone 2: Execution Card */}
-        {taskPlanSteps.length > 0 && (
-             <DynamicExecutionCard 
-                steps={taskPlanSteps} 
-                stepMessages={stepMessages}
-                onSend={onSendMessage}
-                taskState={taskState}
-             />
-        )}
+            {/* Zone 2: Execution Card */}
+            {taskPlanSteps.length > 0 && (
+                 <div className="relative mb-8">
+                    {/* Dot 2 - Blue (Processing) */}
+                    <div className="absolute -left-[22px] top-[22px] flex items-center justify-center w-5 h-5 bg-background ring-[6px] ring-background rounded-full z-10">
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm animate-pulse" />
+                    </div>
 
-        {/* Connector Line 2-3 */}
-        {taskPlanSteps.length > 0 && (
-          <div className="flex justify-start px-6">
-             <div className="w-0.5 h-1.5 bg-border/40 ml-1"></div>
-          </div>
-        )}
+                     <DynamicExecutionCard 
+                        steps={taskPlanSteps} 
+                        stepMessages={stepMessages}
+                        onSend={onSendMessage}
+                        taskState={taskState}
+                     />
+                 </div>
+            )}
 
-        {/* Zone 3: Completed History Card */}
-        {taskPlanSteps.length > 0 && (
-             <div className="mt-0">
-                 <CompletedHistoryCard steps={taskPlanSteps} stepMessages={stepMessages} />
-             </div>
-        )}
+            {/* Zone 3: Completed History Card */}
+            {taskPlanSteps.length > 0 && (
+                 <div className="relative">
+                     {/* Dot 3 - Grey (History) */}
+                     <div className="absolute -left-[22px] top-[22px] flex items-center justify-center w-5 h-5 bg-background ring-[6px] ring-background rounded-full z-10">
+                        <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/40 shadow-sm" />
+                     </div>
+
+                     <div className="mt-0">
+                         <CompletedHistoryCard steps={taskPlanSteps} stepMessages={stepMessages} />
+                     </div>
+                 </div>
+            )}
+        </div>
       </div>
     );
 }
