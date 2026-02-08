@@ -616,7 +616,7 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       {/* ── Active Content Area (current step's L1/L2 results) ── */}
       <div className={cn(
         "px-4 py-3 transition-all duration-300", 
-        !isTitleExpanded ? "max-h-[60px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-8 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
+        !isTitleExpanded ? "max-h-[120px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-12 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
       )}>
         <div className="space-y-1.5">
           {activeStep && renderStepContent(
