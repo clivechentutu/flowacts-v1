@@ -254,7 +254,7 @@ function IntentPlanCard({ steps, isUpdate }: { steps: TaskPlanStep[], isUpdate?:
   };
 
   return (
-    <div className="mx-1 mt-1.5 rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
+    <div className="mx-1 mt-1.5 rounded-xl border border-border/40 bg-card/50 shadow-sm overflow-hidden">
       {/* Header with Title */}
       <div className="px-4 py-2 bg-muted/30 border-b border-border/10 flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -437,11 +437,11 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
   };
 
   return (
-    <div className="mx-1 mt-2 rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
+    <div className="mx-1 mt-2 rounded-xl border border-border/20 bg-muted/10 overflow-hidden">
       {/* History toggle header */}
       <button
         onClick={() => setHistoryExpanded(!historyExpanded)}
-        className="w-full flex items-center justify-between px-4 py-2 bg-muted/30 border-b border-border/10 hover:bg-muted/40 transition-colors group"
+        className="w-full flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-border/10 hover:bg-muted/30 transition-colors group"
       >
         <div className="flex items-center gap-2 min-w-0 overflow-hidden">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
@@ -719,11 +719,11 @@ function DynamicExecutionCard({ steps, stepMessages, onSend, taskState }: { step
   };
 
   return (
-    <div className="mx-1 mt-1 rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
+    <div className="mx-1 mt-1 rounded-xl border border-primary/20 bg-background shadow-md shadow-primary/5 ring-1 ring-primary/5 overflow-hidden transition-all duration-300">
       
       {/* ── Dynamic Title Bar ── */}
       <div 
-        className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b border-border/10 cursor-pointer hover:bg-muted/40 transition-colors"
+        className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-primary/5 via-primary/5 to-transparent border-b border-border/10 cursor-pointer hover:bg-muted/20 transition-colors"
       >
         <div 
             className="flex items-center gap-2 min-w-0 overflow-hidden flex-1"
@@ -918,7 +918,7 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
         {/* Connector Line 1-2 */}
         {taskPlanMsg && taskPlanMsg.taskPlan && taskPlanSteps.length > 0 && (
           <div className="flex justify-start px-6">
-            <div className="w-0.5 h-1.5 bg-border/20 ml-1"></div>
+            <div className="w-0.5 h-1.5 bg-border/40 ml-1"></div>
           </div>
         )}
 
@@ -935,7 +935,7 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
         {/* Connector Line 2-3 */}
         {taskPlanSteps.length > 0 && (
           <div className="flex justify-start px-6">
-             <div className="w-0.5 h-1.5 bg-border/20 ml-1"></div>
+             <div className="w-0.5 h-1.5 bg-border/40 ml-1"></div>
           </div>
         )}
 
