@@ -543,7 +543,7 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
 // Execution Card (Zone 2 - "DynamicExecutionCard" - v8 Single Dynamic Title + Unified Process)
 // Refactored to ONLY show Active Step and Process Timeline
 function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
-  const [isTitleExpanded, setIsTitleExpanded] = useState(true);
+  const [isTitleExpanded, setIsTitleExpanded] = useState(false);
 
   const doneCount = steps.filter((s) => s.status === "done").length;
   const activeStep = steps.find((s) => s.status === "active");
