@@ -249,8 +249,8 @@ function IntentPlanCard({ intentSummary, steps, isUpdate }: { intentSummary: str
   return (
     <div className="mx-1 mt-3 rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
       {/* Header with Title */}
-      <div className="px-4 py-2 bg-muted/10 border-b border-border/10 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
+      <div className="px-4 py-2 bg-muted/20 border-b border-border/10 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
           {isUpdate ? "Update To Do" : "To Do"}
         </span>
       </div>
@@ -640,7 +640,8 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
 // Main List Renderer
 function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
     // 1. Separate special messages from flow messages
-    const taskPlanMsg = messages.find((m) => m.taskPlan);
+    // Use the latest plan if multiple exist (e.g. after an update)
+    const taskPlanMsg = [...messages].reverse().find((m) => m.taskPlan);
     const taskPlanSteps = taskPlanMsg?.taskPlan || [];
   
     // 2. Group messages by taskPlanStepId
