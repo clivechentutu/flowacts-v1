@@ -23,7 +23,8 @@ export interface TaskPlanStep {
   label: string;
   status: "done" | "active" | "pending";
   agentRole: AgentRole;
-  summary?: string; // NEW: one-line result summary shown when collapsed
+  summary?: string; // one-line result summary shown when collapsed
+  resultSummary?: string; // NEW: A short summary of the result, e.g., "Found 3 pricing tiers"
 }
 
 export interface StoryEvent {
