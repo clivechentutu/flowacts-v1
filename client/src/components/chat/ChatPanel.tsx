@@ -247,7 +247,7 @@ function IntentPlanCard({ intentSummary, steps, isUpdate }: { intentSummary: str
   };
 
   return (
-    <div className="mx-1 mt-3 rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
+    <div className="mx-1 mt-1.5 rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
       {/* Header with Title */}
       <div className="px-4 py-2 bg-muted/30 border-b border-border/10 flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -553,7 +553,7 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
   };
 
   return (
-    <div className="mx-1 mt-2 rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
+    <div className="mx-1 mt-1 rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
       
       {/* ── Dynamic Title Bar ── */}
       <div 
@@ -716,7 +716,7 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
   
     // 3. Render
     return (
-      <div className="flex flex-col gap-2 pb-10">
+      <div className="flex flex-col gap-1.5 pb-10">
         {/* Pre-flow messages */}
         {renderedPreFlow}
 
@@ -736,7 +736,7 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
 
         {/* Zone 3: Completed History Card */}
         {taskPlanSteps.length > 0 && (
-             <div className="mt-6 border-t border-border/10 pt-4">
+             <div className="mt-4 border-t border-border/10 pt-3">
                  <CompletedHistoryCard steps={taskPlanSteps} stepMessages={stepMessages} />
              </div>
         )}
