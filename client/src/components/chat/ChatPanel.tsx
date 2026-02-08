@@ -111,7 +111,7 @@ function InsightMessage({ message, insideTimeline = false }: { message: StoryEve
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
       >
-        <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+        <div className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap font-medium">
           {message.content}
         </div>
         {message.canvasLinkId && (
@@ -138,7 +138,7 @@ function InsightMessage({ message, insideTimeline = false }: { message: StoryEve
         onMouseLeave={() => setShowActions(false)}
     >
       {message.agentRole && <AgentLabel role={message.agentRole} />}
-      <div className="text-sm text-foreground leading-relaxed mt-1.5 whitespace-pre-wrap">
+      <div className="text-xs text-foreground/90 leading-relaxed mt-1.5 whitespace-pre-wrap font-medium">
         {message.content}
       </div>
       {message.canvasLinkId && (
