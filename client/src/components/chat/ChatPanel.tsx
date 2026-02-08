@@ -23,6 +23,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ChatPanelProps {
   events: StoryEvent[];
@@ -468,9 +474,17 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   const [isThinkingMode, setIsThinkingMode] = useState(false);
   const [title, setTitle] = useState("Competitor Onboarding Analysis");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("Upliftly Pro");
   
   // Mock Task State
   const [taskState, setTaskState] = useState<'empty' | 'in_progress' | 'completed' | 'thinking'>('in_progress');
+
+  const MODELS = [
+    { name: "Upliftly Pro", icon: "⚡", description: "Best for complex tasks" },
+    { name: "Upliftly Flash", icon: "🚀", description: "Fastest response" },
+    { name: "Claude 3.5 Sonnet", icon: "🧠", description: "High reasoning" },
+    { name: "GPT-4o", icon: "🤖", description: "Balanced performance" },
+  ];
 
   const CHIPS_EMPTY = [
     "Analyze competitor.com signup flow",
@@ -635,6 +649,40 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
                         <AtSign className="w-4 h-4" />
                     </Button>
                     
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          className="h-8 gap-1.5 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
+                          title="Select Model"
+                        >
+                          <span className="text-foreground/80">{selectedModel}</span>
+                          <ChevronDown className="w-3 h-3 opacity-50" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-[200px]">
+                        {MODELS.map((model) => (
+                          <DropdownMenuItem 
+                            key={model.name}
+                            onClick={() => setSelectedModel(model.name)}
+                            className="flex flex-col items-start gap-0.5 py-2 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-2 w-full">
+                              <span>{model.icon}</span>
+                              <span className="font-medium">{model.name}</span>
+                              {selectedModel === model.name && (
+                                <CheckCircle2 className="w-3 h-3 text-primary ml-auto" />
+                              )}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground pl-6">
+                              {model.description}
+                            </span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
                     <div 
                         role="button"
                         onClick={() => setIsThinkingMode(!isThinkingMode)}
