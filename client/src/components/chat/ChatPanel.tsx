@@ -238,126 +238,219 @@ function getDefaultLevel(msg: StoryEvent) {
   return "progress";
 }
 
-// Unified Timeline Component (NEW - replaces TaskPlanCard & FlowNode)
-function UnifiedTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
+// Intent & Plan Card (Zone 1 - "Pre-positioned")
+function IntentPlanCard({ intentSummary, steps }: { intentSummary: string, steps: TaskPlanStep[] }) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const doneCount = steps.filter((s) => s.status === "done").length;
+
+  return (
+    <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden shadow-sm">
+      {/* Header */}
+      <div 
+        className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-primary/5 transition-colors"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary">
+                <Brain className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Intent & Plan</span>
+        </div>
+        <div className="flex items-center gap-2">
+             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                {doneCount} / {steps.length} Steps
+             </span>
+             <ChevronDown className={cn("w-4 h-4 text-muted-foreground/50 transition-transform duration-200", !isExpanded && "-rotate-90")} />
+        </div>
+      </div>
+
+      {/* Content */}
+      {isExpanded && (
+          <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
+            {/* Intent Summary */}
+            <div className="mb-4 text-xs text-muted-foreground leading-relaxed bg-background/50 p-2.5 rounded-lg border border-border/40">
+                <span className="font-semibold text-primary/80 mr-1">Goal:</span>
+                {intentSummary}
+            </div>
+
+            {/* Plan Steps */}
+            <div className="space-y-1 relative pl-2">
+                {/* Connecting Line */}
+                <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/40" />
+                
+                {steps.map((step, i) => (
+                    <div key={step.id} className="relative flex items-center gap-3 z-10">
+                        <div className={cn(
+                            "w-1.5 h-1.5 rounded-full shrink-0 ring-4 ring-background",
+                            step.status === "done" ? "bg-primary" : 
+                            step.status === "active" ? "bg-blue-400 animate-pulse" : "bg-muted-foreground/30"
+                        )} />
+                        <span className={cn(
+                            "text-xs",
+                            step.status === "done" ? "text-muted-foreground line-through decoration-border/50" : 
+                            step.status === "active" ? "text-foreground font-medium" : "text-muted-foreground/60"
+                        )}>
+                            {step.label}
+                        </span>
+                    </div>
+                ))}
+            </div>
+          </div>
+      )}
+    </div>
+  );
+}
+
+// Execution Card (Zone 2 - "Dynamic Process")
+function ExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
+  const activeStep = steps.find((s) => s.status === "active");
+  const completedSteps = steps.filter((s) => s.status === "done");
+  
+  // State to track expanded completed steps
+  const [expandedStepIds, setExpandedStepIds] = useState<Set<string>>(new Set());
+
+  const toggleStep = (id: string) => {
+    const newSet = new Set(expandedStepIds);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setExpandedStepIds(newSet);
+  };
 
   const agentIcons: Record<string, string> = {
     scout: "🕵️", capturer: "📸", analyst: "📊",
     comparator: "⚖️", reporter: "📝",
   };
 
-  const renderStepMessages = (msgs: StoryEvent[]) => {
-      const rendered = [];
-      let i = 0;
-      while (i < msgs.length) {
-          const msg = msgs[i];
-          const level = msg.messageLevel || getDefaultLevel(msg);
+  const renderMessages = (msgs: StoryEvent[]) => {
+      // Filter logs vs results
+      const results = msgs.filter(m => m.messageLevel === 'insight' || m.messageLevel === 'progress' || m.canvasLinkId);
+      const logs = msgs.filter(m => !results.includes(m)); // Everything else is log/process
 
-          if (level === "insight") {
-              rendered.push(<InsightMessage key={msg.id} message={msg} insideTimeline={true} />);
-              i++;
-          } else if (level === "progress") {
-              rendered.push(<ProgressMessage key={msg.id} message={msg} />);
-              i++;
-          } else {
-              // Process messages - group them
-              const group = [msg];
-              while (
-                  i + 1 < msgs.length &&
-                  (msgs[i + 1].messageLevel || getDefaultLevel(msgs[i + 1])) === "process"
-              ) {
-                  i++;
-                  group.push(msgs[i + 1]);
-              }
-              rendered.push(<ProcessMessage key={`proc-${msg.id}`} messages={group} />);
-              i += group.length; // Correct increment: if group has 1, i increments by 1 total in loop
-          }
-      }
-      return rendered;
+      return (
+          <div className="space-y-3">
+              {/* Results First */}
+              {results.length > 0 && (
+                  <div className="space-y-2">
+                      {results.map(msg => (
+                          <div key={msg.id}>
+                              {msg.messageLevel === 'insight' ? (
+                                  <InsightMessage message={msg} insideTimeline={true} />
+                              ) : (
+                                  <div className="text-xs text-foreground/80 bg-muted/10 p-2 rounded border border-border/20">
+                                      {msg.content}
+                                  </div>
+                              )}
+                          </div>
+                      ))}
+                  </div>
+              )}
+
+              {/* Logs / Process Details */}
+              {logs.length > 0 && (
+                  <div className="mt-2">
+                       <details className="group">
+                           <summary className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground cursor-pointer select-none list-none flex items-center gap-1.5">
+                               <ChevronRight className="w-3 h-3 transition-transform group-open:rotate-90" />
+                               <span>View process details ({logs.length})</span>
+                           </summary>
+                           <div className="mt-2 pl-4 space-y-1 border-l border-border/20 ml-1.5">
+                               {logs.map((log) => (
+                                   <div key={log.id} className="text-[10px] text-muted-foreground/60 font-mono">
+                                       <span className="opacity-50 mr-1.5">
+                                            {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                       </span>
+                                       {log.content}
+                                   </div>
+                               ))}
+                           </div>
+                       </details>
+                  </div>
+              )}
+          </div>
+      );
   };
 
   return (
-    <div className="mt-3 px-2">
-      {/* Compact progress header — just text, no card */}
-      <div className="flex items-center gap-2 mb-4 px-1">
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-medium">
-          Progress
-        </span>
-        <div className="flex-1 h-px bg-border/20" />
-        <span className="text-[10px] text-muted-foreground/50">
-          {doneCount}/{steps.length}
-        </span>
-      </div>
+    <div className="space-y-3">
+        {/* 1. Completed Steps List */}
+        {completedSteps.length > 0 && (
+            <div className="space-y-1">
+                {completedSteps.map((step) => {
+                    const isExpanded = expandedStepIds.has(step.id);
+                    const msgs = stepMessages[step.id] || [];
+                    const hasResults = msgs.some(m => m.messageLevel === 'insight' || m.canvasLinkId);
 
-      {/* Timeline nodes */}
-      <div className="relative">
-        {steps.map((step, idx) => {
-          const msgs = stepMessages[step.id] || [];
-          const isLast = idx === steps.length - 1;
-          const icon = agentIcons[step.agentRole] || "🤖";
-          const hasContent = msgs.length > 0;
+                    return (
+                        <div key={step.id} className="rounded-lg border border-border/30 bg-card overflow-hidden">
+                            {/* Header */}
+                            <div 
+                                className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/5 transition-colors"
+                                onClick={() => toggleStep(step.id)}
+                            >
+                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500/10 text-green-600 shrink-0">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                </div>
+                                <span className="text-xs text-muted-foreground line-through decoration-border/40 flex-1">
+                                    {step.label}
+                                </span>
+                                {hasResults && !isExpanded && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">
+                                        Result
+                                    </span>
+                                )}
+                                <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/30 transition-transform", !isExpanded && "-rotate-90")} />
+                            </div>
 
-          return (
-            <div key={step.id} className="relative flex gap-3">
-              {/* Left column: dot + connecting line */}
-              <div className="flex flex-col items-center shrink-0 w-5">
-                {/* Status dot */}
-                <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                  step.status === "done"
-                    ? "bg-muted-foreground/30"
-                    : step.status === "active"
-                    ? "bg-blue-400 animate-pulse ring-4 ring-blue-400/10"
-                    : "bg-muted-foreground/15"
-                }`} />
-                {/* Connecting line */}
-                {!isLast && (
-                  <div className={`w-px flex-1 mt-1.5 ${
-                    step.status === "done"
-                      ? "bg-border/15"
-                      : step.status === "active"
-                      ? "bg-blue-400/20"
-                      : "bg-border/10 border-l border-dashed border-border/15"
-                  }`} />
-                )}
-              </div>
+                            {/* Expanded Body */}
+                            {isExpanded && (
+                                <div className="px-3 pb-3 pt-1 pl-11 animate-in slide-in-from-top-1">
+                                    {step.summary && (
+                                        <div className="mb-2 text-xs font-medium text-foreground/80">
+                                            {step.summary}
+                                        </div>
+                                    )}
+                                    {renderMessages(msgs)}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        )}
 
-              {/* Right column: label + child content */}
-              <div className={`flex-1 pb-5 ${
-                isLast && step.status === "pending" ? "pb-2" : ""
-              }`}>
-                {/* Node label */}
-                <div className={`flex items-center gap-1.5 ${
-                  step.status === "done"
-                    ? "text-muted-foreground/50"
-                    : step.status === "active"
-                    ? "text-foreground"
-                    : "text-muted-foreground/30"
-                }`}>
-                  <span className="text-xs">{icon}</span>
-                  <span className={`text-xs ${
-                    step.status === "active" ? "font-medium" : ""
-                  }`}>
-                    {step.label}
-                  </span>
+        {/* 2. Active Step (Prominent Dynamic Bar) */}
+        {activeStep && (
+            <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 shadow-sm overflow-hidden ring-1 ring-blue-500/10 mt-4">
+                {/* Dynamic Title Bar */}
+                <div className="px-4 py-3 bg-blue-500/10 border-b border-blue-500/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <span className="relative flex h-2.5 w-2.5 shrink-0">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500" />
+                        </span>
+                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                            {activeStep.label}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-background/50 border border-blue-500/20">
+                        <span className="text-xs">{agentIcons[activeStep.agentRole] || "🤖"}</span>
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-blue-600/80 dark:text-blue-400/80">
+                            {activeStep.agentRole} Working
+                        </span>
+                    </div>
                 </div>
 
-                {/* Child messages — only if step has content */}
-                {hasContent && (
-                  <div className="mt-2 space-y-1.5">
-                    {renderStepMessages(msgs)}
-                  </div>
-                )}
-              </div>
+                {/* Body */}
+                <div className="px-4 py-3">
+                     {renderMessages(stepMessages[activeStep.id] || [])}
+                </div>
             </div>
-          );
-        })}
-      </div>
+        )}
     </div>
   );
 }
   
-  // Main List Renderer
+// Main List Renderer
 function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
     // 1. Separate special messages from flow messages
     const taskPlanMsg = messages.find((m) => m.taskPlan);
@@ -406,7 +499,7 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
             continue;
           }
 
-          // Unlinked messages (Plan is skipped here as it's handled by UnifiedTimeline)
+          // Unlinked messages
           const level = msg.messageLevel || getDefaultLevel(msg);
           if (level === "plan") {
              // Should not happen as we filtered it out above, but just in case
@@ -438,17 +531,25 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
   
     // 3. Render
     return (
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-2 pb-10">
         {/* Pre-flow messages */}
         {renderedPreFlow}
 
-        {/* Unified Timeline */}
+        {/* Zone 1: Intent & Plan Card */}
+        {taskPlanMsg && taskPlanMsg.taskPlan && (
+            <IntentPlanCard 
+                intentSummary={taskPlanMsg.intentSummary || "I've created a plan."} 
+                steps={taskPlanMsg.taskPlan} 
+            />
+        )}
+
+        {/* Zone 2: Execution Card */}
         {taskPlanSteps.length > 0 && (
-             <UnifiedTimeline steps={taskPlanSteps} stepMessages={stepMessages} />
+             <ExecutionCard steps={taskPlanSteps} stepMessages={stepMessages} />
         )}
       </div>
     );
-  }
+}
 
 // Suggestion Chips Component
 function SuggestionChips({ chips, onSelect }: { chips: string[], onSelect: (chip: string) => void }) {
