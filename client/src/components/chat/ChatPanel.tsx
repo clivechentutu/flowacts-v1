@@ -970,6 +970,15 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
                  </div>
             )}
 
+            {/* AI Transition Message 2 */}
+            {taskPlanSteps.length > 0 && (
+                <div className="relative mb-8 ml-1">
+                    <div className="text-xs text-foreground/60 leading-relaxed pl-3 border-l-2 border-primary/20 italic">
+                        Generating step results... Final output will appear below.
+                    </div>
+                </div>
+            )}
+
             {/* Zone 3: Completed History Card */}
             {taskPlanSteps.length > 0 && (
                  <div className="relative">
