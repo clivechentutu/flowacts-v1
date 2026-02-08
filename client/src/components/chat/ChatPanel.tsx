@@ -30,6 +30,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useRef } from "react";
 
 interface ChatPanelProps {
   events: StoryEvent[];
@@ -503,9 +510,175 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
   );
 }
 
+function ExecutionOverflowMenu({ onAction }: { onAction: (item: any) => void }) {
+  const MENU_ITEMS = [
+    { icon: "🎯", label: "Focus on this section", action: "focus" },
+    { icon: "⏭", label: "Skip to next step", action: "skip" },
+    { icon: "📸", label: "Take a screenshot", action: "screenshot" },
+    { icon: "⏹", label: "Pause execution", action: "pause" },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="p-1 rounded-md
+            text-muted-foreground/50 hover:text-muted-foreground/80
+            hover:bg-white/5
+            transition-colors duration-150"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="4" cy="8" r="1.5" />
+            <circle cx="8" cy="8" r="1.5" />
+            <circle cx="12" cy="8" r="1.5" />
+          </svg>
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        align="end"
+        className="bg-popover border border-border rounded-xl
+          shadow-xl min-w-[200px] p-1"
+      >
+        {MENU_ITEMS.map((item) => (
+          <DropdownMenuItem
+            key={item.action}
+            onClick={() => onAction(item)}
+            className="flex items-center gap-2 px-3 py-2
+              rounded-lg cursor-pointer
+              text-sm text-muted-foreground
+              hover:text-foreground hover:bg-muted/50
+              transition-colors duration-100"
+          >
+            <span className="text-[13px]">{item.icon}</span>
+            <span>{item.label}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ChatInput({ onSend, taskState }: { onSend: (msg: string) => void, taskState: string }) {
+  const [inputValue, setInputValue] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const getPlaceholder = (state: string) => {
+    switch (state) {
+      case "empty":
+        return "Paste a URL or describe what you'd like to analyze...";
+      case "in_progress":
+        return "Type to redirect or intervene...";
+      case "completed":
+        return "Compare, dig deeper, or start a new analysis...";
+      case "thinking":
+        return "Type to redirect or wait for results...";
+      default:
+        return "Ask Upliftly to analyze a flow...";
+    }
+  };
+
+  const placeholder = getPlaceholder(taskState);
+  const hasContent = inputValue.trim().length > 0;
+
+  const handleSend = () => {
+    if (!hasContent) return;
+    onSend(inputValue.trim());
+    setInputValue("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    // Auto-resize textarea
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+  };
+
+  return (
+    <div className="flex items-end gap-2
+      bg-muted/20 rounded-2xl
+      border border-border/60
+      focus-within:border-primary/50
+      focus-within:ring-1 focus-within:ring-primary/20
+      px-4 py-3
+      transition-all duration-200">
+
+      {/* Textarea */}
+      <textarea
+        ref={textareaRef}
+        value={inputValue}
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="flex-1 bg-transparent resize-none outline-none
+          text-sm text-foreground
+          placeholder:text-muted-foreground/40
+          min-h-[20px] max-h-[120px]"
+        rows={1}
+      />
+
+      {/* Send button — INSIDE the input box */}
+      <button
+        onClick={handleSend}
+        disabled={!hasContent}
+        className={`shrink-0 p-1.5 rounded-lg transition-all duration-150
+          ${hasContent
+            ? "bg-primary text-primary-foreground hover:bg-primary/80 cursor-pointer"
+            : "bg-muted/50 text-muted-foreground/30 cursor-default"
+          }`}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+          xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 8L14 8M14 8L8 2M14 8L8 14"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round"
+            transform="rotate(-45 8 8)" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function ToolbarButton({ icon, tooltip, onClick }: { icon: string, tooltip: string, onClick?: () => void }) {
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onClick}
+            className="p-1.5 rounded-md
+              text-muted-foreground/50 hover:text-muted-foreground/80
+              hover:bg-muted/30
+              transition-colors duration-150"
+          >
+            <span className="text-sm">{icon}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="bg-popover border border-border rounded-lg
+            px-2.5 py-1.5 shadow-lg text-xs"
+        >
+          {tooltip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
 // Execution Card (Zone 2 - "DynamicExecutionCard" - v8 Single Dynamic Title + Unified Process)
 // Refactored to ONLY show Active Step and Process Timeline
-function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
+function DynamicExecutionCard({ steps, stepMessages, onSend, taskState }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]>, onSend: (msg: string) => void, taskState: string }) {
   const [isTitleExpanded, setIsTitleExpanded] = useState(false);
 
   const doneCount = steps.filter((s) => s.status === "done").length;
@@ -551,9 +724,11 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       {/* ── Dynamic Title Bar ── */}
       <div 
         className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b border-border/10 cursor-pointer hover:bg-muted/40 transition-colors"
-        onClick={() => setIsTitleExpanded(!isTitleExpanded)}
       >
-        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+        <div 
+            className="flex items-center gap-2 min-w-0 overflow-hidden flex-1"
+            onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+        >
           <AnimatePresence mode="wait">
             {activeStep ? (
               <motion.div
@@ -586,23 +761,35 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
           </AnimatePresence>
         </div>
         
-        <div className="flex items-center gap-3 shrink-0 ml-3">
+        <div className="flex items-center gap-2 shrink-0 ml-3">
+           {/* Overflow Menu */}
+           {taskState === "in_progress" && activeStep && (
+            <ExecutionOverflowMenu
+                onAction={(item: any) => {
+                    // Send as user message
+                    onSend(item.label);
+                }}
+            />
+          )}
+
           {/* Progress counter with scale animation on change */}
-          <AnimatePresence mode="wait">
-              <motion.span
-                  key={doneCount}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-[10px] text-muted-foreground/40 tabular-nums font-mono"
-              >
-                  {doneCount}/{steps.length}
-              </motion.span>
-          </AnimatePresence>
-          <span className="text-[10px] text-muted-foreground/30 w-3">
-            {isTitleExpanded ? "▾" : "▸"}
-          </span>
+          <div onClick={() => setIsTitleExpanded(!isTitleExpanded)} className="flex items-center gap-1">
+            <AnimatePresence mode="wait">
+                <motion.span
+                    key={doneCount}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-[10px] text-muted-foreground/40 tabular-nums font-mono"
+                >
+                    {doneCount}/{steps.length}
+                </motion.span>
+            </AnimatePresence>
+            <span className="text-[10px] text-muted-foreground/30 w-3">
+                {isTitleExpanded ? "▾" : "▸"}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -630,7 +817,7 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
 }
   
 // Main List Renderer
-function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
+function ChatMessageList({ messages, onSendMessage, taskState }: { messages: StoryEvent[], onSendMessage: (msg: string) => void, taskState: string }) {
     // 1. Separate special messages from flow messages
     // Use the latest plan if multiple exist (e.g. after an update)
     const taskPlanMsg = [...messages].reverse().find((m) => m.taskPlan);
@@ -737,7 +924,12 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
 
         {/* Zone 2: Execution Card */}
         {taskPlanSteps.length > 0 && (
-             <DynamicExecutionCard steps={taskPlanSteps} stepMessages={stepMessages} />
+             <DynamicExecutionCard 
+                steps={taskPlanSteps} 
+                stepMessages={stepMessages}
+                onSend={onSendMessage}
+                taskState={taskState}
+             />
         )}
 
         {/* Connector Line 2-3 */}
@@ -757,24 +949,7 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
     );
 }
 
-// Suggestion Chips Component
-function SuggestionChips({ chips, onSelect }: { chips: string[], onSelect: (chip: string) => void }) {
-  if (!chips || chips.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap gap-2 px-4 py-2 border-b border-border/40 bg-background/30">
-      {chips.map((chip, i) => (
-        <button
-          key={i}
-          onClick={() => onSelect(chip)}
-          className="rounded-full px-3 py-1.5 text-xs bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/50 hover:border-border transition-colors cursor-pointer"
-        >
-          {chip}
-        </button>
-      ))}
-    </div>
-  );
-}
+// Suggestion Chips Component REMOVED
 
 export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   const [input, setInput] = useState("");
@@ -793,62 +968,12 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
     { name: "GPT-4o", icon: "🤖", description: "Balanced performance" },
   ];
 
-  const CHIPS_EMPTY = [
-    "Analyze competitor.com signup flow",
-    "Compare two products' pricing",
-    "Audit my landing page UX",
+  const TOOLBAR_ITEMS = [
+    { icon: "📎", tooltip: "Attach a file or screenshot" },
+    { icon: "@", tooltip: "Mention a specific agent" },
+    { icon: "⚡", tooltip: "Quick commands" },
+    { icon: "🌐", tooltip: "Enter a URL to analyze" },
   ];
-
-  const CHIPS_IN_PROGRESS = [
-    "Focus on the pricing page",
-    "Skip to the signup flow",
-    "Take a screenshot here",
-  ];
-
-  const CHIPS_COMPLETED = [
-    "Compare with another competitor",
-    "Generate a report",
-    "Dig deeper into signup friction",
-  ];
-
-  const getCurrentChips = () => {
-      switch (taskState) {
-          case 'empty': return CHIPS_EMPTY;
-          case 'in_progress': return CHIPS_IN_PROGRESS;
-          case 'completed': return CHIPS_COMPLETED;
-          default: return [];
-      }
-  };
-
-  const getPlaceholder = () => {
-    switch (taskState) {
-      case "empty":
-        return "Paste a URL or describe what you'd like to analyze...";
-      case "in_progress":
-        return "Ask a follow-up or redirect the analysis...";
-      case "completed":
-        return "Compare, dig deeper, or generate a report...";
-      case "thinking":
-        return "Type to redirect or wait for results...";
-      default:
-        return "Ask Upliftly to analyze a flow...";
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    onSendMessage(input);
-    setInput("");
-    
-    // Cycle mock state for demo purposes if needed, or just keep in_progress
-    // setTaskState(prev => prev === 'empty' ? 'in_progress' : prev === 'in_progress' ? 'completed' : 'empty');
-  };
-
-  const handleChipClick = (chip: string) => {
-      onSendMessage(chip);
-      // Optional: cycle state on chip click to show dynamic nature
-  };
 
   const handleTitleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -899,142 +1024,31 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-6">
-        <ChatMessageList messages={events.filter(e => ['user', 'ai'].includes(e.type))} />
+        <ChatMessageList 
+            messages={events.filter(e => ['user', 'ai'].includes(e.type))} 
+            onSendMessage={onSendMessage}
+            taskState={taskState}
+        />
       </ScrollArea>
 
-      {/* Input Area */}
-      <div className="border-t border-border bg-[var(--chat-background)] flex flex-col">
-        <SuggestionChips chips={getCurrentChips()} onSelect={handleChipClick} />
-        
-        <div className="p-4 pt-2">
-            <form 
-            onSubmit={handleSubmit} 
-            className="flex flex-col gap-2"
-            >
-            {/* Input Row */}
-            <div className="flex items-end gap-2 bg-muted/30 rounded-xl border border-border/50 px-3 py-2 focus-within:ring-1 focus-within:ring-primary/20 focus-within:shadow-sm transition-all duration-300">
-                <TextareaAutosize
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder={getPlaceholder()}
-                    minRows={1}
-                    maxRows={6}
-                    className="flex-1 bg-transparent resize-none outline-none text-sm text-foreground placeholder:text-muted-foreground min-h-[24px] py-1"
-                    data-testid="input-chat"
-                />
-                <Button 
-                    type="submit" 
-                    size="icon" 
-                    className="h-7 w-7 rounded-lg hover:bg-primary hover:text-primary-foreground transition-colors shrink-0 mb-0.5"
-                    disabled={!input.trim()}
-                    title="Send message"
-                >
-                    <Send className="w-3.5 h-3.5" />
-                </Button>
-            </div>
-            
-            {/* Toolbar Row */}
-            <div className="flex justify-between items-center px-1">
-                <div className="flex gap-1">
-                    <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-                        title="Attach a file or screenshot"
-                    >
-                        <Paperclip className="w-4 h-4" />
-                    </Button>
-                    
-                    <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-                        title="Mention a specific agent"
-                    >
-                        <AtSign className="w-4 h-4" />
-                    </Button>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          type="button"
-                          variant="ghost" 
-                          className="h-8 gap-1.5 px-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-                          title="Select Model"
-                        >
-                          <span className="text-foreground/80">{selectedModel}</span>
-                          <ChevronDown className="w-3 h-3 opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="w-[200px]">
-                        {MODELS.map((model) => (
-                          <DropdownMenuItem 
-                            key={model.name}
-                            onClick={() => setSelectedModel(model.name)}
-                            className="flex flex-col items-start gap-0.5 py-2 cursor-pointer"
-                          >
-                            <div className="flex items-center gap-2 w-full">
-                              <span>{model.icon}</span>
-                              <span className="font-medium">{model.name}</span>
-                              {selectedModel === model.name && (
-                                <CheckCircle2 className="w-3 h-3 text-primary ml-auto" />
-                              )}
-                            </div>
-                            <span className="text-[10px] text-muted-foreground pl-6">
-                              {model.description}
-                            </span>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+      {/* Input Area (New Layout) */}
+      <div className="border-t border-border bg-[var(--chat-background)] flex flex-col relative">
+        {/* Gradient fade */}
+        <div className="absolute -top-4 left-0 right-0 h-4 bg-gradient-to-t from-[var(--chat-background)] to-transparent pointer-events-none" />
 
-                    <div 
-                        role="button"
-                        onClick={() => setIsThinkingMode(!isThinkingMode)}
-                        className="h-8 bg-muted/30 hover:bg-muted/50 border border-border/30 rounded-lg p-0.5 flex items-center relative cursor-pointer select-none ml-1"
-                        title={isThinkingMode ? "Switch to Fast Mode" : "Switch to Thinking Mode"}
-                    >
-                        {/* Active Indicator Background */}
-                        <div 
-                            className={cn(
-                                "absolute top-0.5 bottom-0.5 w-[28px] bg-background shadow-sm border border-border/40 rounded-[6px] transition-all duration-300 ease-out",
-                                isThinkingMode ? "translate-x-[28px]" : "translate-x-0"
-                            )} 
-                        />
-                        
-                        {/* Fast Icon */}
-                        <div className={cn(
-                            "w-7 h-full flex items-center justify-center relative z-10 transition-colors duration-300",
-                            !isThinkingMode ? "text-amber-500" : "text-muted-foreground/60"
-                        )}>
-                            <Zap className={cn("w-3.5 h-3.5", !isThinkingMode && "fill-current")} />
-                        </div>
-                        
-                        {/* Thinking Icon */}
-                        <div className={cn(
-                            "w-7 h-full flex items-center justify-center relative z-10 transition-colors duration-300",
-                            isThinkingMode ? "text-indigo-500" : "text-muted-foreground/60"
-                        )}>
-                            <Brain className="w-3.5 h-3.5" />
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="flex gap-1">
-                    <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg"
-                        title="Enter a URL to analyze"
-                    >
-                        <Globe className="w-4 h-4" />
-                    </Button>
-                </div>
-            </div>
-            </form>
+        <div className="px-4 pb-2 pt-4">
+            <ChatInput onSend={onSendMessage} taskState={taskState} />
+        </div>
+
+        {/* Toolbar */}
+        <div className="flex items-center gap-1 px-5 pb-3">
+            {TOOLBAR_ITEMS.map((item, i) => (
+                <ToolbarButton
+                    key={i}
+                    icon={item.icon}
+                    tooltip={item.tooltip}
+                />
+            ))}
         </div>
       </div>
     </div>

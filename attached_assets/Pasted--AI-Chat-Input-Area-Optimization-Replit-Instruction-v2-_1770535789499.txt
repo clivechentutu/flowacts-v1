@@ -1,0 +1,492 @@
+# AI Chat Input Area Optimization — Replit Instruction (v2 Revised)
+
+> **This replaces Doc 27 (v1) and the initial v2.** Core change: **Remove Suggestion Chips entirely** from the input area. Instead: (1) Add `⋯` overflow menu to DynamicExecutionCard title bar for mid-execution intervention, (2) Enhance input box with inline send button, (3) Add Radix Tooltips to toolbar. No backend changes — use mock state.
+
+---
+
+## Critical Implementation Rules
+
+**READ THIS FIRST — the strategy has fundamentally changed from v1:**
+
+### MUST DO:
+- ✅ **Remove ALL Suggestion Chips** from the input area (empty, in_progress, completed — ALL states)
+- ✅ Add `⋯` overflow menu button to DynamicExecutionCard title bar (right side)
+- ✅ Send button MUST be inside the input box (right side), not in the toolbar
+- ✅ Send button MUST use `bg-primary` solid fill when input has content
+- ✅ Input box MUST have `focus-within:ring-1 focus-within:ring-primary/20`
+- ✅ Toolbar icons MUST use Radix Tooltip (not native `title`)
+
+### MUST NOT:
+- ❌ Do NOT render any Suggestion Chips in the input area
+- ❌ Do NOT render any text suggestions above the input box
+- ❌ Do NOT put send button in the toolbar row
+- ❌ Do NOT use native `title` for tooltips — use Radix Tooltip
+- ❌ Do NOT add any UI elements between the conversation area and the input box (except gradient fade)
+
+---
+
+## What Stays the Same
+
+- Dynamic placeholder text based on task state (from v1)
+- Toolbar icons (📎 @ ⚡ 🌐) — keep all except ➤ (moved inside input) and ⓘ (removed)
+- Input box textarea behavior (type, send, clear)
+- Overall Chat panel layout
+- Dark theme styling
+- DynamicExecutionCard content area (Doc 26 scope)
+
+---
+
+## Change 1: Remove Suggestion Chips
+
+### What Changes
+**Delete the entire SuggestionChips component.** No chips in any state.
+
+### Before (WRONG — v1 implementation):
+```
+Focus on the pricing page          ← DELETE THIS
+Skip to the signup flow            ← DELETE THIS
+Take a screenshot here             ← DELETE THIS
+┌──────────────────────────────────────────────┐
+│ Ask a follow-up or redirect the analysis...   │
+```
+
+### After (CORRECT — v2 revised):
+```
+                                                    ← clean space, no chips
+┌──────────────────────────────────────────────┐
+│ Ask a follow-up or redirect...          [➤]  │    ← input box directly
+└──────────────────────────────────────────────┘
+📎  @  ⚡  🌐                                       ← toolbar
+```
+
+### Why
+- Chips had extremely low user-need hit rate during execution
+- Occupied ~60px of vertical space better used for conversation visibility
+- Upliftly is an autonomous execution Agent (like Manus), not a conversational assistant (like ChatGPT)
+- Mid-execution intervention is handled by the `⋯` menu on DynamicExecutionCard (see Change 4)
+- Post-completion guidance is handled by Agent inline suggestions in its response
+
+---
+
+## Change 2: Input Box with Inline Send Button
+
+### What Changes
+- Send button moves inside the input box (right side)
+- Input box gets enhanced focus styling
+- ⓘ icon removed from toolbar
+- ➤ removed from toolbar (now inside input box)
+
+### ChatInput Component (COMPLETE — copy exactly)
+
+```jsx
+function ChatInput({ onSend, taskState }) {
+  const [inputValue, setInputValue] = useState("");
+  const textareaRef = useRef(null);
+
+  const placeholder = getPlaceholder(taskState);
+  const hasContent = inputValue.trim().length > 0;
+
+  const handleSend = () => {
+    if (!hasContent) return;
+    onSend(inputValue.trim());
+    setInputValue("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleInput = (e) => {
+    setInputValue(e.target.value);
+    // Auto-resize textarea
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+  };
+
+  return (
+    <div className="flex items-end gap-2
+      bg-muted/20 rounded-2xl
+      border border-border/60
+      focus-within:border-primary/50
+      focus-within:ring-1 focus-within:ring-primary/20
+      px-4 py-3
+      transition-all duration-200">
+
+      {/* Textarea */}
+      <textarea
+        ref={textareaRef}
+        value={inputValue}
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="flex-1 bg-transparent resize-none outline-none
+          text-sm text-foreground
+          placeholder:text-muted-foreground/40
+          min-h-[20px] max-h-[120px]"
+        rows={1}
+      />
+
+      {/* Send button — INSIDE the input box */}
+      <button
+        onClick={handleSend}
+        disabled={!hasContent}
+        className={`shrink-0 p-1.5 rounded-lg transition-all duration-150
+          ${hasContent
+            ? "bg-primary text-primary-foreground hover:bg-primary/80 cursor-pointer"
+            : "bg-muted/50 text-muted-foreground/30 cursor-default"
+          }`}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+          xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 8L14 8M14 8L8 2M14 8L8 14"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round"
+            transform="rotate(-45 8 8)" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function getPlaceholder(taskState) {
+  switch (taskState) {
+    case "empty":
+      return "Paste a URL or describe what you'd like to analyze...";
+    case "in_progress":
+      return "Type to redirect or intervene...";
+    case "completed":
+      return "Compare, dig deeper, or start a new analysis...";
+    case "thinking":
+      return "Type to redirect or wait for results...";
+    default:
+      return "Ask Upliftly to analyze a flow...";
+  }
+}
+```
+
+---
+
+## Change 3: Toolbar with Radix Tooltips
+
+### What Changes
+Replace native `title` attributes with Radix UI Tooltip for a more polished look.
+
+### Toolbar Component
+
+```jsx
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+function ToolbarButton({ icon, tooltip, onClick }) {
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            onClick={onClick}
+            className="p-1.5 rounded-md
+              text-muted-foreground/50 hover:text-muted-foreground/80
+              hover:bg-muted/30
+              transition-colors duration-150"
+          >
+            <span className="text-sm">{icon}</span>
+          </button>
+        </TooltipTrigger>
+        <TooltipContent
+          side="top"
+          className="bg-popover border border-border rounded-lg
+            px-2.5 py-1.5 shadow-lg text-xs"
+        >
+          {tooltip}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+```
+
+### Toolbar Icons (4 remaining)
+
+```jsx
+const TOOLBAR_ITEMS = [
+  { icon: "📎", tooltip: "Attach a file or screenshot" },
+  { icon: "@", tooltip: "Mention a specific agent" },
+  { icon: "⚡", tooltip: "Quick commands" },
+  { icon: "🌐", tooltip: "Enter a URL to analyze" },
+];
+```
+
+---
+
+## Change 4: DynamicExecutionCard `⋯` Overflow Menu
+
+### What Changes
+Add a `⋯` (three-dot) overflow menu button to the DynamicExecutionCard title bar. This replaces the removed Suggestion Chips as the entry point for mid-execution intervention.
+
+### Where It Goes
+
+```
+┌─────────────────────────────────────────────────┐
+│ 🕵️ Scout · Analyzing pricing strategy    [⋯] [▾]│  ← ⋯ button here
+├─────────────────────────────────────────────────┤
+│  ● Analyze Pricing Strategy ✓                    │
+│  ● Test Signup Flow ◉                            │
+│  ○ Compare Competitors                           │
+└─────────────────────────────────────────────────┘
+```
+
+### OverflowMenu Component (COMPLETE — copy exactly)
+
+```jsx
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+function ExecutionOverflowMenu({ onAction }) {
+  const MENU_ITEMS = [
+    { icon: "🎯", label: "Focus on this section", action: "focus" },
+    { icon: "⏭", label: "Skip to next step", action: "skip" },
+    { icon: "📸", label: "Take a screenshot", action: "screenshot" },
+    { icon: "⏹", label: "Pause execution", action: "pause" },
+  ];
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="p-1 rounded-md
+            text-muted-foreground/50 hover:text-muted-foreground/80
+            hover:bg-white/5
+            transition-colors duration-150"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="4" cy="8" r="1.5" />
+            <circle cx="8" cy="8" r="1.5" />
+            <circle cx="12" cy="8" r="1.5" />
+          </svg>
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        align="end"
+        className="bg-popover border border-border rounded-xl
+          shadow-xl min-w-[200px] p-1"
+      >
+        {MENU_ITEMS.map((item) => (
+          <DropdownMenuItem
+            key={item.action}
+            onClick={() => onAction(item)}
+            className="flex items-center gap-2 px-3 py-2
+              rounded-lg cursor-pointer
+              text-sm text-muted-foreground
+              hover:text-foreground hover:bg-muted/50
+              transition-colors duration-100"
+          >
+            <span className="text-[13px]">{item.icon}</span>
+            <span>{item.label}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+```
+
+### Integration with DynamicExecutionCard Title Bar
+
+Add the `ExecutionOverflowMenu` to the existing title bar in DynamicExecutionCard (Doc 26):
+
+```jsx
+{/* In DynamicExecutionCard title bar — add BEFORE the collapse toggle */}
+<div className="flex items-center gap-1">
+  {taskState === "in_progress" && (
+    <ExecutionOverflowMenu
+      onAction={(item) => {
+        // Send as user message
+        onSend(item.label);
+      }}
+    />
+  )}
+  {/* existing collapse toggle button */}
+  <button onClick={toggleCollapse}>▾</button>
+</div>
+```
+
+**IMPORTANT**: The `⋯` menu only appears when `taskState === "in_progress"`. It disappears when the task is completed.
+
+### Menu Action Behavior
+
+```jsx
+const handleOverflowAction = (item) => {
+  // Auto-send: directly add as user message (same as old chip behavior)
+  const userMessage = {
+    id: `msg-${Date.now()}`,
+    role: "user",
+    content: item.label,
+  };
+  setMessages((prev) => [...prev, userMessage]);
+};
+```
+
+---
+
+## Complete Layout Structure
+
+### Full ChatInputArea Component (COMPLETE — copy exactly)
+
+```jsx
+function ChatInputArea({ taskState, onSend }) {
+  // NO chips — just gradient fade + input box + toolbar
+
+  return (
+    <div className="relative">
+      {/* Gradient fade — separates conversation from input area */}
+      <div className="h-4 bg-gradient-to-t from-background
+        via-background to-transparent pointer-events-none" />
+
+      {/* Input box with inline send button — NO chips above this */}
+      <div className="px-4 pb-2">
+        <ChatInput onSend={onSend} taskState={taskState} />
+      </div>
+
+      {/* Toolbar — 4 icons with Radix Tooltips */}
+      <div className="flex items-center gap-1 px-5 pb-3">
+        {TOOLBAR_ITEMS.map((item, i) => (
+          <ToolbarButton
+            key={i}
+            icon={item.icon}
+            tooltip={item.tooltip}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+**Note**: The `ChatInputArea` no longer accepts `messages` prop or renders `SuggestionChips`. It is now a clean input-only component.
+
+---
+
+## Visual Reference
+
+### Layout Diagram (Revised — No Chips)
+
+```
+┌──────────────────────────────────────────────────┐
+│                                                    │
+│  ┌──────────────────────────────────────────────┐  │
+│  │ 🕵️ Scout · Analyzing pricing...    [⋯] [▾]  │  │  ← overflow menu here
+│  ├──────────────────────────────────────────────┤  │
+│  │  ● Analyze Pricing Strategy ✓                │  │
+│  │  ● Test Signup Flow ◉                        │  │
+│  │  ○ Compare Competitors                       │  │
+│  └──────────────────────────────────────────────┘  │
+│                                                    │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │  ← gradient fade
+│                                                    │
+│  ┌──────────────────────────────────────────────┐  │
+│  │ Type to redirect or intervene...        [➤]  │  │  ← input box (inline send)
+│  └──────────────────────────────────────────────┘  │
+│  📎  @  ⚡  🌐                                     │  ← toolbar (4 icons)
+│                                                    │
+└──────────────────────────────────────────────────┘
+```
+
+### Before vs After Comparison
+
+```
+BEFORE (v1 — chips eating space):          AFTER (v2 revised — clean):
+┌────────────────────────────┐             ┌────────────────────────────┐
+│ [execution card]           │             │ [execution card]     [⋯]  │
+│                            │             │                            │
+│ Focus on the pricing page  │ ← wasted   │                            │
+│ Skip to the signup flow    │ ← space    │ [MORE conversation visible]│
+│ Take a screenshot here     │ ← here     │                            │
+├────────────────────────────┤             │                            │
+│ Ask a follow-up...         │             ├────────────────────────────┤
+│ 📎 @ ⚡ ⓘ     🌐 ➤       │             │ Type to redirect...   [➤] │
+└────────────────────────────┘             │ 📎 @ ⚡ 🌐                │
+                                           └────────────────────────────┘
+```
+
+### Input Box Visual Spec
+
+```
+┌──────────────────────────────────────────────┐
+│                                          ┌──┐│
+│  Type to redirect or intervene...        │➤ ││  ← bg-primary when has content
+│                                          └──┘│
+└──────────────────────────────────────────────┘
+  ↑                                          ↑
+  rounded-2xl                          rounded-lg
+  border-border/60                     bg-primary
+  focus: ring-1 ring-primary/20        p-1.5
+```
+
+### Overflow Menu Visual Spec
+
+```
+                                    ┌──────────────────────────┐
+                                    │ 🎯 Focus on this section │
+  [⋯] button click opens →         │ ⏭ Skip to next step     │
+                                    │ 📸 Take a screenshot     │
+                                    │ ⏹ Pause execution       │
+                                    └──────────────────────────┘
+                                      ↑
+                                      rounded-xl, shadow-xl
+                                      bg-popover, border-border
+                                      align="end"
+```
+
+---
+
+## What NOT to Do
+
+- ❌ Do NOT render any Suggestion Chips (not in empty, in_progress, or completed state)
+- ❌ Do NOT add any text suggestions above the input box
+- ❌ Do NOT put send button in the toolbar
+- ❌ Do NOT use native `title` for tooltips
+- ❌ Do NOT show the `⋯` overflow menu when task is completed (only during `in_progress`)
+- ❌ Do NOT change the conversation message area content (that's Doc 26)
+- ❌ Do NOT change the Chat header/title bar (that's Doc 29)
+- ❌ Do NOT remove 📎 @ ⚡ 🌐 toolbar icons
+
+---
+
+## Acceptance Criteria
+
+1. ✅ **No Suggestion Chips** visible in any task state
+2. ✅ Input area is clean: gradient fade → input box → toolbar (nothing else)
+3. ✅ Send button is inside the input box (right side)
+4. ✅ Send button uses `bg-primary` solid fill when input has content
+5. ✅ Send button is dimmed (`bg-muted/50 text-muted-foreground/30`) when input is empty
+6. ✅ Input box has `focus-within:ring-1 focus-within:ring-primary/20`
+7. ✅ Toolbar has 4 icons (📎 @ ⚡ 🌐) with Radix Tooltips
+8. ✅ Gradient fade between conversation area and input area
+9. ✅ `⋯` overflow menu appears on DynamicExecutionCard title bar during `in_progress`
+10. ✅ `⋯` menu contains 4 items: Focus / Skip / Screenshot / Pause
+11. ✅ `⋯` menu uses Radix DropdownMenu with `rounded-xl shadow-xl`
+12. ✅ Clicking a menu item auto-sends it as a user message
+13. ✅ Dark theme styling consistent throughout
+14. ✅ ~60px vertical space reclaimed (previously used by chips)
+
+---
+
+*Document: 27-AIChat输入框引导优化-Replit指令-v2.md（修订版）*
+*Replaces: Doc 27 (v1) and initial v2*
+*Scope: Remove Suggestion Chips + Input box enhancement + Toolbar tooltips + `⋯` overflow menu*
+*Related: Doc 35 (修订分析文档), Doc 26-v8 (DynamicExecutionCard), Doc 17 (Quick Start Role Mentions)*
