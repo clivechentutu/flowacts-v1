@@ -1,0 +1,896 @@
+# AI Chat Single Dynamic Card Layout — Replit Instruction (v8)
+
+> **This replaces Doc 26-v7.** Three targeted improvements with pixel-level specifications: (1) title bar AnimatePresence crossfade animation, (2) unified Process Timeline showing ALL steps' process details, (3) professional visual hierarchy for completed step results with strict CSS constraints. Architecture and data model unchanged from v6.
+
+---
+
+## Critical Implementation Rules
+
+**READ THIS FIRST — these are the most common implementation mistakes from v6/v7:**
+
+### MUST DO:
+- ✅ ResultHighlight MUST have `border-l-2` + agent color border + tinted background
+- ✅ Step icons in history MUST use colored dots (`w-2 h-2 rounded-full bg-{agentColor}`) NOT ⊙ or ✓ text
+- ✅ Title bar content MUST be wrapped in `<AnimatePresence mode="wait">`
+- ✅ Process Timeline MUST show ALL steps' process (not just active step)
+- ✅ "N steps completed" MUST use lowercase, `text-[11px] text-muted-foreground/40`
+- ✅ Expand/collapse arrows MUST use `▸` / `▾` characters (NOT `>` or `<`)
+
+### MUST NOT:
+- ❌ Do NOT use ⊙ icon for completed steps
+- ❌ Do NOT use uppercase "STEPS COMPLETED"
+- ❌ Do NOT render ResultHighlight without colored left border
+- ❌ Do NOT show "Invalid Date" — remove date display or fix formatting
+- ❌ Do NOT use `>` character for expand arrows
+- ❌ Do NOT use CSS transition for title bar text switching (use Framer Motion)
+- ❌ Do NOT show only active step's process in Process Details
+
+---
+
+## What Stays the Same from v6/v7
+
+- Data model (ChatMessage, TaskPlanStep interfaces)
+- IntentPlanCard (Zone 1) — no changes
+- Interaction model (task-execution Agent)
+- Agent roles + colors
+- Mock data structure
+- ChatMessageList orchestration
+- L1/L2/L3 message levels
+- getDefaultLevel helper
+- AgentLabel utility
+
+---
+
+## Fix 1: Title Bar AnimatePresence Animation
+
+### What Changes
+The Dynamic Title Bar in DynamicExecutionCard gets crossfade + slide animation when the active step switches.
+
+### Implementation
+
+Replace the title bar section in DynamicExecutionCard with:
+
+```jsx
+import { AnimatePresence, motion } from "framer-motion";
+
+{/* ── Dynamic Title Bar ── */}
+<div className="flex items-center justify-between px-4 py-2.5
+  border-b border-border/10">
+  <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+    <AnimatePresence mode="wait">
+      {activeStep ? (
+        <motion.div
+          key={activeStep.id}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="flex items-center gap-2 min-w-0"
+        >
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex
+              h-full w-full rounded-full bg-blue-400 opacity-75" />
+            <span className="relative inline-flex rounded-full
+              h-2 w-2 bg-blue-400" />
+          </span>
+          <span className="text-xs text-foreground/80 truncate">
+            {agentIcons[activeStep.agentRole]}{" "}
+            {activeStep.label}
+          </span>
+        </motion.div>
+      ) : (
+        <motion.span
+          key="all-done"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+          className="text-xs text-muted-foreground/50"
+        >
+          ✓ All steps completed
+        </motion.span>
+      )}
+    </AnimatePresence>
+  </div>
+
+  {/* Progress counter with scale animation on change */}
+  <AnimatePresence mode="wait">
+    <motion.span
+      key={doneCount}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+      className="text-[10px] text-muted-foreground/40
+        tabular-nums shrink-0 ml-3"
+    >
+      {doneCount}/{steps.length}
+    </motion.span>
+  </AnimatePresence>
+</div>
+```
+
+### Key Constraints
+- `mode="wait"` ensures old content exits before new content enters
+- `key={activeStep.id}` triggers animation on step change
+- Duration: 250ms for enter, exit is automatic
+- Direction: exit slides UP (y: -6), enter slides DOWN from above (y: 6)
+- Framer Motion MUST be installed: `npm install framer-motion`
+
+---
+
+## Fix 2: Unified Process Timeline
+
+### What Changes
+Replace the current "Process details" (which only shows active step's process) with a unified Process Timeline that shows ALL steps' process details in a single scrollable container.
+
+### Implementation
+
+Replace the Process details section in DynamicExecutionCard with this new ProcessTimeline component:
+
+```jsx
+function ProcessTimeline({ steps, stepMessages }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  // Collect ALL process messages across ALL steps
+  const allProcessGroups = steps
+    .filter((step) => step.status === "done" || step.status === "active")
+    .map((step) => {
+      const msgs = stepMessages[step.id] || [];
+      const processMsgs = msgs.filter((m) => {
+        const level = m.messageLevel || getDefaultLevel(m);
+        return level === "process";
+      });
+      const allSteps = processMsgs.flatMap(
+        (m) => m.thoughtProcess?.steps || []
+      );
+      return { step, processSteps: allSteps };
+    })
+    .filter((group) => group.processSteps.length > 0);
+
+  const totalProcessCount = allProcessGroups.reduce(
+    (sum, g) => sum + g.processSteps.length, 0
+  );
+
+  const hasActive = allProcessGroups.some((g) =>
+    g.processSteps.some((s) => s.status === "active")
+  );
+
+  // Auto-expand when there's an active process step
+  const expanded = isExpanded || hasActive;
+
+  if (totalProcessCount === 0) return null;
+
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  return (
+    <div className="border-t border-border/10">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center gap-2 px-4 py-2
+          text-left hover:bg-muted/8 transition-colors"
+      >
+        <span className="text-[10px] text-muted-foreground/30
+          shrink-0 w-3">
+          {expanded ? "▾" : "▸"}
+        </span>
+        <span className="text-[11px] text-muted-foreground/40">
+          Process Timeline ({totalProcessCount})
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-3 max-h-[200px] overflow-y-auto">
+          <div className="space-y-3">
+            {allProcessGroups.map((group) => {
+              const icon =
+                agentIcons[group.step.agentRole] || "🤖";
+              const isActiveStep =
+                group.step.status === "active";
+
+              return (
+                <div key={group.step.id}>
+                  {/* Step group header */}
+                  <div className="text-[10px] text-muted-foreground/40
+                    font-medium tracking-wider mb-1">
+                    {icon} {group.step.label}
+                  </div>
+
+                  {/* Process steps */}
+                  <div className="ml-2 space-y-0.5">
+                    {group.processSteps.map((ps, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-center gap-1.5
+                          text-[10px] ${
+                            isActiveStep
+                              ? "text-muted-foreground/50"
+                              : "text-muted-foreground/30"
+                          }`}
+                      >
+                        <span
+                          className={`w-1 h-1 rounded-full
+                            shrink-0 ${
+                              ps.status === "done"
+                                ? isActiveStep
+                                  ? "bg-muted-foreground/30"
+                                  : "bg-muted-foreground/15"
+                                : ps.status === "active"
+                                ? "bg-blue-400 animate-pulse"
+                                : "bg-muted-foreground/10"
+                            }`}
+                        />
+                        <span>{ps.label}</span>
+                        {ps.status === "done" && (
+                          <span className="text-muted-foreground/20
+                            ml-auto">✓</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Integration in DynamicExecutionCard
+
+Replace the old "Process details" section with ProcessTimeline. The ProcessTimeline goes between the Active Content Area and the History Section:
+
+```jsx
+{/* ── Active Content Area (current step's L1/L2 results) ── */}
+{activeStep && (
+  <div className="px-4 py-3">
+    <div className="space-y-1.5">
+      {renderStepContent(
+        (stepMessages[activeStep.id] || []).filter((m) => {
+          const level = m.messageLevel || getDefaultLevel(m);
+          return level === "insight" || level === "progress";
+        })
+      )}
+    </div>
+  </div>
+)}
+
+{/* ── Unified Process Timeline (ALL steps) ── */}
+<ProcessTimeline steps={steps} stepMessages={stepMessages} />
+
+{/* ── Collapsible History Section ── */}
+{/* ... unchanged ... */}
+```
+
+### Key Constraints
+- ProcessTimeline MUST iterate over ALL steps with status "done" or "active"
+- Container MUST have `max-h-[200px] overflow-y-auto` for scrollability
+- MUST auto-scroll to bottom when new process steps appear (use `useEffect` + `scrollIntoView`)
+- Step group headers use `text-[10px] text-muted-foreground/40 font-medium tracking-wider`
+- Done steps in completed groups use `text-muted-foreground/30` (very faint)
+- Done steps in active group use `text-muted-foreground/50` (slightly brighter)
+- Active step uses `text-blue-400 animate-pulse`
+
+---
+
+## Fix 3: Visual Hierarchy Overhaul for Completed Steps
+
+### What Changes
+Complete visual redesign of the "N steps completed" history section. Every element gets precise CSS class constraints.
+
+### 3A: History Toggle Header
+
+**WRONG (current):**
+```
+▾ 3 STEPS COMPLETED
+```
+
+**CORRECT:**
+```
+▾ 3 steps completed
+```
+
+```jsx
+<button
+  onClick={() => setHistoryExpanded(!historyExpanded)}
+  className="w-full flex items-center gap-2 px-4 py-2
+    text-left hover:bg-muted/8 transition-colors"
+>
+  <span className="text-[10px] text-muted-foreground/30
+    shrink-0 w-3">
+    {historyExpanded ? "▾" : "▸"}
+  </span>
+  <span className="text-[11px] text-muted-foreground/40 font-normal">
+    {doneCount} step{doneCount !== 1 ? "s" : ""} completed
+  </span>
+</button>
+```
+
+**Constraints:**
+- Text MUST be lowercase ("steps completed" NOT "STEPS COMPLETED")
+- Font weight MUST be `font-normal` (NOT bold)
+- Font size MUST be `text-[11px]`
+- Color MUST be `text-muted-foreground/40`
+- Arrow MUST use `▸` / `▾` characters
+
+### 3B: Completed Step — Collapsed State (Step Header Row)
+
+**WRONG (current):**
+```
+⊙ Browse competitor.com homepage    Homepage analyzed    >
+```
+
+**CORRECT:**
+```
+🔵 🕵️ Browse competitor.com homepage    Homepage analyzed    ▸
+```
+
+```jsx
+{doneSteps.map((step) => {
+  const icon = agentIcons[step.agentRole] || "🤖";
+  const dotColor = agentDotColors[step.agentRole]
+    || "bg-muted-foreground/40";
+  const textColor = agentColors[step.agentRole] || "";
+  const isStepExpanded = expandedSteps.has(step.id);
+  const msgs = stepMessages[step.id] || [];
+  const hasInsight = msgs.some(
+    (m) => m.messageLevel === "insight" || m.canvasLinkId
+  );
+
+  return (
+    <div key={step.id} className="border-b border-border/6
+      last:border-b-0">
+      {/* Collapsed step header */}
+      <button
+        onClick={() => toggleStepResults(step.id)}
+        className="w-full flex items-center gap-2.5 px-4 py-2.5
+          text-left hover:bg-muted/5 transition-colors"
+      >
+        {/* Agent color dot — NOT ⊙ */}
+        <span className={`w-2 h-2 rounded-full shrink-0
+          ${dotColor}`} />
+
+        {/* Agent icon + step label */}
+        <span className="text-[12px] text-foreground/60
+          font-medium truncate">
+          {icon} {step.label}
+        </span>
+
+        {/* Spacer */}
+        <span className="flex-1" />
+
+        {/* Collapsed summary (only when collapsed) */}
+        {!isStepExpanded && step.summary && (
+          <span className="text-[11px] text-muted-foreground/30
+            truncate max-w-[40%]">
+            {step.summary}
+          </span>
+        )}
+
+        {/* Insight badge (only when collapsed + has insight) */}
+        {!isStepExpanded && hasInsight && (
+          <span className={`text-[10px] ${textColor}
+            opacity-40 shrink-0`}>
+            ◆
+          </span>
+        )}
+
+        {/* Expand arrow — MUST use ▸/▾ */}
+        <span className="text-[10px] text-muted-foreground/25
+          shrink-0 ml-1">
+          {isStepExpanded ? "▾" : "▸"}
+        </span>
+      </button>
+
+      {/* Expanded content — see 3C below */}
+      {isStepExpanded && (
+        <StepExpandedContent
+          step={step}
+          messages={msgs}
+        />
+      )}
+    </div>
+  );
+})}
+```
+
+**Agent dot colors map (add to DynamicExecutionCard):**
+```jsx
+const agentDotColors = {
+  scout: "bg-blue-400/60",
+  capturer: "bg-purple-400/60",
+  analyst: "bg-orange-400/60",
+  comparator: "bg-green-400/60",
+  reporter: "bg-pink-400/60",
+};
+```
+
+**Constraints:**
+- Step icon MUST be a colored dot `w-2 h-2 rounded-full bg-{agentColor}/60`
+- Do NOT use ⊙, ✓, or any text character for the step icon
+- Step label: `text-[12px] text-foreground/60 font-medium`
+- Summary: `text-[11px] text-muted-foreground/30 truncate`
+- Expand arrow: `▸` / `▾` in `text-[10px] text-muted-foreground/25`
+- Do NOT use `>` character for expand arrow
+- Steps separated by `border-b border-border/6 last:border-b-0`
+
+### 3C: Completed Step — Expanded State (Results Content)
+
+**WRONG (current):**
+```
+⊙ Analyze Pricing Strategy                              ▾
+  Detailed pricing analysis complete
+
+  Found 3 pricing tiers: Free, Pro ($29/mo), and
+  Enterprise.
+
+  ⚠ The free trial requires a credit card — this
+  is a potential friction point for new users.
+
+  📌 → Pricing Analysis
+```
+(No colored border, no background tint, no visual separation between L1/L2)
+
+**CORRECT:**
+```
+🟠 📊 Analyze Pricing Strategy                          ▾
+  ┃
+  ┃  ┌─ orange border ──────────────────────────┐
+  ┃  │ Found 3 pricing tiers: Free, Pro         │  ← ResultHighlight
+  ┃  │ ($29/mo), and Enterprise.                │     with border-l-2
+  ┃  │                                          │     + bg tint
+  ┃  │ ⚠ The free trial requires a credit card │
+  ┃  │ — this is a potential friction point.    │
+  ┃  │                                          │
+  ┃  │ 📌 → Pricing Analysis                   │
+  ┃  └─────────────────────────────────────────┘
+  ┃
+  ┃  Detailed pricing analysis complete            ← L2 progress (muted)
+```
+
+```jsx
+function StepExpandedContent({ step, messages }) {
+  const accentBorder = {
+    scout: "border-blue-400/20",
+    capturer: "border-purple-400/20",
+    analyst: "border-orange-400/20",
+    comparator: "border-green-400/20",
+    reporter: "border-pink-400/20",
+  };
+
+  const guideLine = accentBorder[step.agentRole]
+    || "border-border/10";
+
+  // Separate L1 insights from L2 progress
+  const resultMsgs = messages.filter((m) => {
+    const level = m.messageLevel || getDefaultLevel(m);
+    return level === "insight" || level === "progress";
+  });
+
+  const insightMsgs = resultMsgs.filter((m) => {
+    const level = m.messageLevel || getDefaultLevel(m);
+    return level === "insight";
+  });
+
+  const progressMsgs = resultMsgs.filter((m) => {
+    const level = m.messageLevel || getDefaultLevel(m);
+    return level === "progress";
+  });
+
+  return (
+    <div className={`ml-[19px] pl-3 pb-3 border-l-2 ${guideLine}`}>
+      <div className="space-y-2">
+        {/* L1 Insights first (highest visual weight) */}
+        {insightMsgs.map((msg) => (
+          <ResultHighlight key={msg.id} message={msg} />
+        ))}
+
+        {/* L2 Progress (lower visual weight) */}
+        {progressMsgs.map((msg) => (
+          <div key={msg.id} className="py-0.5">
+            <span className="text-[11px] text-muted-foreground/50
+              leading-relaxed">
+              {msg.content}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+**Constraints:**
+- Expanded content MUST have left guide line: `ml-[19px] pl-3 border-l-2 border-{agentColor}/20`
+- The `ml-[19px]` aligns the guide line with the center of the colored dot above
+- L1 insights render BEFORE L2 progress (insights have higher priority)
+- Bottom padding `pb-3` creates clear separation from next step
+
+### 3D: ResultHighlight Component (STRICT enforcement)
+
+This component MUST be implemented exactly as specified. This is the single most important visual element.
+
+```jsx
+function ResultHighlight({ message }) {
+  const accentColors = {
+    scout: "border-blue-400/30 bg-blue-400/5",
+    capturer: "border-purple-400/30 bg-purple-400/5",
+    analyst: "border-orange-400/30 bg-orange-400/5",
+    comparator: "border-green-400/30 bg-green-400/5",
+    reporter: "border-pink-400/30 bg-pink-400/5",
+  };
+
+  const accent =
+    accentColors[message.agentRole] || "border-border/20 bg-muted/5";
+
+  return (
+    <div className={`rounded-lg border-l-2 px-3 py-2.5 ${accent}`}>
+      <div className="text-[13px] text-foreground/90 leading-relaxed">
+        {message.content}
+      </div>
+      {message.canvasLinkId && (
+        <div className="mt-2 flex items-center gap-1.5 text-[11px]
+          text-primary/60 hover:text-primary cursor-pointer
+          transition-colors">
+          <span>📌</span>
+          <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**ABSOLUTE CONSTRAINTS (non-negotiable):**
+- MUST have `border-l-2` — this is the colored left border
+- MUST have `bg-{agentColor}/5` — this is the tinted background
+- MUST have `rounded-lg` — rounded corners
+- MUST have `px-3 py-2.5` — internal padding
+- Text MUST be `text-[13px] text-foreground/90` — highest readability
+- Do NOT add bold headers inside ResultHighlight
+- Do NOT add agent labels inside ResultHighlight (parent context provides this)
+- Do NOT omit the border-l-2 under any circumstances
+
+---
+
+## Fix 4: Bug Fixes
+
+### 4A: Remove "Invalid Date"
+
+Search for any date formatting code that produces "Invalid Date" and either:
+1. Fix the date formatting (use `new Date(timestamp).toLocaleTimeString()` with proper null check)
+2. Or remove date display entirely if timestamps are not available in mock data
+
+```jsx
+// If timestamp exists and is valid, format it:
+const formatTime = (timestamp) => {
+  if (!timestamp) return null;
+  const date = new Date(timestamp);
+  if (isNaN(date.getTime())) return null;
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
+// In rendering, only show if valid:
+{formatTime(msg.timestamp) && (
+  <span className="text-[10px] text-muted-foreground/25 mr-1.5">
+    {formatTime(msg.timestamp)}
+  </span>
+)}
+```
+
+### 4B: Fix Agent Icons in Title Bar
+
+The title bar should use the correct agent role icons, not generic building icons:
+
+```jsx
+const agentIcons = {
+  scout: "🕵️",
+  capturer: "📸",
+  analyst: "📊",
+  comparator: "⚖️",
+  reporter: "📝",
+};
+```
+
+Ensure the title bar reads `activeStep.agentRole` and maps to the correct icon.
+
+---
+
+## Complete Updated DynamicExecutionCard
+
+Here is the full component with all three fixes integrated:
+
+```jsx
+function DynamicExecutionCard({ steps, stepMessages }) {
+  const [historyExpanded, setHistoryExpanded] = React.useState(false);
+  const [expandedSteps, setExpandedSteps] = React.useState(new Set());
+
+  const doneCount = steps.filter((s) => s.status === "done").length;
+  const activeStep = steps.find((s) => s.status === "active");
+  const doneSteps = steps.filter((s) => s.status === "done");
+
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+  const agentColors = {
+    scout: "text-blue-400",
+    capturer: "text-purple-400",
+    analyst: "text-orange-400",
+    comparator: "text-green-400",
+    reporter: "text-pink-400",
+  };
+  const agentDotColors = {
+    scout: "bg-blue-400/60",
+    capturer: "bg-purple-400/60",
+    analyst: "bg-orange-400/60",
+    comparator: "bg-green-400/60",
+    reporter: "bg-pink-400/60",
+  };
+
+  const toggleStepResults = (stepId) => {
+    setExpandedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(stepId)) next.delete(stepId);
+      else next.add(stepId);
+      return next;
+    });
+  };
+
+  return (
+    <div className="mx-1 mt-2 rounded-xl border border-border/15
+      bg-muted/5 overflow-hidden">
+
+      {/* ══ Fix 1: Animated Dynamic Title Bar ══ */}
+      <div className="flex items-center justify-between px-4 py-2.5
+        border-b border-border/10">
+        <div className="flex items-center gap-2 min-w-0
+          overflow-hidden">
+          <AnimatePresence mode="wait">
+            {activeStep ? (
+              <motion.div
+                key={activeStep.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="flex items-center gap-2 min-w-0"
+              >
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute
+                    inline-flex h-full w-full rounded-full
+                    bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex
+                    rounded-full h-2 w-2 bg-blue-400" />
+                </span>
+                <span className="text-xs text-foreground/80
+                  truncate">
+                  {agentIcons[activeStep.agentRole]}{" "}
+                  {activeStep.label}
+                </span>
+              </motion.div>
+            ) : (
+              <motion.span
+                key="all-done"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="text-xs text-muted-foreground/50"
+              >
+                ✓ All steps completed
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={doneCount}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.2 }}
+            className="text-[10px] text-muted-foreground/40
+              tabular-nums shrink-0 ml-3"
+          >
+            {doneCount}/{steps.length}
+          </motion.span>
+        </AnimatePresence>
+      </div>
+
+      {/* ══ Active Content Area (L1/L2 only) ══ */}
+      {activeStep && (
+        <div className="px-4 py-3">
+          <div className="space-y-1.5">
+            {renderStepContent(
+              (stepMessages[activeStep.id] || []).filter((m) => {
+                const level =
+                  m.messageLevel || getDefaultLevel(m);
+                return (
+                  level === "insight" || level === "progress"
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ Fix 2: Unified Process Timeline ══ */}
+      <ProcessTimeline steps={steps} stepMessages={stepMessages} />
+
+      {/* ══ Fix 3: Redesigned History Section ══ */}
+      {doneCount > 0 && (
+        <div className={activeStep ? "border-t border-border/10"
+          : ""}>
+          {/* History toggle — lowercase, low weight */}
+          <button
+            onClick={() => setHistoryExpanded(!historyExpanded)}
+            className="w-full flex items-center gap-2 px-4 py-2
+              text-left hover:bg-muted/8 transition-colors"
+          >
+            <span className="text-[10px] text-muted-foreground/30
+              shrink-0 w-3">
+              {historyExpanded ? "▾" : "▸"}
+            </span>
+            <span className="text-[11px] text-muted-foreground/40
+              font-normal">
+              {doneCount} step{doneCount !== 1 ? "s" : ""}
+              {" "}completed
+            </span>
+          </button>
+
+          {/* Expanded history — redesigned step list */}
+          {historyExpanded && (
+            <div className="pb-2">
+              {doneSteps.map((step) => {
+                const icon =
+                  agentIcons[step.agentRole] || "🤖";
+                const dotColor =
+                  agentDotColors[step.agentRole]
+                  || "bg-muted-foreground/40";
+                const textColor =
+                  agentColors[step.agentRole] || "";
+                const isStepExpanded =
+                  expandedSteps.has(step.id);
+                const msgs = stepMessages[step.id] || [];
+                const hasInsight = msgs.some(
+                  (m) =>
+                    m.messageLevel === "insight"
+                    || m.canvasLinkId
+                );
+
+                return (
+                  <div key={step.id}
+                    className="border-b border-border/6
+                      last:border-b-0">
+                    {/* Step header row */}
+                    <button
+                      onClick={() =>
+                        toggleStepResults(step.id)
+                      }
+                      className="w-full flex items-center
+                        gap-2.5 px-4 py-2.5 text-left
+                        hover:bg-muted/5 transition-colors"
+                    >
+                      <span className={`w-2 h-2 rounded-full
+                        shrink-0 ${dotColor}`} />
+                      <span className="text-[12px]
+                        text-foreground/60 font-medium
+                        truncate">
+                        {icon} {step.label}
+                      </span>
+                      <span className="flex-1" />
+                      {!isStepExpanded && step.summary && (
+                        <span className="text-[11px]
+                          text-muted-foreground/30 truncate
+                          max-w-[40%]">
+                          {step.summary}
+                        </span>
+                      )}
+                      {!isStepExpanded && hasInsight && (
+                        <span className={`text-[10px]
+                          ${textColor} opacity-40
+                          shrink-0`}>
+                          ◆
+                        </span>
+                      )}
+                      <span className="text-[10px]
+                        text-muted-foreground/25 shrink-0
+                        ml-1">
+                        {isStepExpanded ? "▾" : "▸"}
+                      </span>
+                    </button>
+
+                    {/* Expanded: results with guide line */}
+                    {isStepExpanded && (
+                      <StepExpandedContent
+                        step={step}
+                        messages={msgs}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## Visual Hierarchy Reference Table
+
+Use this table to verify every element's styling is correct:
+
+| Element | Font Size | Color | Weight | Extra |
+|---------|-----------|-------|--------|-------|
+| Title bar active step | `text-xs` (12px) | `text-foreground/80` | normal | — |
+| Title bar "All done" | `text-xs` | `text-muted-foreground/50` | normal | — |
+| Progress counter | `text-[10px]` | `text-muted-foreground/40` | normal | `tabular-nums` |
+| History toggle text | `text-[11px]` | `text-muted-foreground/40` | normal | lowercase |
+| Step header label | `text-[12px]` | `text-foreground/60` | medium | — |
+| Step summary (collapsed) | `text-[11px]` | `text-muted-foreground/30` | normal | `truncate` |
+| Insight badge ◆ | `text-[10px]` | `{agentColor} opacity-40` | normal | — |
+| Expand arrow ▸/▾ | `text-[10px]` | `text-muted-foreground/25` | normal | — |
+| ResultHighlight text | `text-[13px]` | `text-foreground/90` | normal | `leading-relaxed` |
+| ResultHighlight border | — | `border-{agentColor}/30` | — | `border-l-2` |
+| ResultHighlight bg | — | `bg-{agentColor}/5` | — | `rounded-lg` |
+| Canvas link | `text-[11px]` | `text-primary/60` | normal | hover: `text-primary` |
+| L2 Progress text | `text-[11px]` | `text-muted-foreground/50` | normal | — |
+| Guide line (expanded) | — | `border-{agentColor}/20` | — | `border-l-2 ml-[19px]` |
+| Process Timeline header | `text-[10px]` | `text-muted-foreground/40` | medium | `tracking-wider` |
+| Process step text | `text-[10px]` | `text-muted-foreground/30-50` | normal | — |
+| Process step dot (done) | `w-1 h-1` | `bg-muted-foreground/15-30` | — | `rounded-full` |
+| Process step dot (active) | `w-1 h-1` | `bg-blue-400` | — | `animate-pulse` |
+| Agent color dot (history) | `w-2 h-2` | `bg-{agentColor}/60` | — | `rounded-full` |
+
+---
+
+## Agent Color Reference
+
+| Agent | Role | Dot | Border | Background | Text |
+|-------|------|-----|--------|------------|------|
+| Scout | 🕵️ | `bg-blue-400/60` | `border-blue-400/30` | `bg-blue-400/5` | `text-blue-400` |
+| Capturer | 📸 | `bg-purple-400/60` | `border-purple-400/30` | `bg-purple-400/5` | `text-purple-400` |
+| Analyst | 📊 | `bg-orange-400/60` | `border-orange-400/30` | `bg-orange-400/5` | `text-orange-400` |
+| Comparator | ⚖️ | `bg-green-400/60` | `border-green-400/30` | `bg-green-400/5` | `text-green-400` |
+| Reporter | 📝 | `bg-pink-400/60` | `border-pink-400/30` | `bg-pink-400/5` | `text-pink-400` |
+
+---
+
+## Checklist Before Shipping
+
+Run through this checklist after implementation:
+
+- [ ] Title bar text animates (crossfade + slide) when step changes
+- [ ] Progress counter animates (scale) when number changes
+- [ ] "Process Timeline" shows ALL steps' process, not just active step
+- [ ] Process Timeline has max-height scroll container
+- [ ] "N steps completed" is lowercase, `text-[11px]`, not bold
+- [ ] Step icons are colored dots (w-2 h-2 rounded-full), NOT ⊙
+- [ ] Expand arrows use ▸/▾, NOT >
+- [ ] ResultHighlight has border-l-2 with agent color
+- [ ] ResultHighlight has tinted background (bg-{color}/5)
+- [ ] ResultHighlight text is text-[13px] text-foreground/90
+- [ ] Expanded steps have left guide line (border-l-2 border-{color}/20)
+- [ ] No "Invalid Date" text anywhere
+- [ ] Agent icons match role (🕵️ for scout, 📊 for analyst, etc.)
+- [ ] Steps separated by border-b border-border/6
+- [ ] L1 insights render before L2 progress in expanded view
+
+---
+
+*Document: 26-AIChat对话体验优化-Replit指令-v8.md*
+*Replaces: Doc 26-v7*
+*Related: Doc 34 (v8 analysis), Doc 33 (v6 analysis), Doc 32 (competitive research)*

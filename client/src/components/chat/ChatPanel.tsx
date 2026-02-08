@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import TextareaAutosize from "react-textarea-autosize";
 import React from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { 
   Send, 
   Sparkles, 
@@ -291,7 +292,120 @@ function IntentPlanCard({ intentSummary, steps }: { intentSummary: string, steps
   );
 }
 
-// Execution Card (Zone 2 - "DynamicExecutionCard" - v6 Single Dynamic Title)
+// Process Timeline (Zone 2 - "Unified Process")
+function ProcessTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  // Collect ALL process messages across ALL steps
+  const allProcessGroups = steps
+    .filter((step) => step.status === "done" || step.status === "active")
+    .map((step) => {
+      const msgs = stepMessages[step.id] || [];
+      const processMsgs = msgs.filter((m) => {
+        const level = m.messageLevel || getDefaultLevel(m);
+        return level === "process";
+      });
+      const allSteps = processMsgs.flatMap(
+        (m) => m.thoughtProcess?.steps || []
+      );
+      return { step, processSteps: allSteps };
+    })
+    .filter((group) => group.processSteps.length > 0);
+
+  const totalProcessCount = allProcessGroups.reduce(
+    (sum, g) => sum + g.processSteps.length, 0
+  );
+
+  const hasActive = allProcessGroups.some((g) =>
+    g.processSteps.some((s) => s.status === "active")
+  );
+
+  // Auto-expand when there's an active process step
+  const expanded = isExpanded || hasActive;
+
+  if (totalProcessCount === 0) return null;
+
+  const agentIcons: Record<string, string> = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  return (
+    <div className="border-t border-border/10">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center gap-2 px-4 py-2
+          text-left hover:bg-muted/8 transition-colors"
+      >
+        <span className="text-[10px] text-muted-foreground/30
+          shrink-0 w-3">
+          {expanded ? "▾" : "▸"}
+        </span>
+        <span className="text-[11px] text-muted-foreground/40">
+          Process Timeline ({totalProcessCount})
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="px-4 pb-3 max-h-[200px] overflow-y-auto">
+          <div className="space-y-3">
+            {allProcessGroups.map((group) => {
+              const icon =
+                agentIcons[group.step.agentRole] || "🤖";
+              const isActiveStep =
+                group.step.status === "active";
+
+              return (
+                <div key={group.step.id}>
+                  {/* Step group header */}
+                  <div className="text-[10px] text-muted-foreground/40
+                    font-medium tracking-wider mb-1">
+                    {icon} {group.step.label}
+                  </div>
+
+                  {/* Process steps */}
+                  <div className="ml-2 space-y-0.5">
+                    {group.processSteps.map((ps, i) => (
+                      <div
+                        key={i}
+                        className={`flex items-center gap-1.5
+                          text-[10px] ${
+                            isActiveStep
+                              ? "text-muted-foreground/50"
+                              : "text-muted-foreground/30"
+                          }`}
+                      >
+                        <span
+                          className={`w-1 h-1 rounded-full
+                            shrink-0 ${
+                              ps.status === "done"
+                                ? isActiveStep
+                                  ? "bg-muted-foreground/30"
+                                  : "bg-muted-foreground/15"
+                                : ps.status === "active"
+                                ? "bg-blue-400 animate-pulse"
+                                : "bg-muted-foreground/10"
+                            }`}
+                        />
+                        <span>{ps.label}</span>
+                        {ps.status === "done" && (
+                          <span className="text-muted-foreground/20
+                            ml-auto">✓</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Execution Card (Zone 2 - "DynamicExecutionCard" - v8 Single Dynamic Title + Unified Process)
 function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
@@ -305,6 +419,14 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
     comparator: "⚖️", reporter: "📝",
   };
 
+  const agentDotColors: Record<string, string> = {
+    scout: "bg-blue-400",
+    capturer: "bg-purple-400",
+    analyst: "bg-orange-400",
+    comparator: "bg-green-400",
+    reporter: "bg-pink-400",
+  };
+
   const toggleStepResults = (stepId: string) => {
     setExpandedSteps((prev) => {
       const next = new Set(prev);
@@ -314,14 +436,16 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
     });
   };
 
-  // Helper to render content for a step
-  const renderStepContent = (msgs: StoryEvent[], isHistory = false) => {
-      const results = msgs.filter(m => m.messageLevel === 'insight' || m.messageLevel === 'progress' || m.canvasLinkId);
-      const logs = msgs.filter(m => !results.includes(m)); 
+  // Helper to render content for a step (Results ONLY for active/history)
+  const renderStepContent = (msgs: StoryEvent[]) => {
+      const results = msgs.filter(m => {
+          const level = m.messageLevel || getDefaultLevel(m);
+          return level === 'insight' || level === 'progress' || m.canvasLinkId;
+      });
 
       return (
           <div className="space-y-3">
-              {/* Results First */}
+              {/* Results */}
               {results.length > 0 && (
                   <div className="space-y-2">
                       {results.map(msg => (
@@ -337,43 +461,6 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
                       ))}
                   </div>
               )}
-
-              {/* Logs / Process Details */}
-              {logs.length > 0 && (
-                  <div className="mt-2">
-                      {isHistory ? (
-                          // For history, nested in drill-down
-                           <div className="space-y-1 border-l border-border/20 ml-1.5 pl-4">
-                               {logs.map((log) => (
-                                   <div key={log.id} className="text-[10px] text-muted-foreground/60 font-mono">
-                                       <span className="opacity-50 mr-1.5">
-                                            {new Date(log.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                       </span>
-                                       {log.content}
-                                   </div>
-                               ))}
-                           </div>
-                      ) : (
-                          // For active step, expandable details
-                           <details className="group" open={true}>
-                               <summary className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground cursor-pointer select-none list-none flex items-center gap-1.5">
-                                   <ChevronRight className="w-3 h-3 transition-transform group-open:rotate-90" />
-                                   <span>Process details ({logs.length})</span>
-                               </summary>
-                               <div className="mt-2 pl-4 space-y-1 border-l border-border/20 ml-1.5">
-                                   {logs.map((log) => (
-                                       <div key={log.id} className="text-[10px] text-muted-foreground/60 font-mono">
-                                           <span className="opacity-50 mr-1.5">
-                                                {new Date(log.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                           </span>
-                                           {log.content}
-                                       </div>
-                                   ))}
-                               </div>
-                           </details>
-                      )}
-                  </div>
-              )}
           </div>
       );
   };
@@ -383,38 +470,71 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       
       {/* ── Dynamic Title Bar ── */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 bg-card/50">
-        <div className="flex items-center gap-2 min-w-0">
-          {activeStep ? (
-            <>
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400" />
-              </span>
-              <span className="text-xs font-medium text-foreground/90 truncate flex items-center gap-2">
-                <span className="opacity-80">{agentIcons[activeStep.agentRole]}</span>
-                {activeStep.label}
-              </span>
-            </>
-          ) : (
-            <span className="text-xs font-medium text-muted-foreground/80 flex items-center gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-              All steps completed
-            </span>
-          )}
+        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+          <AnimatePresence mode="wait">
+            {activeStep ? (
+              <motion.div
+                key={activeStep.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="flex items-center gap-2 min-w-0"
+              >
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400" />
+                </span>
+                <span className="text-xs text-foreground/80 truncate">
+                  {agentIcons[activeStep.agentRole]}{" "}
+                  {activeStep.label}
+                </span>
+              </motion.div>
+            ) : (
+              <motion.span
+                key="all-done"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="text-xs text-muted-foreground/50"
+              >
+                ✓ All steps completed
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
-        <span className="text-[10px] text-muted-foreground/40 tabular-nums shrink-0 ml-3 font-mono">
-          {doneCount}/{steps.length}
-        </span>
+        
+        {/* Progress counter with scale animation on change */}
+        <AnimatePresence mode="wait">
+            <motion.span
+                key={doneCount}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+                className="text-[10px] text-muted-foreground/40 tabular-nums shrink-0 ml-3"
+            >
+                {doneCount}/{steps.length}
+            </motion.span>
+        </AnimatePresence>
       </div>
 
-      {/* ── Active Content Area (current step's live content) ── */}
+      {/* ── Active Content Area (current step's L1/L2 results) ── */}
       {activeStep && (
         <div className="px-4 py-3 bg-background/30">
           <div className="space-y-1.5">
-            {renderStepContent(stepMessages[activeStep.id] || [])}
+            {renderStepContent(
+              (stepMessages[activeStep.id] || []).filter((m) => {
+                const level = m.messageLevel || getDefaultLevel(m);
+                return level === "insight" || level === "progress";
+              })
+            )}
           </div>
         </div>
       )}
+
+      {/* ── Unified Process Timeline (ALL steps) ── */}
+      <ProcessTimeline steps={steps} stepMessages={stepMessages} />
 
       {/* ── Collapsible History Section ── */}
       {doneCount > 0 && (
@@ -422,14 +542,13 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
           {/* History toggle header */}
           <button
             onClick={() => setHistoryExpanded(!historyExpanded)}
-            className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-muted/10 transition-colors group"
+            className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-muted/8 transition-colors group"
           >
-            <ChevronRight className={cn(
-                "w-3 h-3 text-muted-foreground/40 transition-transform duration-200",
-                historyExpanded && "rotate-90"
-            )} />
-            <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wider group-hover:text-muted-foreground/70 transition-colors">
-              {doneCount} steps completed
+            <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3">
+                {historyExpanded ? "▾" : "▸"}
+            </span>
+            <span className="text-[11px] text-muted-foreground/40 font-normal group-hover:text-muted-foreground/60 transition-colors">
+              {doneCount} step{doneCount !== 1 ? "s" : ""} completed
             </span>
           </button>
 
@@ -437,6 +556,8 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
           {historyExpanded && (
               <div className="px-4 pb-3 space-y-2 animate-in slide-in-from-top-1 duration-200">
                   {doneSteps.map(step => {
+                      const icon = agentIcons[step.agentRole] || "🤖";
+                      const dotColor = agentDotColors[step.agentRole] || "bg-muted-foreground/40";
                       const isExpanded = expandedSteps.has(step.id);
                       const msgs = stepMessages[step.id] || [];
                       const summaryText = step.resultSummary || step.summary;
@@ -447,20 +568,23 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
                                   className="flex flex-col cursor-pointer hover:bg-muted/5 transition-colors p-2.5"
                                   onClick={() => toggleStepResults(step.id)}
                               >
-                                  <div className="flex items-center gap-2">
-                                      <div className="text-muted-foreground/40 shrink-0">
-                                          <CheckCircle2 className="w-3.5 h-3.5" />
-                                      </div>
-                                      <span className="text-xs text-muted-foreground line-through decoration-border/40 truncate flex-1">
-                                          {step.label}
+                                  <div className="flex items-center gap-2.5">
+                                      {/* Agent color dot */}
+                                      <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                                      
+                                      <span className="text-[12px] text-foreground/60 font-medium truncate flex-1">
+                                          {icon} {step.label}
                                       </span>
+                                      
                                       {/* Level 1 Summary (Result Penetration) */}
                                       {!isExpanded && summaryText && (
                                           <span className="text-[10px] text-muted-foreground/70 bg-muted/10 px-1.5 py-0.5 rounded max-w-[150px] truncate">
                                               {summaryText}
                                           </span>
                                       )}
-                                      <ChevronDown className={cn("w-3 h-3 text-muted-foreground/20 transition-transform", !isExpanded && "-rotate-90")} />
+                                      <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3">
+                                        {isExpanded ? "▾" : "▸"}
+                                      </span>
                                   </div>
                               </div>
 
@@ -472,7 +596,7 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
                                                {summaryText}
                                            </div>
                                        )}
-                                       {renderStepContent(msgs, true)}
+                                       {renderStepContent(msgs)}
                                   </div>
                               )}
                           </div>
@@ -511,10 +635,8 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
       } else {
         // Fallback for messages not linked to a plan or before plan exists
         // Only if it's not a user message (already handled) and not the task plan itself
-         if (!msg.taskPlan && msg.role !== 'user') {
-             // Treat as pre-flow if no task plan exists yet, or put in preFlowMessages
-             preFlowMessages.push(msg);
-         }
+         // Treat as pre-flow if no task plan exists yet, or put in preFlowMessages
+         preFlowMessages.push(msg);
       }
     });
 
