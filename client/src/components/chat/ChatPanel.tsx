@@ -472,7 +472,7 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       {historyExpanded && (
           <div className="relative px-4 pb-4 pt-4 space-y-4 animate-in slide-in-from-top-1 duration-200">
               {/* Continuous vertical line connecting the steps */}
-              <div className="absolute left-[29px] top-6 bottom-6 w-px bg-border/40" />
+              <div className="absolute left-[24px] top-6 bottom-6 w-0.5 bg-foreground/15" />
 
               {doneSteps.map((step, index) => {
                   const icon = agentIcons[step.agentRole] || "🤖";
@@ -489,8 +489,8 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
                           >
                               <div className="flex items-start gap-3">
                                   {/* Agent color dot with background mask for line gap effect */}
-                                  <div className="relative flex items-center justify-center w-4 h-4 mt-0.5 bg-card shrink-0 rounded-full z-10 ring-4 ring-card">
-                                      <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                                  <div className="relative flex items-center justify-center w-[18px] h-[18px] mt-0.5 bg-card shrink-0 rounded-full z-10 ring-4 ring-card">
+                                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor} shadow-[0_0_0_1px_rgba(0,0,0,0.1)]`} />
                                   </div>
                                   
                                   <div className="flex-1 min-w-0">
