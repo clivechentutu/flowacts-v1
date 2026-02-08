@@ -467,90 +467,94 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
   };
 
   return (
-    <div className="mx-1 mt-2 rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
+    <div className="flex flex-col gap-2 mx-1 mt-2">
       
-      {/* ── Dynamic Title Bar ── */}
-      <div 
-        className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 bg-card/50 cursor-pointer hover:bg-card/70 transition-colors"
-        onClick={() => setIsTitleExpanded(!isTitleExpanded)}
-      >
-        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-          <AnimatePresence mode="wait">
-            {activeStep ? (
-              <motion.div
-                key={activeStep.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                className="flex items-center gap-2 min-w-0"
-              >
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400" />
-                </span>
-                <span className="text-xs text-foreground/80 truncate">
-                  {agentIcons[activeStep.agentRole]}{" "}
-                  {activeStep.label}
-                </span>
-              </motion.div>
-            ) : (
-              <motion.span
-                key="all-done"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                className="text-xs text-muted-foreground/50"
-              >
-                ✓ All steps completed
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </div>
+      {/* ── Active Execution Card (Main Focus) ── */}
+      <div className="rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
         
-        <div className="flex items-center gap-3 shrink-0 ml-3">
-          {/* Progress counter with scale animation on change */}
-          <AnimatePresence mode="wait">
-              <motion.span
-                  key={doneCount}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-[10px] text-muted-foreground/40 tabular-nums font-mono"
-              >
-                  {doneCount}/{steps.length}
-              </motion.span>
-          </AnimatePresence>
-          <span className="text-[10px] text-muted-foreground/30 w-3">
-            {isTitleExpanded ? "▾" : "▸"}
-          </span>
-        </div>
-      </div>
-
-      {/* ── Active Content Area (current step's L1/L2 results) ── */}
-      {activeStep && (
-        <div className={cn(
-          "px-4 py-3 transition-all duration-300", // Removed bg-background/30 to remove "inset" look
-          !isTitleExpanded ? "max-h-[80px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-8 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
-        )}>
-          <div className="space-y-1.5">
-            {renderStepContent(
-              (stepMessages[activeStep.id] || []).filter((m) => {
-                const level = m.messageLevel || getDefaultLevel(m);
-                return level === "insight" || level === "progress";
-              })
-            )}
+        {/* ── Dynamic Title Bar ── */}
+        <div 
+          className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 bg-card/50 cursor-pointer hover:bg-card/70 transition-colors"
+          onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+        >
+          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+            <AnimatePresence mode="wait">
+              {activeStep ? (
+                <motion.div
+                  key={activeStep.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.25, ease: "easeOut" }}
+                  className="flex items-center gap-2 min-w-0"
+                >
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400" />
+                  </span>
+                  <span className="text-xs text-foreground/80 truncate">
+                    {agentIcons[activeStep.agentRole]}{" "}
+                    {activeStep.label}
+                  </span>
+                </motion.div>
+              ) : (
+                <motion.span
+                  key="all-done"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="text-xs text-muted-foreground/50"
+                >
+                  ✓ All steps completed
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          <div className="flex items-center gap-3 shrink-0 ml-3">
+            {/* Progress counter with scale animation on change */}
+            <AnimatePresence mode="wait">
+                <motion.span
+                    key={doneCount}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-[10px] text-muted-foreground/40 tabular-nums font-mono"
+                >
+                    {doneCount}/{steps.length}
+                </motion.span>
+            </AnimatePresence>
+            <span className="text-[10px] text-muted-foreground/30 w-3">
+              {isTitleExpanded ? "▾" : "▸"}
+            </span>
           </div>
         </div>
-      )}
 
-      {/* ── Unified Process Timeline (ALL steps) ── */}
-      {isTitleExpanded && <ProcessTimeline steps={steps} stepMessages={stepMessages} />}
+        {/* ── Active Content Area (current step's L1/L2 results) ── */}
+        {activeStep && (
+          <div className={cn(
+            "px-4 py-3 transition-all duration-300", 
+            !isTitleExpanded ? "max-h-[80px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-8 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
+          )}>
+            <div className="space-y-1.5">
+              {renderStepContent(
+                (stepMessages[activeStep.id] || []).filter((m) => {
+                  const level = m.messageLevel || getDefaultLevel(m);
+                  return level === "insight" || level === "progress";
+                })
+              )}
+            </div>
+          </div>
+        )}
 
-      {/* ── Collapsible History Section ── */}
-      {doneCount > 0 && isTitleExpanded && (
-        <div className="border-t border-border/10">
+        {/* ── Unified Process Timeline (ALL steps) ── */}
+        {isTitleExpanded && <ProcessTimeline steps={steps} stepMessages={stepMessages} />}
+      </div>
+
+      {/* ── Collapsible History Section (Independent Sibling) ── */}
+      {doneCount > 0 && (
+        <div className="rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
           {/* History toggle header */}
           <button
             onClick={() => setHistoryExpanded(!historyExpanded)}
