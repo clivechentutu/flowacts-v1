@@ -294,8 +294,6 @@ function IntentPlanCard({ intentSummary, steps }: { intentSummary: string, steps
 
 // Process Timeline (Zone 2 - "Unified Process")
 function ProcessTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
-  const [isExpanded, setIsExpanded] = React.useState(false);
-
   // Collect ALL process messages across ALL steps
   const allProcessGroups = steps
     .filter((step) => step.status === "done" || step.status === "active")
@@ -316,13 +314,6 @@ function ProcessTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepM
     (sum, g) => sum + g.processSteps.length, 0
   );
 
-  const hasActive = allProcessGroups.some((g) =>
-    g.processSteps.some((s) => s.status === "active")
-  );
-
-  // Auto-expand when there's an active process step
-  const expanded = isExpanded || hasActive;
-
   if (totalProcessCount === 0) return null;
 
   const agentIcons: Record<string, string> = {
@@ -331,76 +322,50 @@ function ProcessTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepM
   };
 
   return (
-    <div className="border-t border-border/10">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 px-4 py-2
-          text-left hover:bg-muted/8 transition-colors"
-      >
-        <span className="text-[10px] text-muted-foreground/30
-          shrink-0 w-3">
-          {expanded ? "▾" : "▸"}
-        </span>
-        <span className="text-[11px] text-muted-foreground/40">
-          Process Timeline ({totalProcessCount})
-        </span>
-      </button>
+    <div className="space-y-3 pt-2">
+        {allProcessGroups.map((group) => {
+            const icon = agentIcons[group.step.agentRole] || "🤖";
+            const isActiveStep = group.step.status === "active";
 
-      {expanded && (
-        <div className="px-4 pb-3 max-h-[200px] overflow-y-auto">
-          <div className="space-y-3">
-            {allProcessGroups.map((group) => {
-              const icon =
-                agentIcons[group.step.agentRole] || "🤖";
-              const isActiveStep =
-                group.step.status === "active";
-
-              return (
-                <div key={group.step.id}>
-                  {/* Step group header */}
-                  <div className="text-[10px] text-muted-foreground/40
-                    font-medium tracking-wider mb-1">
-                    {icon} {group.step.label}
-                  </div>
-
-                  {/* Process steps */}
-                  <div className="ml-2 space-y-0.5">
-                    {group.processSteps.map((ps, i) => (
-                      <div
-                        key={i}
-                        className={`flex items-center gap-1.5
-                          text-[10px] ${
-                            isActiveStep
-                              ? "text-muted-foreground/50"
-                              : "text-muted-foreground/30"
-                          }`}
-                      >
-                        <span
-                          className={`w-1 h-1 rounded-full
-                            shrink-0 ${
-                              ps.status === "done"
-                                ? isActiveStep
-                                  ? "bg-muted-foreground/30"
-                                  : "bg-muted-foreground/15"
-                                : ps.status === "active"
-                                ? "bg-blue-400 animate-pulse"
-                                : "bg-muted-foreground/10"
-                            }`}
-                        />
-                        <span>{ps.label}</span>
-                        {ps.status === "done" && (
-                          <span className="text-muted-foreground/20
-                            ml-auto">✓</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+            return (
+            <div key={group.step.id}>
+                {/* Step group header */}
+                <div className="text-[10px] text-muted-foreground/40 font-medium tracking-wider mb-1">
+                {icon} {group.step.label}
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+
+                {/* Process steps */}
+                <div className="ml-2 space-y-0.5">
+                {group.processSteps.map((ps, i) => (
+                    <div
+                    key={i}
+                    className={`flex items-center gap-1.5 text-[10px] ${
+                        isActiveStep
+                        ? "text-muted-foreground/50"
+                        : "text-muted-foreground/30"
+                    }`}
+                    >
+                    <span
+                        className={`w-1 h-1 rounded-full shrink-0 ${
+                        ps.status === "done"
+                            ? isActiveStep
+                            ? "bg-muted-foreground/30"
+                            : "bg-muted-foreground/15"
+                            : ps.status === "active"
+                            ? "bg-blue-400 animate-pulse"
+                            : "bg-muted-foreground/10"
+                        }`}
+                    />
+                    <span>{ps.label}</span>
+                    {ps.status === "done" && (
+                        <span className="text-muted-foreground/20 ml-auto">✓</span>
+                    )}
+                    </div>
+                ))}
+                </div>
+            </div>
+            );
+        })}
     </div>
   );
 }
@@ -645,24 +610,24 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       </div>
 
       {/* ── Active Content Area (current step's L1/L2 results) ── */}
-      {activeStep && (
-        <div className={cn(
-          "px-4 py-3 transition-all duration-300", 
-          !isTitleExpanded ? "max-h-[80px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-8 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
-        )}>
-          <div className="space-y-1.5">
-            {renderStepContent(
-              (stepMessages[activeStep.id] || []).filter((m) => {
-                const level = m.messageLevel || getDefaultLevel(m);
-                return level === "insight" || level === "progress";
-              })
-            )}
-          </div>
+      <div className={cn(
+        "px-4 py-3 transition-all duration-300", 
+        !isTitleExpanded ? "max-h-[60px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-8 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
+      )}>
+        <div className="space-y-1.5">
+          {activeStep && renderStepContent(
+            (stepMessages[activeStep.id] || []).filter((m) => {
+              const level = m.messageLevel || getDefaultLevel(m);
+              return level === "insight" || level === "progress";
+            })
+          )}
+           
+           {/* Unified Process Timeline (ALL steps) */}
+           <ProcessTimeline steps={steps} stepMessages={stepMessages} />
         </div>
-      )}
+      </div>
 
-      {/* ── Unified Process Timeline (ALL steps) ── */}
-      {isTitleExpanded && <ProcessTimeline steps={steps} stepMessages={stepMessages} />}
+      {/* ── Removed Separate Process Timeline ── */}
     </div>
   );
 }
