@@ -405,15 +405,15 @@ function ProcessTimeline({ steps, stepMessages }: { steps: TaskPlanStep[]; stepM
   );
 }
 
-// Execution Card (Zone 2 - "DynamicExecutionCard" - v8 Single Dynamic Title + Unified Process)
-function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
+// Completed History Card (Independent Component)
+function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
   const [historyExpanded, setHistoryExpanded] = useState(true);
-  const [isTitleExpanded, setIsTitleExpanded] = useState(true);
   const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
 
-  const doneCount = steps.filter((s) => s.status === "done").length;
-  const activeStep = steps.find((s) => s.status === "active");
   const doneSteps = steps.filter((s) => s.status === "done");
+  const doneCount = doneSteps.length;
+
+  if (doneCount === 0) return null;
 
   const agentIcons: Record<string, string> = {
     scout: "🕵️", capturer: "📸", analyst: "📊",
@@ -437,7 +437,7 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
     });
   };
 
-  // Helper to render content for a step (Results ONLY for active/history)
+  // Helper to render content for a step
   const renderStepContent = (msgs: StoryEvent[]) => {
       const results = msgs.filter(m => {
           const level = m.messageLevel || getDefaultLevel(m);
@@ -467,161 +467,199 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
   };
 
   return (
-    <div className="flex flex-col gap-2 mx-1 mt-2">
-      
-      {/* ── Active Execution Card (Main Focus) ── */}
-      <div className="rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
-        
-        {/* ── Dynamic Title Bar ── */}
-        <div 
-          className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 bg-card/50 cursor-pointer hover:bg-card/70 transition-colors"
-          onClick={() => setIsTitleExpanded(!isTitleExpanded)}
-        >
-          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
-            <AnimatePresence mode="wait">
-              {activeStep ? (
-                <motion.div
-                  key={activeStep.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                  className="flex items-center gap-2 min-w-0"
-                >
-                  <span className="relative flex h-2 w-2 shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400" />
-                  </span>
-                  <span className="text-xs text-foreground/80 truncate">
-                    {agentIcons[activeStep.agentRole]}{" "}
-                    {activeStep.label}
-                  </span>
-                </motion.div>
-              ) : (
-                <motion.span
-                  key="all-done"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="text-xs text-muted-foreground/50"
-                >
-                  ✓ All steps completed
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </div>
-          
-          <div className="flex items-center gap-3 shrink-0 ml-3">
-            {/* Progress counter with scale animation on change */}
-            <AnimatePresence mode="wait">
-                <motion.span
-                    key={doneCount}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-[10px] text-muted-foreground/40 tabular-nums font-mono"
-                >
-                    {doneCount}/{steps.length}
-                </motion.span>
-            </AnimatePresence>
-            <span className="text-[10px] text-muted-foreground/30 w-3">
-              {isTitleExpanded ? "▾" : "▸"}
-            </span>
-          </div>
-        </div>
+    <div className="mx-1 mt-2 rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
+      {/* History toggle header */}
+      <button
+        onClick={() => setHistoryExpanded(!historyExpanded)}
+        className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-muted/8 transition-colors group"
+      >
+        <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3">
+            {historyExpanded ? "▾" : "▸"}
+        </span>
+        <span className="text-[11px] text-muted-foreground/40 font-normal group-hover:text-muted-foreground/60 transition-colors">
+          {doneCount} step{doneCount !== 1 ? "s" : ""} completed
+        </span>
+      </button>
 
-        {/* ── Active Content Area (current step's L1/L2 results) ── */}
-        {activeStep && (
-          <div className={cn(
-            "px-4 py-3 transition-all duration-300", 
-            !isTitleExpanded ? "max-h-[80px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-8 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
-          )}>
-            <div className="space-y-1.5">
-              {renderStepContent(
-                (stepMessages[activeStep.id] || []).filter((m) => {
-                  const level = m.messageLevel || getDefaultLevel(m);
-                  return level === "insight" || level === "progress";
-                })
-              )}
-            </div>
-          </div>
-        )}
+      {/* History List */}
+      {historyExpanded && (
+          <div className="px-4 pb-3 space-y-2 animate-in slide-in-from-top-1 duration-200">
+              {doneSteps.map(step => {
+                  const icon = agentIcons[step.agentRole] || "🤖";
+                  const dotColor = agentDotColors[step.agentRole] || "bg-muted-foreground/40";
+                  const isExpanded = expandedSteps.has(step.id);
+                  const msgs = stepMessages[step.id] || [];
+                  const summaryText = step.resultSummary || step.summary;
 
-        {/* ── Unified Process Timeline (ALL steps) ── */}
-        {isTitleExpanded && <ProcessTimeline steps={steps} stepMessages={stepMessages} />}
-      </div>
-
-      {/* ── Collapsible History Section (Independent Sibling) ── */}
-      {doneCount > 0 && (
-        <div className="rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
-          {/* History toggle header */}
-          <button
-            onClick={() => setHistoryExpanded(!historyExpanded)}
-            className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-muted/8 transition-colors group"
-          >
-            <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3">
-                {historyExpanded ? "▾" : "▸"}
-            </span>
-            <span className="text-[11px] text-muted-foreground/40 font-normal group-hover:text-muted-foreground/60 transition-colors">
-              {doneCount} step{doneCount !== 1 ? "s" : ""} completed
-            </span>
-          </button>
-
-          {/* History List */}
-          {historyExpanded && (
-              <div className="px-4 pb-3 space-y-2 animate-in slide-in-from-top-1 duration-200">
-                  {doneSteps.map(step => {
-                      const icon = agentIcons[step.agentRole] || "🤖";
-                      const dotColor = agentDotColors[step.agentRole] || "bg-muted-foreground/40";
-                      const isExpanded = expandedSteps.has(step.id);
-                      const msgs = stepMessages[step.id] || [];
-                      const summaryText = step.resultSummary || step.summary;
-
-                      return (
-                          <div key={step.id} className="rounded-lg border border-border/10 bg-card/40 overflow-hidden">
-                              <div 
-                                  className="flex flex-col cursor-pointer hover:bg-muted/5 transition-colors p-2.5"
-                                  onClick={() => toggleStepResults(step.id)}
-                              >
-                                  <div className="flex items-center gap-2.5">
-                                      {/* Agent color dot */}
-                                      <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
-                                      
-                                      <span className="text-[12px] text-foreground/60 font-medium truncate flex-1">
-                                          {icon} {step.label}
+                  return (
+                      <div key={step.id} className="rounded-lg border border-border/10 bg-card/40 overflow-hidden">
+                          <div 
+                              className="flex flex-col cursor-pointer hover:bg-muted/5 transition-colors p-2.5"
+                              onClick={() => toggleStepResults(step.id)}
+                          >
+                              <div className="flex items-center gap-2.5">
+                                  {/* Agent color dot */}
+                                  <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                                  
+                                  <span className="text-[12px] text-foreground/60 font-medium truncate flex-1">
+                                      {icon} {step.label}
+                                  </span>
+                                  
+                                  {/* Level 1 Summary (Result Penetration) */}
+                                  {!isExpanded && summaryText && (
+                                      <span className="text-[10px] text-muted-foreground/70 bg-muted/10 px-1.5 py-0.5 rounded max-w-[150px] truncate">
+                                          {summaryText}
                                       </span>
-                                      
-                                      {/* Level 1 Summary (Result Penetration) */}
-                                      {!isExpanded && summaryText && (
-                                          <span className="text-[10px] text-muted-foreground/70 bg-muted/10 px-1.5 py-0.5 rounded max-w-[150px] truncate">
-                                              {summaryText}
-                                          </span>
-                                      )}
-                                      <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3">
-                                        {isExpanded ? "▾" : "▸"}
-                                      </span>
-                                  </div>
+                                  )}
+                                  <span className="text-[10px] text-muted-foreground/30 shrink-0 w-3">
+                                    {isExpanded ? "▾" : "▸"}
+                                  </span>
                               </div>
+                          </div>
 
-                              {/* Level 2 Drill Down */}
-                              {isExpanded && (
-                                  <div className="px-3 pb-3 pt-0 pl-8 space-y-2 border-t border-border/5 pt-2">
-                                       {summaryText && (
-                                           <div className="text-xs font-medium text-foreground/80 mb-2">
-                                               {summaryText}
-                                           </div>
-                                       )}
-                                       {renderStepContent(msgs)}
+                          {/* Level 2 Drill Down */}
+                          {isExpanded && (
+                              <div className="px-3 pb-3 pt-0 pl-8 space-y-2 border-t border-border/5 pt-2">
+                                   {summaryText && (
+                                       <div className="text-xs font-medium text-foreground/80 mb-2">
+                                           {summaryText}
+                                       </div>
+                                   )}
+                                   {renderStepContent(msgs)}
+                              </div>
+                          )}
+                      </div>
+                  );
+              })}
+          </div>
+      )}
+    </div>
+  );
+}
+
+// Execution Card (Zone 2 - "DynamicExecutionCard" - v8 Single Dynamic Title + Unified Process)
+// Refactored to ONLY show Active Step and Process Timeline
+function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
+  const [isTitleExpanded, setIsTitleExpanded] = useState(true);
+
+  const doneCount = steps.filter((s) => s.status === "done").length;
+  const activeStep = steps.find((s) => s.status === "active");
+
+  const agentIcons: Record<string, string> = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  // Helper to render content for a step
+  const renderStepContent = (msgs: StoryEvent[]) => {
+      const results = msgs.filter(m => {
+          const level = m.messageLevel || getDefaultLevel(m);
+          return level === 'insight' || level === 'progress' || m.canvasLinkId;
+      });
+
+      return (
+          <div className="space-y-3">
+              {/* Results */}
+              {results.length > 0 && (
+                  <div className="space-y-2">
+                      {results.map(msg => (
+                          <div key={msg.id}>
+                              {msg.messageLevel === 'insight' ? (
+                                  <InsightMessage message={msg} insideTimeline={true} />
+                              ) : (
+                                  <div className="text-xs text-foreground/80 bg-muted/10 p-2 rounded border border-border/20">
+                                      {msg.content}
                                   </div>
                               )}
                           </div>
-                      );
-                  })}
-              </div>
-          )}
+                      ))}
+                  </div>
+              )}
+          </div>
+      );
+  };
+
+  return (
+    <div className="mx-1 mt-2 rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
+      
+      {/* ── Dynamic Title Bar ── */}
+      <div 
+        className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 bg-card/50 cursor-pointer hover:bg-card/70 transition-colors"
+        onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+      >
+        <div className="flex items-center gap-2 min-w-0 overflow-hidden">
+          <AnimatePresence mode="wait">
+            {activeStep ? (
+              <motion.div
+                key={activeStep.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="flex items-center gap-2 min-w-0"
+              >
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400" />
+                </span>
+                <span className="text-xs text-foreground/80 truncate">
+                  {agentIcons[activeStep.agentRole]}{" "}
+                  {activeStep.label}
+                </span>
+              </motion.div>
+            ) : (
+              <motion.span
+                key="all-done"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="text-xs text-muted-foreground/50"
+              >
+                ✓ All steps completed
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+        
+        <div className="flex items-center gap-3 shrink-0 ml-3">
+          {/* Progress counter with scale animation on change */}
+          <AnimatePresence mode="wait">
+              <motion.span
+                  key={doneCount}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-[10px] text-muted-foreground/40 tabular-nums font-mono"
+              >
+                  {doneCount}/{steps.length}
+              </motion.span>
+          </AnimatePresence>
+          <span className="text-[10px] text-muted-foreground/30 w-3">
+            {isTitleExpanded ? "▾" : "▸"}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Active Content Area (current step's L1/L2 results) ── */}
+      {activeStep && (
+        <div className={cn(
+          "px-4 py-3 transition-all duration-300", 
+          !isTitleExpanded ? "max-h-[80px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-8 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
+        )}>
+          <div className="space-y-1.5">
+            {renderStepContent(
+              (stepMessages[activeStep.id] || []).filter((m) => {
+                const level = m.messageLevel || getDefaultLevel(m);
+                return level === "insight" || level === "progress";
+              })
+            )}
+          </div>
         </div>
       )}
+
+      {/* ── Unified Process Timeline (ALL steps) ── */}
+      {isTitleExpanded && <ProcessTimeline steps={steps} stepMessages={stepMessages} />}
     </div>
   );
 }
@@ -720,6 +758,11 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
         {/* Zone 2: Execution Card */}
         {taskPlanSteps.length > 0 && (
              <DynamicExecutionCard steps={taskPlanSteps} stepMessages={stepMessages} />
+        )}
+
+        {/* Zone 3: Completed History Card */}
+        {taskPlanSteps.length > 0 && (
+             <CompletedHistoryCard steps={taskPlanSteps} stepMessages={stepMessages} />
         )}
       </div>
     );
