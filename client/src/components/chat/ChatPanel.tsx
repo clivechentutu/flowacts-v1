@@ -576,7 +576,7 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400" />
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate">
-                  {activeStep.label}
+                  Processing: {activeStep.label}
                 </span>
               </motion.div>
             ) : (
