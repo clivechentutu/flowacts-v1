@@ -1,0 +1,164 @@
+# AI Chat Single Dynamic Card Layout — Replit Instruction (v6)
+
+> **This replaces Doc 26-v5.** Core shift: from flat accordion listing all steps as rows → **single dynamic card** with one active title bar + two-level drill-down history. The execution zone shows ONLY the current step; completed steps are accessible via expandable history.
+
+---
+
+## Problem with v5 (current implementation)
+
+The Two-Zone Collapsible Card approach improved containment but still has issues:
+
+1. **Flat accordion lists all done+active steps as rows**: Even collapsed, 4 done steps = 4 rows in the ExecutionCard. This still grows linearly with task complexity.
+2. **No single focal point**: The user sees multiple accordion rows competing for attention. There's no clear "this is what's happening RIGHT NOW" focus.
+3. **Missing IntentPlanCard in implementation**: The Replit implementation skipped Zone 1 entirely — went straight to execution without showing intent recognition + todo plan.
+4. **Accordion rows are redundant with IntentPlanCard**: The step list already exists in Zone 1. Repeating all steps as accordion rows in Zone 2 is duplication.
+
+## Solution: IntentPlanCard + Single Dynamic Execution Card
+
+The AI response to a complex task is organized into **two zones**:
+
+| Zone | Purpose | Default State |
+|------|---------|---------------|
+| **Zone 1: IntentPlanCard** | Shows intent recognition + task plan | Always visible, compact |
+| **Zone 2: DynamicExecutionCard** | Shows ONLY the current active step + collapsible history | Active step content visible, history collapsed |
+
+**Key principle: the execution zone has ONE dynamic title bar that switches as execution progresses. Completed steps fold into a compact history section with two-level drill-down.**
+
+---
+
+## What Changed from v5
+
+| v5 (current) | v6 (this update) |
+|--------------|-------------------|
+| ExecutionCard lists all done+active steps as accordion rows | **DynamicExecutionCard** shows only active step content |
+| Flat accordion — each done step is a visible row | Done steps fold into **collapsible history** section |
+| Card header shows active step name + count | Card header is the **dynamic title bar** — switches per step |
+| Expanding a done step shows flat L1/L2/L3 content | **Two-level drill-down**: Level 1 → key results, Level 2 → process actions |
+| 4 done steps = 4 visible rows minimum | 4 done steps = **1 line** ("4 steps completed ▸") until expanded |
+
+**What stays the same:** IntentPlanCard (Zone 1), data model, L1/L2/L3 message levels, interaction model, Agent roles + colors, mock data structure, ResultHighlight, design system.
+
+---
+
+## Interaction Model (unchanged)
+
+Upliftly is a **task-execution Agent**. User sends ONE complex request → Agent auto-decomposes → auto-executes all steps → user intervenes only when needed.
+
+---
+
+## Data Model (unchanged from v5)
+
+```ts
+interface TaskPlanStep {
+  id: string;
+  label: string;
+  status: "done" | "active" | "pending";
+  agentRole: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  summary?: string; // one-line result summary
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "ai";
+  agentRole?: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  content: string;
+  messageLevel?: "insight" | "progress" | "process" | "plan";
+  thoughtProcess?: {
+    steps: Array<{ label: string; status: "done" | "active" | "pending" }>;
+  };
+  taskPlan?: TaskPlanStep[];
+  taskPlanStepId?: string;
+  canvasLinkId?: string;
+  canvasCardTitle?: string;
+  intentSummary?: string;
+}
+```
+
+---
+
+## Component 1: IntentPlanCard (Zone 1 — unchanged from v5)
+
+This card appears immediately after the user's message. It shows:
+1. **Intent recognition**: A brief sentence confirming what the Agent understood
+2. **Task plan**: The list of steps the Agent will execute
+
+This is a **contained card** with a subtle border. It does NOT expand — it's always compact.
+
+**CRITICAL: This component MUST be rendered. The v5 Replit implementation skipped it entirely. This is the user's first feedback point — intent recognition and todo plan must appear BEFORE execution begins.**
+
+```jsx
+function IntentPlanCard({ intentSummary, steps }) {
+  const doneCount = steps.filter((s) => s.status === "done").length;
+
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  return (
+    <div className="mx-1 mt-3 rounded-xl border border-border/15
+      bg-muted/5 overflow-hidden">
+      {/* Intent summary header */}
+      <div className="px-4 py-3 border-b border-border/10">
+        <p className="text-sm text-foreground/90 leading-relaxed">
+          {intentSummary}
+        </p>
+      </div>
+
+      {/* Step list — always visible, very compact */}
+      <div className="px-4 py-3 space-y-1.5">
+        {steps.map((step) => {
+          const icon = agentIcons[step.agentRole] || "🤖";
+          return (
+            <div key={step.id}
+              className="flex items-center gap-2 text-xs">
+              <span className={`shrink-0 ${
+                step.status === "done"
+                  ? "text-muted-foreground/40"
+                  : step.status === "active"
+                  ? "text-blue-400"
+                  : "text-muted-foreground/25"
+              }`}>
+                {step.status === "done" ? "✓" :
+                 step.status === "active" ? "●" : "○"}
+              </span>
+              <span className={`${
+                step.status === "done"
+                  ? "text-muted-foreground/40 line-through"
+                  : step.status === "active"
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground/30"
+              }`}>
+                {icon} {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer: progress bar */}
+      <div className="px-4 pb-3">
+        <div className="h-1 rounded-full bg-border/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-blue-400/60
+              transition-all duration-500"
+            style={{
+              width: `${(doneCount / steps.length) * 100}%`
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**Key visual traits (unchanged):**
+- Contained card: `rounded-xl border border-border/15`
+- Intent summary at top confirms understanding before showing plan
+- Compact step list: each step is one line with `✓/●/○` + agent icon + label
+- Done steps get strikethrough
+- Thin progress bar at bottom
+- No expand/collapse needed — always small enough to show fully
+
+---
