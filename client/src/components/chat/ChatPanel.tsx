@@ -529,8 +529,11 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       </div>
 
       {/* ── Active Content Area (current step's L1/L2 results) ── */}
-      {isTitleExpanded && activeStep && (
-        <div className="px-4 py-3 bg-background/30 animate-in slide-in-from-top-1 duration-200">
+      {activeStep && (
+        <div className={cn(
+          "px-4 py-3 bg-background/30 transition-all duration-300",
+          !isTitleExpanded ? "max-h-[80px] overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-8 after:bg-gradient-to-t after:from-muted/20 after:to-transparent pointer-events-none" : ""
+        )}>
           <div className="space-y-1.5">
             {renderStepContent(
               (stepMessages[activeStep.id] || []).filter((m) => {
@@ -546,8 +549,8 @@ function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
       {isTitleExpanded && <ProcessTimeline steps={steps} stepMessages={stepMessages} />}
 
       {/* ── Collapsible History Section ── */}
-      {doneCount > 0 && (
-        <div className={(activeStep && isTitleExpanded) ? "border-t border-border/10" : ""}>
+      {doneCount > 0 && isTitleExpanded && (
+        <div className="border-t border-border/10">
           {/* History toggle header */}
           <button
             onClick={() => setHistoryExpanded(!historyExpanded)}
