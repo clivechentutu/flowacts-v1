@@ -248,11 +248,6 @@ function getDefaultLevel(msg: StoryEvent) {
 
 // Intent & Plan Card (Zone 1 - "Pre-positioned" - v6 Compact)
 function IntentPlanCard({ steps, isUpdate }: { steps: TaskPlanStep[], isUpdate?: boolean }) {
-  const agentIcons: Record<string, string> = {
-    scout: "🕵️", capturer: "📸", analyst: "📊",
-    comparator: "⚖️", reporter: "📝",
-  };
-
   return (
     <div className="mx-1 mt-1.5 rounded-xl border border-border/60 bg-card shadow-[0_1px_2px_rgba(0,0,0,0.05)] overflow-hidden">
       {/* Header with Title */}
@@ -268,18 +263,18 @@ function IntentPlanCard({ steps, isUpdate }: { steps: TaskPlanStep[], isUpdate?:
       {/* Step list — always visible, very compact */}
       <div className="px-4 py-3 space-y-2 bg-card/50">
         {steps.map((step) => {
-          const icon = agentIcons[step.agentRole] || "🤖";
           return (
             <div key={step.id} className="flex items-center gap-2 text-xs">
-              <span className={`shrink-0 ${
-                step.status === "done"
-                  ? "text-muted-foreground/40"
-                  : step.status === "active"
-                  ? "text-blue-400"
-                  : "text-muted-foreground/25"
-              }`}>
-                {step.status === "done" ? "✓" :
-                 step.status === "active" ? "●" : "○"}
+              <span className="shrink-0">
+                {step.status === "done" ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                ) : (
+                  <div className={`w-3.5 h-3.5 rounded border ${
+                    step.status === "active" 
+                      ? "border-blue-400 bg-blue-50/50" 
+                      : "border-muted-foreground/30 bg-muted/20"
+                  }`} />
+                )}
               </span>
               <span className={`${
                 step.status === "done"
@@ -288,14 +283,12 @@ function IntentPlanCard({ steps, isUpdate }: { steps: TaskPlanStep[], isUpdate?:
                   ? "text-foreground font-medium"
                   : "text-muted-foreground/30"
               }`}>
-                {icon} {step.label}
+                {step.label}
               </span>
             </div>
           );
         })}
       </div>
-
-      {/* Footer: progress bar removed */}
     </div>
   );
 }
