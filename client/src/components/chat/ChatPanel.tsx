@@ -515,13 +515,15 @@ function CompletedHistoryCard({ steps, stepMessages }: { steps: TaskPlanStep[]; 
 
                           {/* Level 2 Drill Down */}
                           {isExpanded && (
-                              <div className="mt-3 ml-7 space-y-2 border-l border-border/10 pl-3">
+                              <div className="mt-3 ml-[9px] space-y-4 border-l-2 border-border/10 pl-5">
                                    {summaryText && (
-                                       <div className="text-xs font-medium text-foreground/90 mb-2">
+                                       <div className="text-[13px] font-bold text-foreground leading-tight tracking-tight">
                                            {summaryText}
                                        </div>
                                    )}
-                                   {renderStepContent(msgs)}
+                                   <div className="pl-1">
+                                       {renderStepContent(msgs)}
+                                   </div>
                               </div>
                           )}
                       </div>
