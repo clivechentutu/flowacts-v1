@@ -384,21 +384,34 @@ function ExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMes
                         <div key={step.id} className="rounded-lg border border-border/30 bg-card overflow-hidden">
                             {/* Header */}
                             <div 
-                                className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/5 transition-colors"
+                                className="flex flex-col gap-0.5 px-3 py-2.5 cursor-pointer hover:bg-muted/5 transition-colors"
                                 onClick={() => toggleStep(step.id)}
                             >
-                                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500/10 text-green-600 shrink-0">
-                                    <CheckCircle2 className="w-3 h-3" />
-                                </div>
-                                <span className="text-xs text-muted-foreground line-through decoration-border/40 flex-1">
-                                    {step.label}
-                                </span>
-                                {hasResults && !isExpanded && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">
-                                        Result
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500/10 text-green-600 shrink-0">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                    </div>
+                                    <span className="text-xs text-muted-foreground line-through decoration-border/40 flex-1">
+                                        {step.label}
                                     </span>
+                                    <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/30 transition-transform", !isExpanded && "-rotate-90")} />
+                                </div>
+                                
+                                {/* Collapsed Result Snippet */}
+                                {!isExpanded && (step.summary || hasResults) && (
+                                    <div className="pl-8 pr-2 mt-0.5 animate-in fade-in duration-300">
+                                         {step.summary ? (
+                                             <div className="text-[11px] text-foreground/80 leading-relaxed font-medium">
+                                                 <span className="text-blue-500 text-[10px] uppercase tracking-wide mr-1.5 font-bold">Result</span>
+                                                 {step.summary}
+                                             </div>
+                                         ) : (
+                                             <div className="text-[10px] text-muted-foreground/50 italic pl-1">
+                                                 See results...
+                                             </div>
+                                         )}
+                                    </div>
                                 )}
-                                <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground/30 transition-transform", !isExpanded && "-rotate-90")} />
                             </div>
 
                             {/* Expanded Body */}
