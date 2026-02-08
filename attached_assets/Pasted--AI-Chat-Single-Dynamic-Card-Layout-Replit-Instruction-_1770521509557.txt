@@ -1,0 +1,1076 @@
+# AI Chat Single Dynamic Card Layout — Replit Instruction (v6)
+
+> **This replaces Doc 26-v5.** Core shift: from flat accordion listing all steps as rows to a **single dynamic title bar** that shows only the current active step, with **two-level drill-down** for completed steps. More compact, more focused.
+
+---
+
+## Problem with v5 (current implementation)
+
+The Two-Zone Card approach improved over v4, but the Replit implementation revealed two issues:
+
+1. **Missing IntentPlanCard (Zone 1)**: The implementation went straight to execution without showing intent recognition + task plan. Users had no "I understood your request, here's my plan" moment.
+2. **ExecutionCard still lists all steps as rows**: The accordion shows every done + active step as a separate row. For a 5-step task with 3 done, the card still has 4 visible rows (3 collapsed + 1 active). Not compact enough.
+3. **No single focus point**: The user's eye has to scan multiple rows to find the current action. There should be ONE dynamic title bar that always shows what's happening NOW.
+
+## Solution: IntentPlanCard + Single Dynamic Execution Card
+
+| Zone | Purpose | Default State |
+|------|---------|---------------|
+| **Zone 1: IntentPlanCard** | Shows intent recognition + task plan | Expanded (compact), MUST appear before execution |
+| **Zone 2: DynamicExecutionCard** | Single title bar + current step content + collapsible history | Title bar shows active step, history collapsed |
+
+**Key principle: the execution zone has ONE dynamic focus point (the title bar) that switches as steps progress. Completed steps are tucked into a collapsible history section with two-level drill-down.**
+
+---
+
+## What Changed from v5
+
+| v5 (current) | v6 (this update) |
+|--------------|-------------------|
+| ExecutionCard lists all done+active steps as accordion rows | **Single dynamic title bar** showing ONLY the current active step |
+| Done steps are individual collapsed rows in the accordion | Done steps tucked into **collapsible history section** |
+| One level of expand (click row → see L1/L2/L3) | **Two-level drill-down**: Level 1 → key results; Level 2 → process actions |
+| Card header shows active step name (redundant with the active row below) | Card header IS the dynamic focus — no separate active row |
+| 3 done + 1 active = 4 visible rows | 3 done + 1 active = **1 title bar + 1 active content area + 1 collapsed history line** |
+| IntentPlanCard sometimes missing in implementation | IntentPlanCard is **mandatory** — acceptance criteria enforced |
+
+**What stays the same:** Data model, IntentPlanCard design, L1/L2/L3 message levels, interaction model, Agent roles + colors, ResultHighlight, ProcessSteps, mock data structure.
+
+---
+
+## Interaction Model (unchanged)
+
+Upliftly is a **task-execution Agent**. User sends ONE complex request → Agent auto-decomposes → auto-executes all steps → user intervenes only when needed.
+
+---
+
+## Data Model (unchanged from v5)
+
+```ts
+interface TaskPlanStep {
+  id: string;
+  label: string;
+  status: "done" | "active" | "pending";
+  agentRole: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  summary?: string; // one-line result summary
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "ai";
+  agentRole?: "scout" | "capturer" | "analyst" | "comparator" | "reporter";
+  content: string;
+  messageLevel?: "insight" | "progress" | "process" | "plan";
+  thoughtProcess?: {
+    steps: Array<{ label: string; status: "done" | "active" | "pending" }>;
+  };
+  taskPlan?: TaskPlanStep[];
+  taskPlanStepId?: string;
+  canvasLinkId?: string;
+  canvasCardTitle?: string;
+  intentSummary?: string;
+}
+```
+
+---
+
+## Component 1: IntentPlanCard (Zone 1 — unchanged from v5, MANDATORY)
+
+**CRITICAL: This component MUST appear before any execution content.** The v5 Replit implementation skipped this entirely — that is wrong. The user must see intent recognition + task plan BEFORE execution begins.
+
+This card appears immediately after the user's message. It shows:
+1. **Intent recognition**: A brief sentence confirming what the Agent understood
+2. **Task plan**: The list of steps the Agent will execute
+
+This is a **contained card** with a subtle border. It does NOT expand — it's always compact.
+
+```jsx
+function IntentPlanCard({ intentSummary, steps }) {
+  const doneCount = steps.filter((s) => s.status === "done").length;
+
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+
+  return (
+    <div className="mx-1 mt-3 rounded-xl border border-border/15
+      bg-muted/5 overflow-hidden">
+      {/* Intent summary header */}
+      <div className="px-4 py-3 border-b border-border/10">
+        <p className="text-sm text-foreground/90 leading-relaxed">
+          {intentSummary}
+        </p>
+      </div>
+
+      {/* Step list — always visible, very compact */}
+      <div className="px-4 py-3 space-y-1.5">
+        {steps.map((step) => {
+          const icon = agentIcons[step.agentRole] || "🤖";
+          return (
+            <div key={step.id}
+              className="flex items-center gap-2 text-xs">
+              <span className={`shrink-0 ${
+                step.status === "done"
+                  ? "text-muted-foreground/40"
+                  : step.status === "active"
+                  ? "text-blue-400"
+                  : "text-muted-foreground/25"
+              }`}>
+                {step.status === "done" ? "✓" :
+                 step.status === "active" ? "●" : "○"}
+              </span>
+              <span className={`${
+                step.status === "done"
+                  ? "text-muted-foreground/40 line-through"
+                  : step.status === "active"
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground/30"
+              }`}>
+                {icon} {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer: progress bar */}
+      <div className="px-4 pb-3">
+        <div className="h-1 rounded-full bg-border/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-blue-400/60
+              transition-all duration-500"
+            style={{
+              width: `${(doneCount / steps.length) * 100}%`
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**Key visual traits (unchanged):**
+- **Contained card**: `rounded-xl border border-border/15`
+- **Intent summary at top**: Confirms understanding before showing plan
+- **Compact step list**: Each step is one line with `✓/●/○` + agent icon + label
+- **Done steps get strikethrough**: `line-through` makes completed steps visually recede
+- **Thin progress bar at bottom**: Shows overall completion
+- **No expand/collapse needed**: Always small enough to show fully
+
+---
+
+## Component 2: DynamicExecutionCard (Zone 2 — CORE REDESIGN)
+
+This is the **main change from v5**. Instead of listing all done+active steps as accordion rows, the execution zone is a **single dynamic card** with three sections:
+
+### Architecture
+
+```
+┌─────────────────────────────────────────┐
+│  ● 🕵️ Test signup flow          3/5   │  ← Dynamic Title Bar (switches per step)
+├─────────────────────────────────────────┤
+│                                         │
+│  [Current step's live content here]     │  ← Active Content Area
+│  L3 process steps + L2 progress + L1   │
+│                                         │
+├─────────────────────────────────────────┤
+│  ▸ 2 steps completed                   │  ← Collapsible History (Level 1 entry)
+└─────────────────────────────────────────┘
+```
+
+### Behavior Rules
+
+1. **Dynamic Title Bar**: Shows ONLY the current active step's name + agent icon + pulsing dot + progress count. As execution progresses from step 1 → 2 → 3, the title bar text dynamically switches. When all steps are done, shows "✓ All steps completed".
+
+2. **Active Content Area**: Below the title bar, shows the current step's live content — L3 process steps (auto-expanded while running), L2 progress updates, L1 insights as they arrive.
+
+3. **Collapsible History Section**: Below the active content, a single line "▸ N steps completed" that expands to reveal completed steps. This is the **two-level drill-down**:
+   - **Level 1 expand** (click "▸ 2 steps completed"): Shows a list of completed steps, each displaying its key results (L1 ResultHighlight cards, L2 progress summaries)
+   - **Level 2 expand** (click "▸ 3 process steps" within a specific step's results): Shows the L3 process actions that produced those results
+
+4. **When no steps are done yet**: History section is hidden entirely.
+5. **When all steps are done**: Title bar shows completion state, no active content area, history section shows all steps.
+
+```jsx
+function DynamicExecutionCard({ steps, stepMessages }) {
+  const [historyExpanded, setHistoryExpanded] = React.useState(false);
+  const [expandedSteps, setExpandedSteps] = React.useState(new Set());
+  const [expandedProcesses, setExpandedProcesses] = React.useState(
+    new Set()
+  );
+
+  const doneCount = steps.filter((s) => s.status === "done").length;
+  const activeStep = steps.find((s) => s.status === "active");
+  const doneSteps = steps.filter((s) => s.status === "done");
+  const allDone = steps.every((s) => s.status === "done");
+
+  const agentIcons = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
+  const agentColors = {
+    scout: "text-blue-400",
+    capturer: "text-purple-400",
+    analyst: "text-orange-400",
+    comparator: "text-green-400",
+    reporter: "text-pink-400",
+  };
+
+  const toggleStepResults = (stepId) => {
+    setExpandedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(stepId)) next.delete(stepId);
+      else next.add(stepId);
+      return next;
+    });
+  };
+
+  const toggleStepProcess = (stepId) => {
+    setExpandedProcesses((prev) => {
+      const next = new Set(prev);
+      if (next.has(stepId)) next.delete(stepId);
+      else next.add(stepId);
+      return next;
+    });
+  };
+
+  return (
+    <div className="mx-1 mt-2 rounded-xl border border-border/15
+      bg-muted/5 overflow-hidden">
+
+      {/* ── Dynamic Title Bar ── */}
+      <div className="flex items-center justify-between px-4 py-2.5
+        border-b border-border/10">
+        <div className="flex items-center gap-2 min-w-0">
+          {activeStep ? (
+            <>
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex
+                  h-full w-full rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex rounded-full
+                  h-2 w-2 bg-blue-400" />
+              </span>
+              <span className="text-xs text-foreground/80 truncate">
+                {agentIcons[activeStep.agentRole]}{" "}
+                {activeStep.label}
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground/50">
+              ✓ All steps completed
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] text-muted-foreground/40
+          tabular-nums shrink-0 ml-3">
+          {doneCount}/{steps.length}
+        </span>
+      </div>
+
+      {/* ── Active Content Area (current step's live content) ── */}
+      {activeStep && (
+        <div className="px-4 py-3">
+          <div className="space-y-1.5">
+            {renderStepContent(stepMessages[activeStep.id] || [])}
+          </div>
+        </div>
+      )}
+
+      {/* ── Collapsible History Section ── */}
+      {doneCount > 0 && (
+        <div className={activeStep ? "border-t border-border/10" : ""}>
+          {/* History toggle header */}
+          <button
+            onClick={() => setHistoryExpanded(!historyExpanded)}
+            className="w-full flex items-center gap-2 px-4 py-2
+              text-left hover:bg-muted/8 transition-colors"
+          >
+            <span className="text-[10px] text-muted-foreground/30
+              shrink-0 w-3">
+              {historyExpanded ? "▾" : "▸"}
+            </span>
+            <span className="text-[11px] text-muted-foreground/40">
+              {doneCount} step{doneCount !== 1 ? "s" : ""} completed
+            </span>
+          </button>
+
+          {/* ── Level 1: Expanded history — list of done steps ── */}
+          {historyExpanded && (
+            <div className="pb-2 divide-y divide-border/6">
+              {doneSteps.map((step) => {
+                const msgs = stepMessages[step.id] || [];
+                const icon = agentIcons[step.agentRole] || "🤖";
+                const color = agentColors[step.agentRole] || "";
+                const isStepExpanded = expandedSteps.has(step.id);
+                const hasInsight = msgs.some(
+                  (m) =>
+                    m.messageLevel === "insight" || m.canvasLinkId
+                );
+
+                // Separate results (L1+L2) from process (L3)
+                const resultMsgs = msgs.filter((m) => {
+                  const level =
+                    m.messageLevel || getDefaultLevel(m);
+                  return (
+                    level === "insight" || level === "progress"
+                  );
+                });
+                const processMsgs = msgs.filter((m) => {
+                  const level =
+                    m.messageLevel || getDefaultLevel(m);
+                  return level === "process";
+                });
+                const isProcessExpanded =
+                  expandedProcesses.has(step.id);
+
+                return (
+                  <div key={step.id} className="px-4">
+                    {/* Step header — click to expand key results */}
+                    <button
+                      onClick={() => toggleStepResults(step.id)}
+                      className="w-full flex items-center gap-2
+                        py-2 text-left hover:bg-muted/5
+                        transition-colors"
+                    >
+                      <span className="text-[10px]
+                        text-muted-foreground/30 shrink-0 w-3">
+                        {isStepExpanded ? "▾" : "▸"}
+                      </span>
+                      <span className="text-xs
+                        text-muted-foreground/40">
+                        ✓ {icon} {step.label}
+                      </span>
+                      {/* Collapsed: show summary + insight badge */}
+                      {!isStepExpanded && step.summary && (
+                        <span className="text-[11px]
+                          text-muted-foreground/30 truncate
+                          ml-auto pl-2">
+                          — {step.summary}
+                        </span>
+                      )}
+                      {!isStepExpanded && hasInsight && (
+                        <span className={`text-[10px] ${color}
+                          opacity-50 shrink-0 ml-1`}>
+                          ◆
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Level 1 expanded: Key results (L1+L2) */}
+                    {isStepExpanded && (
+                      <div className="ml-5 pb-2 space-y-1.5">
+                        {resultMsgs.map((msg) => {
+                          const level =
+                            msg.messageLevel ||
+                            getDefaultLevel(msg);
+                          if (level === "insight") {
+                            return (
+                              <ResultHighlight
+                                key={msg.id}
+                                message={msg}
+                              />
+                            );
+                          }
+                          return (
+                            <div key={msg.id} className="py-0.5">
+                              <span className="text-[11px]
+                                text-muted-foreground/50
+                                leading-relaxed">
+                                {msg.content}
+                              </span>
+                            </div>
+                          );
+                        })}
+
+                        {/* Level 2 entry: Process drill-down */}
+                        {processMsgs.length > 0 && (
+                          <div className="pt-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleStepProcess(step.id);
+                              }}
+                              className="flex items-center
+                                gap-1.5 text-[10px]
+                                text-muted-foreground/35
+                                hover:text-muted-foreground/50
+                                transition-colors"
+                            >
+                              <span>
+                                {isProcessExpanded ? "▾" : "▸"}
+                              </span>
+                              <span>
+                                {processMsgs
+                                  .flatMap(
+                                    (m) =>
+                                      m.thoughtProcess?.steps ||
+                                      []
+                                  )
+                                  .filter(
+                                    (s) => s.status === "done"
+                                  ).length}{" "}
+                                process steps
+                              </span>
+                            </button>
+
+                            {/* Level 2 expanded: L3 actions */}
+                            {isProcessExpanded && (
+                              <div className="mt-1 ml-2
+                                space-y-0.5">
+                                {processMsgs
+                                  .flatMap(
+                                    (m) =>
+                                      m.thoughtProcess?.steps ||
+                                      []
+                                  )
+                                  .map((ps, i) => (
+                                    <div
+                                      key={i}
+                                      className="flex
+                                        items-center gap-1.5
+                                        text-[10px]
+                                        text-muted-foreground/35"
+                                    >
+                                      <span
+                                        className={`w-1 h-1
+                                          rounded-full shrink-0
+                                          ${
+                                            ps.status === "done"
+                                              ? "bg-muted-foreground/20"
+                                              : ps.status ===
+                                                "active"
+                                              ? "bg-blue-400 animate-pulse"
+                                              : "bg-muted-foreground/10"
+                                          }`}
+                                      />
+                                      <span>{ps.label}</span>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Key Visual Traits
+
+- **Single dynamic title bar**: Only ONE line at the top showing the current step — no list of all steps
+- **Active content area**: Live content streams below the title bar, exactly like v5's active step but without the surrounding accordion rows
+- **Collapsible history**: "▸ 2 steps completed" — ONE line that hides all completed work
+- **Two-level drill-down inside history**:
+  - Level 1: Click a completed step → see its key results (L1 ResultHighlight + L2 progress)
+  - Level 2: Click "▸ 3 process steps" within a result → see L3 thought process actions
+- **Maximum compactness**: A 5-step task with 3 done + 1 active shows: 1 title bar + active content + "▸ 3 steps completed" = roughly **3-5 visible lines** (vs v5's 4+ accordion rows)
+
+---
+
+## Component 3: ResultHighlight (unchanged from v5)
+
+When an L1 Insight appears inside the DynamicExecutionCard, it's rendered as a **highlighted result card** with a colored accent.
+
+```jsx
+function ResultHighlight({ message }) {
+  const accentColors = {
+    scout: "border-blue-400/30 bg-blue-400/5",
+    capturer: "border-purple-400/30 bg-purple-400/5",
+    analyst: "border-orange-400/30 bg-orange-400/5",
+    comparator: "border-green-400/30 bg-green-400/5",
+    reporter: "border-pink-400/30 bg-pink-400/5",
+  };
+
+  const accent =
+    accentColors[message.agentRole] || "border-border/20 bg-muted/5";
+
+  return (
+    <div className={`rounded-lg border-l-2 px-3 py-2.5 ${accent}`}>
+      <div className="text-[13px] text-foreground/90 leading-relaxed">
+        {message.content}
+      </div>
+      {message.canvasLinkId && (
+        <div className="mt-2 flex items-center gap-1.5 text-[11px]
+          text-primary/60 hover:text-primary cursor-pointer
+          transition-colors">
+          <span>📌</span>
+          <span>→ {message.canvasCardTitle || "View in Canvas"}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Key visual traits:**
+- **Colored left border + tinted background**: `border-l-2 border-orange-400/30 bg-orange-400/5`
+- **No agent label**: The parent section already identifies the agent
+- **Compact**: `text-[13px]`
+- **Canvas link**: If the insight links to a Canvas card, show the link
+
+---
+
+## Helper: renderStepContent (renders L1/L2/L3 inside active content area)
+
+This helper renders the messages belonging to the ACTIVE step inside the Active Content Area. For completed steps in the history section, L1/L2 and L3 are rendered separately (see DynamicExecutionCard above).
+
+```jsx
+function renderStepContent(msgs) {
+  const rendered = [];
+  let i = 0;
+
+  while (i < msgs.length) {
+    const msg = msgs[i];
+    const level = msg.messageLevel || getDefaultLevel(msg);
+
+    if (level === "insight") {
+      rendered.push(
+        <ResultHighlight key={msg.id} message={msg} />
+      );
+      i++;
+    } else if (level === "progress") {
+      rendered.push(
+        <div key={msg.id} className="py-0.5">
+          <span className="text-[11px] text-muted-foreground/50
+            leading-relaxed">
+            {msg.content}
+          </span>
+        </div>
+      );
+      i++;
+    } else {
+      // L3: Collapsible process steps
+      const group = [msg];
+      while (
+        i + 1 < msgs.length &&
+        (msgs[i + 1].messageLevel || getDefaultLevel(msgs[i + 1]))
+          === "process"
+      ) {
+        i++;
+        group.push(msgs[i]);
+      }
+      rendered.push(
+        <ProcessSteps key={`proc-${msg.id}`} messages={group} />
+      );
+      i++;
+    }
+  }
+
+  return rendered;
+}
+
+// L3 process steps — collapsible micro-steps (used in active content area)
+function ProcessSteps({ messages }) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  const hasActive = messages.some(
+    (m) => m.thoughtProcess?.steps?.some((s) => s.status === "active")
+  );
+  const allSteps = messages.flatMap(
+    (m) => m.thoughtProcess?.steps || []
+  );
+  const expanded = isExpanded || hasActive;
+  const doneSteps = allSteps.filter((s) => s.status === "done").length;
+
+  return (
+    <div className="py-0.5">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-1.5 text-[10px]
+          text-muted-foreground/35 hover:text-muted-foreground/50
+          transition-colors"
+      >
+        <span>{expanded ? "▾" : "▸"}</span>
+        <span>
+          {hasActive
+            ? "working..."
+            : `${doneSteps} step${doneSteps !== 1 ? "s" : ""} completed`}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="mt-1 ml-2 space-y-0.5">
+          {allSteps.map((step, i) => (
+            <div key={i} className="flex items-center gap-1.5
+              text-[10px] text-muted-foreground/35">
+              <span className={`w-1 h-1 rounded-full shrink-0 ${
+                step.status === "done"
+                  ? "bg-muted-foreground/20"
+                  : step.status === "active"
+                  ? "bg-blue-400 animate-pulse"
+                  : "bg-muted-foreground/10"
+              }`} />
+              <span>{step.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getDefaultLevel(msg) {
+  if (msg.taskPlan) return "plan";
+  if (msg.canvasLinkId) return "insight";
+  if (["analyst", "comparator", "reporter"].includes(msg.agentRole)) {
+    return "insight";
+  }
+  if (msg.thoughtProcess) return "process";
+  return "progress";
+}
+```
+
+---
+
+## Component 4: ChatMessageList (updated for v6 — uses DynamicExecutionCard)
+
+```jsx
+function ChatMessageList({ messages }) {
+  const taskPlanMsg = messages.find((m) => m.taskPlan);
+  const taskPlanSteps = taskPlanMsg?.taskPlan || [];
+  const intentSummary = taskPlanMsg?.intentSummary
+    || taskPlanMsg?.content || "";
+
+  // Group messages by taskPlanStepId
+  const stepMessages = {};
+  taskPlanSteps.forEach((step) => {
+    stepMessages[step.id] = [];
+  });
+
+  const preFlowMessages = []; // greeting, user message
+
+  messages.forEach((msg) => {
+    if (msg.taskPlan || msg.role === "user" ||
+        (!msg.taskPlanStepId && !taskPlanMsg)) {
+      preFlowMessages.push(msg);
+    } else if (msg.taskPlanStepId && stepMessages[msg.taskPlanStepId]) {
+      stepMessages[msg.taskPlanStepId].push(msg);
+    }
+  });
+
+  const hasExecution = taskPlanSteps.some(
+    (s) => s.status === "done" || s.status === "active"
+  );
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {/* Pre-flow: greeting + user request */}
+      {preFlowMessages.map((msg) => {
+        if (msg.role === "user") {
+          return (
+            <div key={msg.id} className="flex justify-end px-4 py-2">
+              <div className="max-w-[80%] rounded-2xl px-4 py-2.5
+                bg-primary/15 text-sm text-foreground leading-relaxed">
+                {msg.content}
+              </div>
+            </div>
+          );
+        }
+        if (msg.taskPlan) return null; // handled by zones
+        // Greeting message (outside zones)
+        return (
+          <div key={msg.id} className="px-4 py-2">
+            <div className="text-sm text-foreground/80 leading-relaxed">
+              {msg.agentRole && <AgentLabel role={msg.agentRole} />}
+              <span className="mt-1 block">{msg.content}</span>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* ═══ Zone 1: Intent + Plan (MANDATORY) ═══ */}
+      {taskPlanSteps.length > 0 && (
+        <IntentPlanCard
+          intentSummary={intentSummary}
+          steps={taskPlanSteps}
+        />
+      )}
+
+      {/* ═══ Zone 2: Dynamic Execution ═══ */}
+      {hasExecution && (
+        <DynamicExecutionCard
+          steps={taskPlanSteps}
+          stepMessages={stepMessages}
+        />
+      )}
+    </div>
+  );
+}
+```
+
+**Key change from v5:** `ExecutionCard` is replaced by `DynamicExecutionCard`. Everything else in the orchestration remains the same.
+
+---
+
+## AgentLabel utility (unchanged, used only for greeting)
+
+```jsx
+function AgentLabel({ role }) {
+  const agents = {
+    scout:      { icon: "🕵️", name: "Scout",      color: "text-blue-400" },
+    capturer:   { icon: "📸", name: "Capturer",   color: "text-purple-400" },
+    analyst:    { icon: "📊", name: "Analyst",    color: "text-orange-400" },
+    comparator: { icon: "⚖️", name: "Comparator", color: "text-green-400" },
+    reporter:   { icon: "📝", name: "Reporter",   color: "text-pink-400" },
+  };
+  const agent = agents[role] || agents.scout;
+  return (
+    <div className={`flex items-center gap-1.5 ${agent.color}`}>
+      <span className="text-sm">{agent.icon}</span>
+      <span className="text-xs font-semibold">{agent.name}</span>
+    </div>
+  );
+}
+```
+
+---
+
+## Mock Data (unchanged from v5)
+
+```js
+const DEMO_MESSAGES = [
+  {
+    id: "m1",
+    role: "ai",
+    agentRole: "scout",
+    content:
+      "Your UX analysis team is ready.\nPaste a URL or describe a user flow to get started.",
+    messageLevel: "insight",
+  },
+  {
+    id: "m2",
+    role: "user",
+    content:
+      "Analyze the new user signup and onboarding flow for competitor.com.",
+  },
+  {
+    id: "m3",
+    role: "ai",
+    agentRole: "scout",
+    content: "Got it. I'll analyze competitor.com's signup and onboarding experience.",
+    intentSummary:
+      "I'll analyze competitor.com's complete signup and onboarding experience, covering homepage navigation, pricing structure, registration flow, onboarding steps, and compile a full UX analysis report.",
+    messageLevel: "plan",
+    taskPlan: [
+      {
+        id: "t1", label: "Browse competitor.com homepage",
+        status: "done", agentRole: "scout",
+        summary: "Found 4 nav items: Pricing, Features, Sign Up, Blog",
+      },
+      {
+        id: "t2", label: "Analyze pricing page",
+        status: "done", agentRole: "analyst",
+        summary: "3 tiers found, credit card required for free trial",
+      },
+      {
+        id: "t3", label: "Test signup flow",
+        status: "active", agentRole: "scout",
+      },
+      {
+        id: "t4", label: "Evaluate onboarding experience",
+        status: "pending", agentRole: "analyst",
+      },
+      {
+        id: "t5", label: "Generate analysis report",
+        status: "pending", agentRole: "reporter",
+      },
+    ],
+  },
+  {
+    id: "m4",
+    role: "ai",
+    agentRole: "scout",
+    content: "Visiting competitor.com as a first-time user...",
+    messageLevel: "process",
+    taskPlanStepId: "t1",
+    thoughtProcess: {
+      steps: [
+        { label: "Preparing to visit competitor.com...", status: "done" },
+        { label: "Simulating a first-time visitor", status: "done" },
+        { label: "Scanning homepage layout", status: "done" },
+      ],
+    },
+  },
+  {
+    id: "m5",
+    role: "ai",
+    agentRole: "scout",
+    content:
+      "Landed on homepage · Found navigation: Pricing, Features, Sign Up, Blog",
+    messageLevel: "progress",
+    taskPlanStepId: "t1",
+  },
+  {
+    id: "m6",
+    role: "ai",
+    agentRole: "scout",
+    content: "Navigating to pricing page...",
+    messageLevel: "process",
+    taskPlanStepId: "t2",
+    thoughtProcess: {
+      steps: [
+        { label: "Looking through the navigation...", status: "done" },
+        { label: "Found the pricing page", status: "done" },
+        { label: "Heading to pricing...", status: "done" },
+      ],
+    },
+  },
+  {
+    id: "m7",
+    role: "ai",
+    agentRole: "analyst",
+    content:
+      "Found 3 pricing tiers: Free, Pro ($29/mo), and Enterprise.\n\n⚠️ The free trial requires a credit card — this is a potential friction point for new users.",
+    messageLevel: "insight",
+    taskPlanStepId: "t2",
+    canvasLinkId: "card-pricing",
+    canvasCardTitle: "Pricing Analysis",
+  },
+  {
+    id: "m8",
+    role: "ai",
+    agentRole: "scout",
+    content: "Testing the signup flow...",
+    messageLevel: "process",
+    taskPlanStepId: "t3",
+    thoughtProcess: {
+      steps: [
+        { label: "Clicking 'Start Free Trial'...", status: "done" },
+        { label: "Filling in registration form...", status: "active" },
+        { label: "Checking for friction points", status: "pending" },
+      ],
+    },
+  },
+];
+```
+
+---
+
+## Expected Visual Result
+
+### Default state (3 done, 1 active, 1 pending):
+
+```
+┌──────────────────────────────────────────┐
+│ Competitor Onboarding Analysis           │
+│ Last edited 2m ago              🕐  📋  │
+├──────────────────────────────────────────┤
+│                                          │
+│  🕵️ Scout                               │
+│  Your UX analysis team is ready.        │  ← greeting
+│  Paste a URL or describe a user flow    │
+│  to get started.                        │
+│                                          │
+│         [Analyze the new user signup     │
+│          and onboarding flow for         │  ← user bubble
+│          competitor.com.]                │
+│                                          │
+│  ┌─ Zone 1: Intent + Plan ────────────┐ │
+│  │                                     │ │
+│  │  I'll analyze competitor.com's      │ │  ← intent summary
+│  │  complete signup and onboarding     │ │
+│  │  experience, covering homepage      │ │
+│  │  navigation, pricing structure,     │ │
+│  │  registration flow, onboarding      │ │
+│  │  steps, and compile a full UX       │ │
+│  │  analysis report.                   │ │
+│  │                                     │ │
+│  │  ✓ 🕵️ Browse competitor.com       │ │  ← done (muted)
+│  │  ✓ 📊 Analyze pricing page        │ │  ← done
+│  │  ● 🕵️ Test signup flow            │ │  ← active (bright)
+│  │  ○ 📊 Evaluate onboarding         │ │  ← pending (ghosted)
+│  │  ○ 📝 Generate analysis report    │ │  ← pending
+│  │                                     │ │
+│  │  ━━━━━━━━━━━━━━━━━━━━░░░░░ 40%    │ │  ← thin progress bar
+│  └─────────────────────────────────────┘ │
+│                                          │
+│  ┌─ Zone 2: Dynamic Execution ────────┐ │
+│  │                                     │ │
+│  │  ● 🕵️ Test signup flow      2/5   │ │  ← DYNAMIC title bar
+│  │                                     │ │
+│  │  ▾ working...                       │ │  ← L3 process (active)
+│  │    · Clicking 'Start Free Trial' ✓ │ │
+│  │    · Filling in form...          ● │ │
+│  │    · Checking friction           ○ │ │
+│  │                                     │ │
+│  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │ │  ← subtle divider
+│  │  ▸ 2 steps completed               │ │  ← collapsed history
+│  └─────────────────────────────────────┘ │
+│                                          │
+├──────────────────────────────────────────┤
+│ [Focus on pricing] [Skip to signup]      │
+│ [Take a screenshot here]                 │
+│                                          │
+│ Ask a follow-up or redirect...           │
+│ 📎  @  ⚡  ⓘ            🌐  ➤          │
+└──────────────────────────────────────────┘
+```
+
+### When user clicks "▸ 2 steps completed" (Level 1 expand):
+
+```
+│  ┌─ Zone 2: Dynamic Execution ────────┐ │
+│  │                                     │ │
+│  │  ● 🕵️ Test signup flow      2/5   │ │  ← title bar (unchanged)
+│  │                                     │ │
+│  │  ▾ working...                       │ │  ← active content
+│  │    · Clicking 'Start Free Trial' ✓ │ │
+│  │    · Filling in form...          ● │ │
+│  │    · Checking friction           ○ │ │
+│  │                                     │ │
+│  │  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │ │
+│  │  ▾ 2 steps completed               │ │  ← now expanded
+│  │                                     │ │
+│  │  ▸ ✓ 🕵️ Browse homepage           │ │  ← collapsed step
+│  │      — Found 4 nav items        ◆  │ │     (summary + badge)
+│  │                                     │ │
+│  │  ▸ ✓ 📊 Analyze pricing           │ │  ← collapsed step
+│  │      — 3 tiers, CC required      ◆  │ │     (summary + badge)
+│  │                                     │ │
+│  └─────────────────────────────────────┘ │
+```
+
+### When user clicks "▸ ✓ 📊 Analyze pricing" (Level 1 → step results):
+
+```
+│  │  ▾ ✓ 📊 Analyze pricing           │ │  ← now expanded
+│  │                                     │ │
+│  │      ┌──────────────────────────┐   │ │
+│  │      │ Found 3 pricing tiers:   │   │ │  ← L1 ResultHighlight
+│  │      │ Free, Pro ($29/mo), and  │   │ │     (orange-tinted bg +
+│  │      │ Enterprise.              │   │ │      left border)
+│  │      │                          │   │ │
+│  │      │ ⚠️ Free trial requires  │   │ │
+│  │      │ credit card — potential  │   │ │
+│  │      │ friction point.          │   │ │
+│  │      │                          │   │ │
+│  │      │ 📌 → Pricing Analysis   │   │ │  ← canvas link
+│  │      └──────────────────────────┘   │ │
+│  │                                     │ │
+│  │      ▸ 3 process steps             │ │  ← Level 2 entry (collapsed)
+│  │                                     │ │
+```
+
+### When user clicks "▸ 3 process steps" (Level 2 → process actions):
+
+```
+│  │      ▾ 3 process steps             │ │  ← Level 2 expanded
+│  │        · Looking through nav...     │ │
+│  │        · Found the pricing page     │ │  ← L3 micro-steps
+│  │        · Heading to pricing...      │ │
+│  │                                     │ │
+```
+
+### When all steps are done (title bar switches):
+
+```
+│  ┌─ Zone 2: Dynamic Execution ────────┐ │
+│  │                                     │ │
+│  │  ✓ All steps completed       5/5   │ │  ← completion state
+│  │                                     │ │
+│  │  ▸ 5 steps completed               │ │  ← all in history
+│  └─────────────────────────────────────┘ │
+```
+
+---
+
+## Design Principles (from competitive research — Doc 32)
+
+This v6 design further refines insights from 7 EU/US AI agent products:
+
+### 1. Single Focus Point
+- **Cursor AI**: Shows ONE active operation at a time in the status area — not a list of all operations
+- **ChatGPT Deep Research**: The "searching..." indicator is a single dynamic line, not a list of all searches
+- **v6 applies this**: The Dynamic Title Bar shows ONLY the current step. Previous steps are hidden in history.
+
+### 2. Progressive Disclosure (Two-Level)
+- **Perplexity Pro Search**: Collapsed "Sources" section expands to show references, each reference can be further expanded
+- **Devin AI**: Task log shows high-level steps; clicking a step reveals detailed actions
+- **v6 applies this**: History → Step Results (Level 1) → Process Actions (Level 2)
+
+### 3. Containment over Open Flow
+- **ChatGPT Deep Research**: Uses a contained progress area — completed steps auto-fold
+- **v6 applies this**: Both zones are contained cards. The execution doesn't bleed into the chat.
+
+### 4. Process Light, Result Prominent
+- **All 7 products**: Process steps use secondary styling, results use primary styling
+- **v6 applies this**: L3 process steps are `text-[10px] text-muted-foreground/35`. L1 ResultHighlight cards use colored borders + tinted backgrounds.
+
+### 5. Intent Before Execution (ENFORCED)
+- **Perplexity Pro Search**: Shows "Understanding the question" before executing
+- **Devin AI**: Shows planning phase before coding
+- **v6 enforces this**: IntentPlanCard is MANDATORY in acceptance criteria. Implementation MUST NOT skip it.
+
+---
+
+## Vertical Space Comparison
+
+| Scenario | v4 (Timeline) | v5 (Accordion) | v6 (Dynamic Card) |
+|----------|---------------|-----------------|---------------------|
+| 5 steps, 2 done, 1 active | ~35-40 lines | ~18-20 lines | **~10-12 lines** |
+| 5 steps, 4 done, 1 active | ~50-60 lines | ~20-22 lines | **~10-12 lines** |
+| 5 steps, all done | ~55-65 lines | ~15-17 lines | **~5-6 lines** |
+
+The key savings come from:
+- Only ONE step visible at a time in the title bar (vs v5's multiple accordion rows)
+- All completed steps hidden behind a single "▸ N steps completed" line
+- Two-level drill-down means details are only shown when explicitly requested
+- No accordion rows consuming vertical space for done steps
+
+---
+
+## What NOT to Do
+
+- Do NOT render an open vertical timeline — use contained cards
+- Do NOT list all done steps as separate accordion rows — use collapsible history
+- Do NOT show pending steps in the DynamicExecutionCard — they're in IntentPlanCard only
+- Do NOT expand completed steps by default — everything collapsed
+- Do NOT skip IntentPlanCard — it is MANDATORY (this was the #1 issue in v5 implementation)
+- Do NOT use connecting lines between steps
+- Do NOT show Agent labels inside expanded step content — the step header already shows the agent
+- Do NOT use horizontal dividers between zones
+- Do NOT insert user messages between auto-executed steps
+- Do NOT add real AI functionality — this is mock data only
+- Do NOT show the active step as a separate row below the title bar — the title bar IS the active step indicator
+
+---
+
+## Acceptance Criteria
+
+1. **IntentPlanCard (Zone 1) is MANDATORY**: Must appear before any execution content. Shows intent summary + compact step list + progress bar. This is the #1 priority — do NOT skip it.
+2. **DynamicExecutionCard (Zone 2)** replaces the old ExecutionCard
+3. **Dynamic Title Bar**: Shows ONLY the current active step with pulsing dot + agent icon + label + `doneCount/totalCount`. Text dynamically switches as steps progress.
+4. **Active Content Area**: Below title bar, shows current step's live L3/L2/L1 content
+5. **Collapsible History**: Single line "▸ N steps completed" below active content. Hidden when no steps are done.
+6. **Level 1 drill-down**: Expanding history shows list of done steps. Each step shows `▸ ✓ icon label — summary ◆`. Click to expand → see L1 ResultHighlight + L2 progress.
+7. **Level 2 drill-down**: Inside an expanded step's results, "▸ N process steps" expands to show L3 thought process actions.
+8. **L1 ResultHighlight**: Colored left border + tinted background, no agent label
+9. **L3 ProcessSteps in active area**: Collapsible micro-steps with `text-[10px]`, auto-expand when active
+10. **Vertical space**: A 5-step task with 2 done + 1 active should fit in ~10-12 lines (title bar + active content + history line)
+11. **Both cards use same visual style**: `rounded-xl border border-border/15 bg-muted/5`
+12. **No open timeline**, no connecting lines, no unbounded vertical growth
+13. **Dark theme consistent**
+14. **Only 1 user message in demo**
+15. **Greeting message outside zones** uses AgentLabel + plain text (no card)
+16. **Insight badge `◆`** on collapsed done steps that contain L1 insights
+17. **When all done**: Title bar shows "✓ All steps completed", no active content area, history shows all steps
+
+---
+
+*Document: 26-AIChat对话体验优化-Replit指令-v6.md*
+*Scope: Single dynamic card with two-level drill-down replacing flat accordion*
+*Replaces: Doc 26-v5*
+*Related: Doc 32 (competitive research), Doc 31 (message layering analysis)*
+*Design references: Cursor AI (single focus), Perplexity (progressive disclosure), ChatGPT Deep Research (containment), Devin (two-level task log)*
+

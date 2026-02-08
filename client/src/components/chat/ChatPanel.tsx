@@ -238,101 +238,94 @@ function getDefaultLevel(msg: StoryEvent) {
   return "progress";
 }
 
-// Intent & Plan Card (Zone 1 - "Pre-positioned")
+// Intent & Plan Card (Zone 1 - "Pre-positioned" - v6 Compact)
 function IntentPlanCard({ intentSummary, steps }: { intentSummary: string, steps: TaskPlanStep[] }) {
-  const [isExpanded, setIsExpanded] = useState(true);
   const doneCount = steps.filter((s) => s.status === "done").length;
+  
+  const agentIcons: Record<string, string> = {
+    scout: "🕵️", capturer: "📸", analyst: "📊",
+    comparator: "⚖️", reporter: "📝",
+  };
 
   return (
-    <div className="mb-4 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden shadow-sm">
-      {/* Header */}
-      <div 
-        className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-primary/5 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary">
-                <Brain className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-sm font-semibold text-foreground">Intent & Plan</span>
-        </div>
-        <div className="flex items-center gap-2">
-             <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                {doneCount} / {steps.length} Steps
-             </span>
-             <ChevronDown className={cn("w-4 h-4 text-muted-foreground/50 transition-transform duration-200", !isExpanded && "-rotate-90")} />
-        </div>
+    <div className="mx-1 mt-3 rounded-xl border border-border/15 bg-muted/5 overflow-hidden">
+      {/* Intent summary header */}
+      <div className="px-4 py-3 border-b border-border/10">
+        <p className="text-sm text-foreground/90 leading-relaxed">
+          {intentSummary}
+        </p>
       </div>
 
-      {/* Content */}
-      {isExpanded && (
-          <div className="px-4 pb-4 pt-0 animate-in slide-in-from-top-2 duration-200">
-            {/* Intent Summary */}
-            <div className="mb-4 text-xs text-muted-foreground leading-relaxed bg-background/50 p-2.5 rounded-lg border border-border/40">
-                <span className="font-semibold text-primary/80 mr-1">Goal:</span>
-                {intentSummary}
+      {/* Step list — always visible, very compact */}
+      <div className="px-4 py-3 space-y-1.5">
+        {steps.map((step) => {
+          const icon = agentIcons[step.agentRole] || "🤖";
+          return (
+            <div key={step.id} className="flex items-center gap-2 text-xs">
+              <span className={`shrink-0 ${
+                step.status === "done"
+                  ? "text-muted-foreground/40"
+                  : step.status === "active"
+                  ? "text-blue-400"
+                  : "text-muted-foreground/25"
+              }`}>
+                {step.status === "done" ? "✓" :
+                 step.status === "active" ? "●" : "○"}
+              </span>
+              <span className={`${
+                step.status === "done"
+                  ? "text-muted-foreground/40 line-through"
+                  : step.status === "active"
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground/30"
+              }`}>
+                {icon} {step.label}
+              </span>
             </div>
+          );
+        })}
+      </div>
 
-            {/* Plan Steps */}
-            <div className="space-y-1 relative pl-2">
-                {/* Connecting Line */}
-                <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/40" />
-                
-                {steps.map((step, i) => (
-                    <div key={step.id} className="relative flex items-center gap-3 z-10">
-                        <div className={cn(
-                            "w-1.5 h-1.5 rounded-full shrink-0 ring-4 ring-background",
-                            step.status === "done" ? "bg-primary" : 
-                            step.status === "active" ? "bg-blue-400 animate-pulse" : "bg-muted-foreground/30"
-                        )} />
-                        <span className={cn(
-                            "text-xs",
-                            step.status === "done" ? "text-muted-foreground line-through decoration-border/50" : 
-                            step.status === "active" ? "text-foreground font-medium" : "text-muted-foreground/60"
-                        )}>
-                            {step.label}
-                        </span>
-                    </div>
-                ))}
-            </div>
-          </div>
-      )}
+      {/* Footer: progress bar */}
+      <div className="px-4 pb-3">
+        <div className="h-1 rounded-full bg-border/10 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-blue-400/60 transition-all duration-500"
+            style={{
+              width: `${(doneCount / steps.length) * 100}%`
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
 
-// Execution Card (Zone 2 - "Dynamic Process" with Result Penetration)
-function ExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
-  // State to track expanded steps
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  
-  // Auto-expand active step on change
-  const activeStep = steps.find(s => s.status === 'active');
-  React.useEffect(() => {
-      if (activeStep) {
-          setExpandedIds(prev => {
-              const next = new Set(prev);
-              next.add(activeStep.id);
-              return next;
-          });
-      }
-  }, [activeStep?.id]);
+// Execution Card (Zone 2 - "DynamicExecutionCard" - v6 Single Dynamic Title)
+function DynamicExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMessages: Record<string, StoryEvent[]> }) {
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
 
-  const toggleStep = (id: string) => {
-    setExpandedIds(prev => {
-        const next = new Set(prev);
-        if (next.has(id)) next.delete(id);
-        else next.add(id);
-        return next;
-    });
-  };
+  const doneCount = steps.filter((s) => s.status === "done").length;
+  const activeStep = steps.find((s) => s.status === "active");
+  const doneSteps = steps.filter((s) => s.status === "done");
 
   const agentIcons: Record<string, string> = {
     scout: "🕵️", capturer: "📸", analyst: "📊",
     comparator: "⚖️", reporter: "📝",
   };
 
-  const renderMessages = (msgs: StoryEvent[]) => {
+  const toggleStepResults = (stepId: string) => {
+    setExpandedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(stepId)) next.delete(stepId);
+      else next.add(stepId);
+      return next;
+    });
+  };
+
+  // Helper to render content for a step
+  const renderStepContent = (msgs: StoryEvent[], isHistory = false) => {
       const results = msgs.filter(m => m.messageLevel === 'insight' || m.messageLevel === 'progress' || m.canvasLinkId);
       const logs = msgs.filter(m => !results.includes(m)); 
 
@@ -358,12 +351,9 @@ function ExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMes
               {/* Logs / Process Details */}
               {logs.length > 0 && (
                   <div className="mt-2">
-                       <details className="group" open={logs.some(l => l.thoughtProcess?.steps?.some(s => s.status === 'active'))}>
-                           <summary className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground cursor-pointer select-none list-none flex items-center gap-1.5">
-                               <ChevronRight className="w-3 h-3 transition-transform group-open:rotate-90" />
-                               <span>View process details ({logs.length})</span>
-                           </summary>
-                           <div className="mt-2 pl-4 space-y-1 border-l border-border/20 ml-1.5">
+                      {isHistory ? (
+                          // For history, nested in drill-down
+                           <div className="space-y-1 border-l border-border/20 ml-1.5 pl-4">
                                {logs.map((log) => (
                                    <div key={log.id} className="text-[10px] text-muted-foreground/60 font-mono">
                                        <span className="opacity-50 mr-1.5">
@@ -373,7 +363,25 @@ function ExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMes
                                    </div>
                                ))}
                            </div>
-                       </details>
+                      ) : (
+                          // For active step, expandable details
+                           <details className="group" open={true}>
+                               <summary className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground cursor-pointer select-none list-none flex items-center gap-1.5">
+                                   <ChevronRight className="w-3 h-3 transition-transform group-open:rotate-90" />
+                                   <span>Process details ({logs.length})</span>
+                               </summary>
+                               <div className="mt-2 pl-4 space-y-1 border-l border-border/20 ml-1.5">
+                                   {logs.map((log) => (
+                                       <div key={log.id} className="text-[10px] text-muted-foreground/60 font-mono">
+                                           <span className="opacity-50 mr-1.5">
+                                                {new Date(log.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                           </span>
+                                           {log.content}
+                                       </div>
+                                   ))}
+                               </div>
+                           </details>
+                      )}
                   </div>
               )}
           </div>
@@ -381,95 +389,109 @@ function ExecutionCard({ steps, stepMessages }: { steps: TaskPlanStep[]; stepMes
   };
 
   return (
-    <div className="space-y-2">
-        {steps.map((step) => {
-            const isExpanded = expandedIds.has(step.id);
-            const msgs = stepMessages[step.id] || [];
-            // Check for insights to show in penetration zone
-            const insights = msgs.filter(m => m.messageLevel === 'insight' || m.canvasLinkId);
-            const hasInsights = insights.length > 0;
-            // Use resultSummary or summary, fallback to first insight if needed?
-            const summaryText = step.resultSummary || step.summary;
+    <div className="mx-1 mt-2 rounded-xl border border-border/15 bg-muted/5 overflow-hidden transition-all duration-300">
+      
+      {/* ── Dynamic Title Bar ── */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/10 bg-card/50">
+        <div className="flex items-center gap-2 min-w-0">
+          {activeStep ? (
+            <>
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-400" />
+              </span>
+              <span className="text-xs font-medium text-foreground/90 truncate flex items-center gap-2">
+                <span className="opacity-80">{agentIcons[activeStep.agentRole]}</span>
+                {activeStep.label}
+              </span>
+            </>
+          ) : (
+            <span className="text-xs font-medium text-muted-foreground/80 flex items-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+              All steps completed
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] text-muted-foreground/40 tabular-nums shrink-0 ml-3 font-mono">
+          {doneCount}/{steps.length}
+        </span>
+      </div>
 
-            return (
-                <div key={step.id} className={cn(
-                    "rounded-xl border transition-all duration-300 overflow-hidden",
-                    step.status === 'active' 
-                        ? "border-blue-500/30 bg-blue-500/5 shadow-sm ring-1 ring-blue-500/10" 
-                        : "border-border/30 bg-card"
-                )}>
-                    {/* Header */}
-                    <div 
-                        className="flex flex-col cursor-pointer hover:bg-muted/5 transition-colors"
-                        onClick={() => toggleStep(step.id)}
-                    >
-                        <div className="flex items-center gap-3 px-3 py-2.5">
-                            {/* Status Icon */}
-                            <div className={cn(
-                                "flex items-center justify-center w-6 h-6 rounded-full shrink-0 transition-colors",
-                                step.status === 'done' ? "bg-green-500/10 text-green-600" :
-                                step.status === 'active' ? "bg-blue-500/10 text-blue-600" :
-                                "bg-muted text-muted-foreground/50"
-                            )}>
-                                {step.status === 'done' ? <CheckCircle2 className="w-3.5 h-3.5" /> :
-                                 step.status === 'active' ? <span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span></span> :
-                                 <div className="w-2 h-2 rounded-full bg-current" />}
-                            </div>
+      {/* ── Active Content Area (current step's live content) ── */}
+      {activeStep && (
+        <div className="px-4 py-3 bg-background/30">
+          <div className="space-y-1.5">
+            {renderStepContent(stepMessages[activeStep.id] || [])}
+          </div>
+        </div>
+      )}
 
-                            {/* Label & Agent */}
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <span className={cn(
-                                    "text-sm font-medium truncate",
-                                    step.status === 'done' ? "text-muted-foreground line-through decoration-border/40" : 
-                                    step.status === 'active' ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"
-                                )}>
-                                    {step.label}
-                                </span>
-                                {step.status === 'active' && (
-                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20 font-medium uppercase tracking-wide">
-                                        {step.agentRole} Working
-                                    </span>
-                                )}
-                            </div>
+      {/* ── Collapsible History Section ── */}
+      {doneCount > 0 && (
+        <div className={activeStep ? "border-t border-border/10" : ""}>
+          {/* History toggle header */}
+          <button
+            onClick={() => setHistoryExpanded(!historyExpanded)}
+            className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-muted/10 transition-colors group"
+          >
+            <ChevronRight className={cn(
+                "w-3 h-3 text-muted-foreground/40 transition-transform duration-200",
+                historyExpanded && "rotate-90"
+            )} />
+            <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wider group-hover:text-muted-foreground/70 transition-colors">
+              {doneCount} steps completed
+            </span>
+          </button>
 
-                            {/* Result Penetration (Header Summary) */}
-                            {!isExpanded && summaryText && (
-                                <span className="hidden sm:inline-block text-xs text-muted-foreground truncate max-w-[200px] bg-muted/10 px-2 py-0.5 rounded">
-                                    {summaryText}
-                                </span>
-                            )}
+          {/* History List */}
+          {historyExpanded && (
+              <div className="px-4 pb-3 space-y-2 animate-in slide-in-from-top-1 duration-200">
+                  {doneSteps.map(step => {
+                      const isExpanded = expandedSteps.has(step.id);
+                      const msgs = stepMessages[step.id] || [];
+                      const summaryText = step.resultSummary || step.summary;
 
-                            <ChevronDown className={cn("w-4 h-4 text-muted-foreground/30 transition-transform duration-200 shrink-0", !isExpanded && "-rotate-90")} />
-                        </div>
+                      return (
+                          <div key={step.id} className="rounded-lg border border-border/10 bg-card/40 overflow-hidden">
+                              <div 
+                                  className="flex flex-col cursor-pointer hover:bg-muted/5 transition-colors p-2.5"
+                                  onClick={() => toggleStepResults(step.id)}
+                              >
+                                  <div className="flex items-center gap-2">
+                                      <div className="text-muted-foreground/40 shrink-0">
+                                          <CheckCircle2 className="w-3.5 h-3.5" />
+                                      </div>
+                                      <span className="text-xs text-muted-foreground line-through decoration-border/40 truncate flex-1">
+                                          {step.label}
+                                      </span>
+                                      {/* Level 1 Summary (Result Penetration) */}
+                                      {!isExpanded && summaryText && (
+                                          <span className="text-[10px] text-muted-foreground/70 bg-muted/10 px-1.5 py-0.5 rounded max-w-[150px] truncate">
+                                              {summaryText}
+                                          </span>
+                                      )}
+                                      <ChevronDown className={cn("w-3 h-3 text-muted-foreground/20 transition-transform", !isExpanded && "-rotate-90")} />
+                                  </div>
+                              </div>
 
-                        {/* Result Penetration (Insight Zone - visible when collapsed) */}
-                        {!isExpanded && hasInsights && (
-                            <div className="px-3 pb-2.5 pl-[3.25rem] animate-in fade-in slide-in-from-top-1 duration-200">
-                                <div className="text-xs text-foreground/80 bg-blue-500/5 p-2 rounded-md border-l-2 border-blue-500/40 flex items-start gap-2">
-                                    <span className="shrink-0 mt-0.5 text-[10px]">💡</span>
-                                    <span className="line-clamp-2 leading-relaxed">
-                                        {insights[0].content}
-                                    </span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Expanded Body */}
-                    {isExpanded && (
-                        <div className="px-4 pb-4 pt-0 pl-[3.25rem] animate-in slide-in-from-top-2 duration-200 space-y-3 border-t border-border/5 mt-1 pt-3">
-                             {/* Expanded Summary if available */}
-                             {summaryText && (
-                                <div className="text-sm text-foreground/90 font-medium border-l-2 border-primary/20 pl-3 py-1">
-                                    {summaryText}
-                                </div>
-                             )}
-                             {renderMessages(msgs)}
-                        </div>
-                    )}
-                </div>
-            );
-        })}
+                              {/* Level 2 Drill Down */}
+                              {isExpanded && (
+                                  <div className="px-3 pb-3 pt-0 pl-8 space-y-2 border-t border-border/5 pt-2">
+                                       {summaryText && (
+                                           <div className="text-xs font-medium text-foreground/80 mb-2">
+                                               {summaryText}
+                                           </div>
+                                       )}
+                                       {renderStepContent(msgs, true)}
+                                  </div>
+                              )}
+                          </div>
+                      );
+                  })}
+              </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -569,7 +591,7 @@ function ChatMessageList({ messages }: { messages: StoryEvent[] }) {
 
         {/* Zone 2: Execution Card */}
         {taskPlanSteps.length > 0 && (
-             <ExecutionCard steps={taskPlanSteps} stepMessages={stepMessages} />
+             <DynamicExecutionCard steps={taskPlanSteps} stepMessages={stepMessages} />
         )}
       </div>
     );
