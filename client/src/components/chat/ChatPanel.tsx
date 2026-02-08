@@ -286,17 +286,7 @@ function IntentPlanCard({ intentSummary, steps }: { intentSummary: string, steps
         })}
       </div>
 
-      {/* Footer: progress bar */}
-      <div className="px-4 pb-3">
-        <div className="h-1 rounded-full bg-border/10 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-blue-400/60 transition-all duration-500"
-            style={{
-              width: `${(doneCount / steps.length) * 100}%`
-            }}
-          />
-        </div>
-      </div>
+      {/* Footer: progress bar removed */}
     </div>
   );
 }
