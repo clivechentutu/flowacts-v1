@@ -945,6 +945,15 @@ function ChatMessageList({ messages, onSendMessage, taskState }: { messages: Sto
           </div>
         )}
 
+        {/* AI Transition Message (between Plan and Execution) */}
+        {taskPlanMsg && taskPlanMsg.taskPlan && taskPlanSteps.length > 0 && (
+            <div className="px-4 py-1">
+                <div className="text-xs text-foreground/70 leading-relaxed pl-1 border-l-2 border-primary/30">
+                    Plan approved. Initiating execution sequence...
+                </div>
+            </div>
+        )}
+
         {/* Zone 2: Execution Card */}
         {taskPlanSteps.length > 0 && (
              <DynamicExecutionCard 
