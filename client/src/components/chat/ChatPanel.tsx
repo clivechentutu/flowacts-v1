@@ -1163,7 +1163,7 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   const [selectedModel, setSelectedModel] = useState("Upliftly Pro");
   
   // Mock Task State
-  const [taskState, setTaskState] = useState<'empty' | 'in_progress' | 'completed' | 'thinking'>('in_progress');
+  const [taskState, setTaskState] = useState<'empty' | 'in_progress' | 'completed' | 'thinking'>('empty');
 
   const MODELS = [
     { name: "Upliftly Pro", icon: "⚡", description: "Best for complex tasks" },
