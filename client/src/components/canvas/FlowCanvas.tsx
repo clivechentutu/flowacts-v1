@@ -133,43 +133,42 @@ const Controls = ({ onScreenshot, scale, setScale }: { onScreenshot: () => void,
   // Handlers for the new bottom-right control
   const handleZoomIn = () => {
       zoomIn(); 
-      // We can't easily get the new scale directly from zoomIn return, 
-      // but the TransformWrapper state updates and re-renders.
-      // However, we are passing `scale` as prop which comes from a ref or state?
-      // Let's look at how FlowCanvas uses this.
   };
   const handleZoomOut = () => zoomOut();
 
   return (
     <>
-        {/* Original Left Controls - Kept as is or simplified? 
-            User said "Do not change any other functions", but also "red box position needs zoom state".
-            The red box is bottom right. The existing controls are bottom left.
-            I will keep the Screenshot/Reset on the left if needed, or maybe just hide the zoom buttons from the left 
-            if they are now on the right? 
-            Let's keep the left controls for Reset/Screenshot as they provide extra utility, 
-            but maybe remove the duplicate zoom buttons to clean up? 
-            Or just leave them alone to be safe ("do not change any other functions").
-            
-            Actually, the user showed a screenshot of the bottom right zoom control. 
-            I will add the NEW control to the bottom right.
-        */}
-        <div className="absolute bottom-8 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
-            <button 
-                onClick={() => resetTransform()} 
-                className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-                title="Reset View"
-            >
-                <Maximize className="w-4 h-4" />
-            </button>
-            <div className="w-full h-px bg-border my-1" />
-            <button 
-                onClick={onScreenshot} 
-                className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-                title="Screenshot Area"
-            >
-                <Crop className="w-4 h-4" />
-            </button>
+        {/* Original Left Controls (Restored) */}
+        <div className="absolute bottom-20 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
+          <button 
+            onClick={() => zoomIn()} 
+            className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+            title="Zoom In"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => zoomOut()} 
+            className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => resetTransform()} 
+            className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+            title="Reset View"
+          >
+            <Maximize className="w-4 h-4" />
+          </button>
+          <div className="w-full h-px bg-border my-1" />
+          <button 
+            onClick={onScreenshot} 
+            className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
+            title="Screenshot Area"
+          >
+            <Crop className="w-4 h-4" />
+          </button>
         </div>
 
         {/* New Bottom Right Zoom Control (Miro-style) */}
