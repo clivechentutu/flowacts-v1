@@ -1,9 +1,10 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { StoryEvent } from "@/lib/mock-data";
 import { ActionCard } from "./cards/ActionCard";
 import { InsightCard } from "./cards/InsightCard";
 import { AlertCard } from "./cards/AlertCard";
 import { motion } from "framer-motion";
+import { Minus, Plus } from "lucide-react";
 
 interface CanvasProps {
   events: StoryEvent[];
@@ -12,6 +13,7 @@ interface CanvasProps {
 export function Canvas({ events }: CanvasProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(77);
 
   // Auto-scroll to right when events change
   useEffect(() => {
@@ -23,6 +25,9 @@ export function Canvas({ events }: CanvasProps) {
     }
   }, [events]);
 
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 5, 200));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 5, 10));
+
   return (
     <div className="h-full bg-slate-50 relative overflow-hidden flex flex-col">
       {/* Background Pattern */}
@@ -33,7 +38,10 @@ export function Canvas({ events }: CanvasProps) {
         ref={scrollRef}
         className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar flex items-center px-20 relative z-10"
       >
-        <div className="flex items-center space-x-0 min-w-max h-full py-20">
+        <div 
+          className="flex items-center space-x-0 min-w-max h-full py-20 transition-transform duration-300 ease-out origin-center"
+          style={{ transform: `scale(${zoom / 100})` }}
+        >
              {events.filter(e => ['action', 'insight', 'alert'].includes(e.type)).map((event, index, filteredArr) => {
                const isLast = index === filteredArr.length - 1;
                
@@ -75,6 +83,31 @@ export function Canvas({ events }: CanvasProps) {
                );
              })}
              <div ref={endRef} className="w-20" />
+        </div>
+      </div>
+
+      {/* Zoom Controls (Bottom Right) */}
+      <div className="absolute bottom-6 right-6 z-50">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200/60 shadow-xl shadow-slate-200/40 rounded-xl p-1.5 flex items-center gap-1">
+          <button 
+            onClick={handleZoomOut}
+            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+          >
+            <Minus className="w-3.5 h-3.5" />
+          </button>
+          
+          <div className="px-2 min-w-[50px] text-center">
+            <span className="text-xs font-semibold text-slate-700 tabular-nums">
+              {zoom}%
+            </span>
+          </div>
+
+          <button 
+            onClick={handleZoomIn}
+            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </div>
