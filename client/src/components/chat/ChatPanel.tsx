@@ -577,27 +577,86 @@ function ExecutionOverflowMenu({ onAction }: { onAction: (item: any) => void }) 
   );
 }
 
-function ChatInput({ onSend, taskState }: { onSend: (msg: string) => void, taskState: string }) {
+const FORMAT_CHIPS = [
+  { id: "report", icon: "📄", label: "Report" },
+  { id: "table", icon: "📊", label: "Table" },
+  { id: "mindmap", icon: "🧠", label: "Mind Map" },
+  { id: "checklist", icon: "✅", label: "Checklist" },
+  { id: "summary", icon: "📝", label: "Summary" },
+];
+
+function FormatChips({ selectedFormats, onToggleFormat }: { selectedFormats: string[], onToggleFormat: (id: string) => void }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {FORMAT_CHIPS.map((chip) => {
+        const isSelected = selectedFormats.includes(chip.id);
+        return (
+          <button
+            key={chip.id}
+            onClick={() => onToggleFormat(chip.id)}
+            className={`
+              inline-flex items-center gap-1.5
+              px-3 py-1.5
+              rounded-full
+              text-xs font-medium
+              border
+              transition-all duration-150
+              cursor-pointer
+              select-none
+              whitespace-nowrap
+              ${isSelected
+                ? "bg-primary/15 border-primary/40 text-primary hover:bg-primary/20"
+                : "bg-muted/30 border-border/40 text-muted-foreground/70 hover:bg-muted/50 hover:text-muted-foreground hover:border-border/60"
+              }
+            `}
+          >
+            <span className="text-[13px] leading-none">{chip.icon}</span>
+            <span>{chip.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChatInput({ onSend, taskState, selectedFormats = [] }: { onSend: (msg: string) => void, taskState: string, selectedFormats?: string[] }) {
   const [inputValue, setInputValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const getPlaceholder = (state: string) => {
-    switch (state) {
-      case "empty":
-        return "Paste a URL or describe what you'd like to analyze...";
-      case "in_progress":
-        return "Type to redirect or intervene...";
-      case "completed":
-        return "Compare, dig deeper, or start a new analysis...";
-      case "thinking":
-        return "Type to redirect or wait for results...";
-      default:
-        return "Ask Upliftly to analyze a flow...";
+  const getPlaceholder = (state: string, formats: string[]) => {
+    // During execution states, use task-state-based placeholders (unchanged)
+    if (state === "in_progress") {
+      return "Type to redirect or intervene...";
     }
+    if (state === "thinking") {
+      return "Type to redirect or wait for results...";
+    }
+
+    // For empty/completed states, adjust based on selected format chips
+    if (formats.length === 0) {
+      // No chips selected — generic prompt
+      if (state === "completed") {
+        return "Compare, dig deeper, or start a new analysis...";
+      }
+      return "Paste a URL or describe what you'd like to analyze...";
+    }
+
+    // One or more chips selected — format-aware prompt
+    const formatNames = formats
+      .map((id) => FORMAT_CHIPS.find((c) => c.id === id)?.label)
+      .filter(Boolean);
+
+    if (formatNames.length === 1) {
+      const name = formatNames[0]?.toLowerCase();
+      return `Enter a URL or topic to generate a ${name}...`;
+    }
+
+    return `Enter a URL or topic to generate ${formatNames.length} outputs...`;
   };
 
-  const placeholder = getPlaceholder(taskState);
+  const placeholder = getPlaceholder(taskState, selectedFormats);
   const hasContent = inputValue.trim().length > 0;
+  const hasFormats = selectedFormats && selectedFormats.length > 0;
 
   const handleSend = () => {
     if (!hasContent) return;
@@ -631,6 +690,29 @@ function ChatInput({ onSend, taskState }: { onSend: (msg: string) => void, taskS
       px-4 py-3
       transition-all duration-200">
 
+      {/* Format indicator tags — inside input box, before textarea */}
+      {hasFormats && (
+        <div className="flex items-center gap-1 shrink-0 self-center">
+          {selectedFormats.map((id) => {
+            const chip = FORMAT_CHIPS.find((c) => c.id === id);
+            if (!chip) return null;
+            return (
+              <span
+                key={id}
+                className="inline-flex items-center
+                  px-1.5 py-0.5
+                  rounded-md
+                  bg-primary/10 text-primary
+                  text-[10px] font-medium
+                  leading-tight"
+              >
+                {chip.icon}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       {/* Textarea */}
       <textarea
         ref={textareaRef}
@@ -663,6 +745,80 @@ function ChatInput({ onSend, taskState }: { onSend: (msg: string) => void, taskS
             transform="rotate(-45 8 8)" />
         </svg>
       </button>
+    </div>
+  );
+}
+
+function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string, onSend: (msg: string) => void, toolbarItems: { icon: string, tooltip: string }[] }) {
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+
+  const showChips = taskState === "empty" || taskState === "completed";
+
+  const handleToggleFormat = (formatId: string) => {
+    setSelectedFormats((prev) =>
+      prev.includes(formatId)
+        ? prev.filter((id) => id !== formatId)
+        : [...prev, formatId]
+    );
+  };
+
+  const handleSend = (message: string) => {
+    // Prepend selected format tags to the message
+    if (selectedFormats.length > 0) {
+      const formatLabels = selectedFormats
+        .map((id) => FORMAT_CHIPS.find((c) => c.id === id)?.label)
+        .filter(Boolean);
+      const prefix = formatLabels.map((l) => `[${l}]`).join(" ");
+      onSend(`${prefix} ${message}`);
+    } else {
+      onSend(message);
+    }
+    // Reset chip selection after sending
+    setSelectedFormats([]);
+  };
+
+  return (
+    <div className="border-t border-border bg-[var(--chat-background)] flex flex-col relative">
+      {/* Gradient fade — separates conversation from input area */}
+      <div className="absolute -top-4 left-0 right-0 h-4 bg-gradient-to-t from-[var(--chat-background)] to-transparent pointer-events-none" />
+
+      {/* Format Chips — only visible in empty/completed states */}
+      <AnimatePresence>
+        {showChips && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="px-4 pb-2 pt-3 overflow-hidden"
+          >
+            <FormatChips
+              selectedFormats={selectedFormats}
+              onToggleFormat={handleToggleFormat}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Input box with inline send button */}
+      <div className="px-4 pb-2 pt-2">
+        <ChatInput
+          onSend={handleSend}
+          taskState={taskState}
+          selectedFormats={selectedFormats}
+        />
+      </div>
+
+      {/* Toolbar — 4 icons with Radix Tooltips */}
+      <div className="flex items-center gap-1 px-5 pb-3">
+        {toolbarItems.map((item, i) => (
+          <ToolbarButton
+            key={i}
+            icon={item.icon}
+            tooltip={item.tooltip}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -1079,26 +1235,12 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
         />
       </ScrollArea>
 
-      {/* Input Area (New Layout) */}
-      <div className="border-t border-border bg-[var(--chat-background)] flex flex-col relative">
-        {/* Gradient fade */}
-        <div className="absolute -top-4 left-0 right-0 h-4 bg-gradient-to-t from-[var(--chat-background)] to-transparent pointer-events-none" />
-
-        <div className="px-4 pb-2 pt-4">
-            <ChatInput onSend={onSendMessage} taskState={taskState} />
-        </div>
-
-        {/* Toolbar */}
-        <div className="flex items-center gap-1 px-5 pb-3">
-            {TOOLBAR_ITEMS.map((item, i) => (
-                <ToolbarButton
-                    key={i}
-                    icon={item.icon}
-                    tooltip={item.tooltip}
-                />
-            ))}
-        </div>
-      </div>
+      {/* Input Area (New Layout with Chips) */}
+      <ChatInputArea 
+        taskState={taskState} 
+        onSend={onSendMessage}
+        toolbarItems={TOOLBAR_ITEMS}
+      />
     </div>
   );
 }

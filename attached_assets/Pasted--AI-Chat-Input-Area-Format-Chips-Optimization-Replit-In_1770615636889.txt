@@ -1,0 +1,550 @@
+# AI Chat Input Area — Format Chips Optimization (Replit Instruction)
+
+> **This extends Doc 27-v2.** Core change: **Add format-level output chips** above the input box, inspired by Miro's AI Chat input area design. Chips define the output format (Report, Table, Mind Map, Checklist, Summary); the input box defines the analysis content. Chips are multi-selectable toggles. No backend changes — use mock state.
+
+---
+
+## Critical Implementation Rules
+
+**READ THIS FIRST — this adds a new layer to the existing input area (Doc 27-v2):**
+
+### MUST DO:
+- ✅ Add a **horizontal row of format chips** between the gradient fade and the input box
+- ✅ Chips are **toggle buttons** — clicking toggles selected/unselected state (multi-select allowed)
+- ✅ Selected chips have `bg-primary/15 border-primary/40 text-primary` styling
+- ✅ Unselected chips have `bg-muted/30 border-border/40 text-muted-foreground/70` styling
+- ✅ Chips row **ONLY appears** when `taskState === "empty"` or `taskState === "completed"`
+- ✅ Chips row **HIDDEN** when `taskState === "in_progress"` or `taskState === "thinking"`
+- ✅ Input box placeholder **dynamically changes** based on selected chips
+- ✅ When user sends a message, selected chip labels are prepended as `[format tags]` to the message
+- ✅ Input box MUST remain visually prominent — **do NOT reduce its height or padding**
+- ✅ All styling must use the existing dark theme tokens (bg-muted, border-border, text-foreground, etc.)
+
+### MUST NOT:
+- ❌ Do NOT make chips look like scenario/task buttons (no "竞品分析", "落地页诊断" etc.)
+- ❌ Do NOT use chips as single-select radio buttons — they are multi-select toggles
+- ❌ Do NOT show chips during execution (`in_progress` / `thinking` states)
+- ❌ Do NOT reduce the input box size to accommodate chips — chips sit ABOVE the input box
+- ❌ Do NOT change the existing input box, send button, or toolbar implementation (Doc 27-v2)
+- ❌ Do NOT change the DynamicExecutionCard or `⋯` overflow menu (Doc 26 / Doc 27-v2 scope)
+
+---
+
+## What Stays the Same (from Doc 27-v2)
+
+- Input box with inline send button (ChatInput component)
+- Dynamic placeholder text based on task state
+- Toolbar icons (📎 @ ⚡ 🌐) with Radix Tooltips
+- Gradient fade above input area
+- `⋯` overflow menu on DynamicExecutionCard during execution
+- Dark theme styling throughout
+
+---
+
+## Change 1: FormatChips Component
+
+### What It Does
+
+A horizontal row of 5 format chips that let users specify what output format(s) they want. Each chip is a toggle — users can select one or multiple formats. The selection is passed along with the user's message when they hit send.
+
+### Visual Reference (Miro-inspired)
+
+Miro's AI Chat uses format-based chips (Mind map, Document, Image, Presentation, Sticky notes, Table) as a horizontal row above the input. Flowacts adapts this pattern with its own format set.
+
+### FormatChips Component (COMPLETE — copy exactly)
+
+```jsx
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const FORMAT_CHIPS = [
+  { id: "report", icon: "📄", label: "Report" },
+  { id: "table", icon: "📊", label: "Table" },
+  { id: "mindmap", icon: "🧠", label: "Mind Map" },
+  { id: "checklist", icon: "✅", label: "Checklist" },
+  { id: "summary", icon: "📝", label: "Summary" },
+];
+
+function FormatChips({ selectedFormats, onToggleFormat }) {
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {FORMAT_CHIPS.map((chip) => {
+        const isSelected = selectedFormats.includes(chip.id);
+        return (
+          <button
+            key={chip.id}
+            onClick={() => onToggleFormat(chip.id)}
+            className={`
+              inline-flex items-center gap-1.5
+              px-3 py-1.5
+              rounded-full
+              text-xs font-medium
+              border
+              transition-all duration-150
+              cursor-pointer
+              select-none
+              whitespace-nowrap
+              ${isSelected
+                ? "bg-primary/15 border-primary/40 text-primary hover:bg-primary/20"
+                : "bg-muted/30 border-border/40 text-muted-foreground/70 hover:bg-muted/50 hover:text-muted-foreground hover:border-border/60"
+              }
+            `}
+          >
+            <span className="text-[13px] leading-none">{chip.icon}</span>
+            <span>{chip.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+```
+
+### Chip Visual Spec
+
+```
+Unselected:                          Selected:
+┌─────────────┐                      ┌─────────────┐
+│ 📄 Report   │                      │ 📄 Report   │
+└─────────────┘                      └─────────────┘
+  bg-muted/30                          bg-primary/15
+  border-border/40                     border-primary/40
+  text-muted-foreground/70             text-primary
+  rounded-full                         rounded-full
+  px-3 py-1.5                          px-3 py-1.5
+  text-xs font-medium                  text-xs font-medium
+```
+
+### Chip Sizing Rationale
+
+- `px-3 py-1.5` + `text-xs` = compact height (~28px), does not crowd the input box
+- `rounded-full` = pill shape, consistent with modern chip patterns (Miro, ChatGPT, Gemini)
+- `gap-2` between chips = breathing room without wasting space
+- Total row height including padding: ~36px (chips row container with `py-1`)
+
+---
+
+## Change 2: Updated ChatInputArea Layout
+
+### What Changes
+
+Insert the FormatChips row between the gradient fade and the input box. The chips row animates in/out based on task state.
+
+### Updated ChatInputArea Component (COMPLETE — copy exactly)
+
+```jsx
+function ChatInputArea({ taskState, onSend }) {
+  const [selectedFormats, setSelectedFormats] = useState([]);
+
+  const showChips = taskState === "empty" || taskState === "completed";
+
+  const handleToggleFormat = (formatId) => {
+    setSelectedFormats((prev) =>
+      prev.includes(formatId)
+        ? prev.filter((id) => id !== formatId)
+        : [...prev, formatId]
+    );
+  };
+
+  const handleSend = (message) => {
+    // Prepend selected format tags to the message
+    if (selectedFormats.length > 0) {
+      const formatLabels = selectedFormats
+        .map((id) => FORMAT_CHIPS.find((c) => c.id === id)?.label)
+        .filter(Boolean);
+      const prefix = formatLabels.map((l) => `[${l}]`).join(" ");
+      onSend(`${prefix} ${message}`);
+    } else {
+      onSend(message);
+    }
+    // Reset chip selection after sending
+    setSelectedFormats([]);
+  };
+
+  return (
+    <div className="relative">
+      {/* Gradient fade — separates conversation from input area */}
+      <div className="h-4 bg-gradient-to-t from-background
+        via-background to-transparent pointer-events-none" />
+
+      {/* Format Chips — only visible in empty/completed states */}
+      <AnimatePresence>
+        {showChips && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="px-4 pb-2 overflow-hidden"
+          >
+            <FormatChips
+              selectedFormats={selectedFormats}
+              onToggleFormat={handleToggleFormat}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Input box with inline send button */}
+      <div className="px-4 pb-2">
+        <ChatInput
+          onSend={handleSend}
+          taskState={taskState}
+          selectedFormats={selectedFormats}
+        />
+      </div>
+
+      {/* Toolbar — 4 icons with Radix Tooltips */}
+      <div className="flex items-center gap-1 px-5 pb-3">
+        {TOOLBAR_ITEMS.map((item, i) => (
+          <ToolbarButton
+            key={i}
+            icon={item.icon}
+            tooltip={item.tooltip}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Change 3: Updated ChatInput with Format-Aware Placeholder
+
+### What Changes
+
+The ChatInput component now receives `selectedFormats` prop and adjusts its placeholder text based on which format chips are selected.
+
+### Updated getPlaceholder Function (COMPLETE — copy exactly)
+
+```jsx
+function getPlaceholder(taskState, selectedFormats = []) {
+  // During execution states, use task-state-based placeholders (unchanged)
+  if (taskState === "in_progress") {
+    return "Type to redirect or intervene...";
+  }
+  if (taskState === "thinking") {
+    return "Type to redirect or wait for results...";
+  }
+
+  // For empty/completed states, adjust based on selected format chips
+  if (selectedFormats.length === 0) {
+    // No chips selected — generic prompt
+    if (taskState === "completed") {
+      return "Compare, dig deeper, or start a new analysis...";
+    }
+    return "Paste a URL or describe what you'd like to analyze...";
+  }
+
+  // One or more chips selected — format-aware prompt
+  const formatNames = selectedFormats
+    .map((id) => FORMAT_CHIPS.find((c) => c.id === id)?.label)
+    .filter(Boolean);
+
+  if (formatNames.length === 1) {
+    const name = formatNames[0].toLowerCase();
+    return `Enter a URL or topic to generate a ${name}...`;
+  }
+
+  return `Enter a URL or topic to generate ${formatNames.length} outputs...`;
+}
+```
+
+### Updated ChatInput Component (only the changed parts)
+
+```jsx
+function ChatInput({ onSend, taskState, selectedFormats }) {
+  // ... existing state and handlers unchanged ...
+
+  const placeholder = getPlaceholder(taskState, selectedFormats);
+
+  // ... rest of component unchanged ...
+}
+```
+
+**IMPORTANT**: Only the `placeholder` line changes. The textarea, send button, styling, auto-resize behavior — all remain exactly as in Doc 27-v2.
+
+---
+
+## Change 4: Format Selection Indicator on Input Box (Optional Enhancement)
+
+### What It Does
+
+When one or more format chips are selected, show a subtle indicator inside the input box (left side, before the textarea) to remind the user what formats are active. This is optional but recommended for clarity.
+
+### Implementation
+
+```jsx
+function ChatInput({ onSend, taskState, selectedFormats }) {
+  const [inputValue, setInputValue] = useState("");
+  const textareaRef = useRef(null);
+
+  const placeholder = getPlaceholder(taskState, selectedFormats);
+  const hasContent = inputValue.trim().length > 0;
+  const hasFormats = selectedFormats && selectedFormats.length > 0;
+
+  // ... existing handleSend, handleKeyDown, handleInput unchanged ...
+
+  return (
+    <div className="flex items-end gap-2
+      bg-muted/20 rounded-2xl
+      border border-border/60
+      focus-within:border-primary/50
+      focus-within:ring-1 focus-within:ring-primary/20
+      px-4 py-3
+      transition-all duration-200">
+
+      {/* Format indicator tags — inside input box, before textarea */}
+      {hasFormats && (
+        <div className="flex items-center gap-1 shrink-0 self-center">
+          {selectedFormats.map((id) => {
+            const chip = FORMAT_CHIPS.find((c) => c.id === id);
+            if (!chip) return null;
+            return (
+              <span
+                key={id}
+                className="inline-flex items-center
+                  px-1.5 py-0.5
+                  rounded-md
+                  bg-primary/10 text-primary
+                  text-[10px] font-medium
+                  leading-tight"
+              >
+                {chip.icon}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Textarea — unchanged from Doc 27-v2 */}
+      <textarea
+        ref={textareaRef}
+        value={inputValue}
+        onChange={handleInput}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="flex-1 bg-transparent resize-none outline-none
+          text-sm text-foreground
+          placeholder:text-muted-foreground/40
+          min-h-[20px] max-h-[120px]"
+        rows={1}
+      />
+
+      {/* Send button — unchanged from Doc 27-v2 */}
+      <button
+        onClick={handleSend}
+        disabled={!hasContent}
+        className={`shrink-0 p-1.5 rounded-lg transition-all duration-150
+          ${hasContent
+            ? "bg-primary text-primary-foreground hover:bg-primary/80 cursor-pointer"
+            : "bg-muted/50 text-muted-foreground/30 cursor-default"
+          }`}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+          xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 8L14 8M14 8L8 2M14 8L8 14"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round"
+            transform="rotate(-45 8 8)" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+```
+
+### Format Indicator Visual Spec
+
+```
+Input box with 2 formats selected:
+
+┌──────────────────────────────────────────────────────┐
+│ [📄][📊]  Enter a URL or topic to generate 2...  [➤]│
+└──────────────────────────────────────────────────────┘
+  ↑                                                  ↑
+  Format indicator icons                       Send button
+  bg-primary/10, text-primary                  (unchanged)
+  text-[10px], rounded-md
+  px-1.5 py-0.5
+```
+
+**IMPORTANT**: The format indicator icons are small (10px) and compact. They do NOT reduce the textarea's usable width significantly. The textarea still takes `flex-1` and remains the dominant element.
+
+---
+
+## Complete Layout Diagram
+
+### State: Empty (no task running, no chips selected)
+
+```
+┌──────────────────────────────────────────────────────┐
+│                                                        │
+│  [conversation area]                                   │
+│                                                        │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │  ← gradient fade
+│                                                        │
+│  📄 Report   📊 Table   🧠 Mind Map   ✅ Checklist   📝 Summary  │  ← format chips
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ Paste a URL or describe what you'd like...  [➤]  │  │  ← input box
+│  └──────────────────────────────────────────────────┘  │
+│  📎  @  ⚡  🌐                                         │  ← toolbar
+│                                                        │
+└──────────────────────────────────────────────────────┘
+```
+
+### State: Empty (2 chips selected)
+
+```
+┌──────────────────────────────────────────────────────┐
+│                                                        │
+│  [conversation area]                                   │
+│                                                        │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+│                                                        │
+│  📄 Report ●  📊 Table ●  🧠 Mind Map  ✅ Checklist  📝 Summary  │  ← 2 selected
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ [📄][📊] Enter a URL or topic to generate 2... [➤]│  │  ← format indicators
+│  └──────────────────────────────────────────────────┘  │
+│  📎  @  ⚡  🌐                                         │
+│                                                        │
+└──────────────────────────────────────────────────────┘
+```
+
+### State: In Progress (chips hidden)
+
+```
+┌──────────────────────────────────────────────────────┐
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ 🕵️ Scout · Analyzing pricing...    [⋯] [▾]      │  │  ← execution card
+│  ├──────────────────────────────────────────────────┤  │
+│  │  ● Analyze Pricing Strategy ✓                    │  │
+│  │  ● Test Signup Flow ◉                            │  │
+│  │  ○ Compare Competitors                           │  │
+│  └──────────────────────────────────────────────────┘  │
+│                                                        │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+│                                                        │  ← NO chips (hidden)
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ Type to redirect or intervene...            [➤]  │  │  ← input box (full space)
+│  └──────────────────────────────────────────────────┘  │
+│  📎  @  ⚡  🌐                                         │
+│                                                        │
+└──────────────────────────────────────────────────────┘
+```
+
+### State: Completed (chips reappear)
+
+```
+┌──────────────────────────────────────────────────────┐
+│                                                        │
+│  [analysis results / final report card]                │
+│                                                        │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+│                                                        │
+│  📄 Report   📊 Table   🧠 Mind Map   ✅ Checklist   📝 Summary  │  ← chips back
+│                                                        │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │ Compare, dig deeper, or start a new analysis.[➤] │  │
+│  └──────────────────────────────────────────────────┘  │
+│  📎  @  ⚡  🌐                                         │
+│                                                        │
+└──────────────────────────────────────────────────────┘
+```
+
+---
+
+## Interaction Flow
+
+### Step-by-step User Journey
+
+```
+1. User sees format chips above input box
+       ↓
+2. User clicks one or more chips (e.g., [Report] + [Table])
+   → Chips toggle to selected state (bg-primary/15)
+   → Input box placeholder updates ("Enter a URL or topic to generate 2 outputs...")
+   → Format indicator icons appear inside input box ([📄][📊])
+       ↓
+3. User types or pastes a URL in the input box
+   (e.g., "https://miro.com analyze their pricing strategy")
+       ↓
+4. User hits Enter or clicks send button
+   → Message sent as: "[Report] [Table] https://miro.com analyze their pricing strategy"
+   → Chip selection resets to empty
+   → taskState transitions to "in_progress"
+   → Chips row animates out (hidden during execution)
+       ↓
+5. Agent executes task...
+   → Input area shows only: input box + toolbar (no chips)
+   → User can still type interventions
+       ↓
+6. Agent completes task
+   → taskState transitions to "completed"
+   → Chips row animates back in
+   → User can select new formats for follow-up analysis
+```
+
+### Edge Cases
+
+| Scenario | Behavior |
+|----------|----------|
+| User sends without selecting any chips | Message sent as-is (no format prefix). This is valid — Agent uses default output format. |
+| User selects chips then deselects all | Returns to "no chips selected" state. Placeholder reverts to generic. |
+| User selects chips during `completed` state | Works normally. Chips persist until message is sent. |
+| Task transitions to `in_progress` while chips are selected | Chips row hides. Selection state is preserved in memory. If task completes quickly, chips reappear with previous selection. |
+| User clicks same chip twice | Toggles off (deselects). |
+
+---
+
+## What NOT to Do
+
+- ❌ Do NOT make chips single-select (radio button behavior) — they MUST be multi-select toggles
+- ❌ Do NOT show chips during `in_progress` or `thinking` states
+- ❌ Do NOT use scenario labels ("Competitive Analysis", "Landing Page Audit") — chips are format-only
+- ❌ Do NOT reduce input box height, padding, or font size to fit chips
+- ❌ Do NOT place chips below the input box or inside the toolbar
+- ❌ Do NOT add more than 5 chips (keep it to: Report, Table, Mind Map, Checklist, Summary)
+- ❌ Do NOT change the existing send button, toolbar, or gradient fade behavior
+- ❌ Do NOT use large chip sizes — keep `text-xs` and `px-3 py-1.5` for compact height
+
+---
+
+## Acceptance Criteria
+
+1. ✅ **5 format chips** visible above input box in `empty` and `completed` states
+2. ✅ Chips are **multi-select toggles** — clicking toggles selected/unselected
+3. ✅ Selected chips: `bg-primary/15 border-primary/40 text-primary`
+4. ✅ Unselected chips: `bg-muted/30 border-border/40 text-muted-foreground/70`
+5. ✅ Chips **hidden** during `in_progress` and `thinking` states (with animation)
+6. ✅ Chips row uses `AnimatePresence` + `motion.div` for smooth show/hide
+7. ✅ Input box placeholder **changes dynamically** based on selected chips
+8. ✅ Format indicator icons appear **inside input box** (left side) when chips are selected
+9. ✅ Sending a message **prepends format tags** (e.g., `[Report] [Table]`) to the message
+10. ✅ Chip selection **resets** after message is sent
+11. ✅ Input box remains **full width and prominent** — chips do not compress it
+12. ✅ Total chips row height ≤ 36px — does not dominate the input area
+13. ✅ All styling uses existing dark theme tokens — no new colors or custom CSS
+14. ✅ Existing Doc 27-v2 components (input box, send button, toolbar, `⋯` menu) unchanged
+
+---
+
+## Dependencies
+
+- `framer-motion` — AnimatePresence for chips show/hide animation (already in project)
+- `@radix-ui/react-tooltip` — Toolbar tooltips (already in project, from Doc 27-v2)
+- `@radix-ui/react-dropdown-menu` — `⋯` overflow menu (already in project, from Doc 27-v2)
+- No new dependencies required
+
+---
+
+*Document: 38-AIChat输入区格式Chips优化-Replit指令.md*
+*Extends: Doc 27-v2 (AIChat输入框引导优化-Replit指令)*
+*Design basis: Doc 36 section 3.5 (Chips 分类策略深度分析 — 纯格式级 Chips 方案)*
+*Related: Doc 35 (修订分析文档), Doc 26-v8 (DynamicExecutionCard)*
+
