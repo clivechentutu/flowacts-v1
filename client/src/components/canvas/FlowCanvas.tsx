@@ -182,14 +182,6 @@ const Controls = ({ onScreenshot, scale, setScale }: { onScreenshot: () => void,
                     <ZoomOut className="w-5 h-5" strokeWidth={1.5} />
                 </button>
                 
-                <button
-                    onClick={() => resetTransform()}
-                    className="min-w-[56px] text-center select-none font-medium text-black/90 text-sm tabular-nums hover:bg-black/[0.04] rounded-lg py-1.5 transition-colors cursor-pointer"
-                    title="Reset Zoom"
-                >
-                    {Math.round(scale * 100)}%
-                </button>
-
                 <button 
                     onClick={() => zoomIn(0.2)}
                     className="w-9 h-9 flex items-center justify-center hover:bg-black/[0.04] rounded-lg text-black/80 transition-colors active:scale-95 duration-100"
