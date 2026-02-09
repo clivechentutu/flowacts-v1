@@ -1,0 +1,452 @@
+# AI Chat Input Area — Format Chips Optimization (Replit Instruction v2)
+
+> **This replaces Doc 38 v1 and extends Doc 27-v2.** Core design change: **Unified container** — format chips, textarea, toolbar, and send button all live inside ONE card. Inspired by Miro's AI Chat input area (where chips + input + actions share a single container), but adapted for Flowacts' dark theme and Agent product model. No backend changes — use mock state.
+
+---
+
+## Why v2? What Was Wrong With v1?
+
+v1 had a **fragmented 3-layer layout**: chips floated above the input box as a separate element, the input box was its own card, and the toolbar sat below as a third layer. The Replit implementation looked disjointed — three unrelated strips stacked vertically with no visual cohesion.
+
+**Root causes of the poor v1 result:**
+
+1. **No shared container** — chips, input, toolbar were 3 independent DOM layers
+2. **Chips too small** — `text-xs` + `px-3 py-1.5` = ~28px height, barely visible on dark backgrounds
+3. **Poor dark theme contrast** — `bg-muted/30` made unselected chips nearly invisible
+4. **Emoji icons too small** — `text-[13px]` emojis rendered poorly
+5. **Redundant format indicators** — Change 4 (icons inside input box) added clutter without value
+
+**v2 fix: Unified container pattern.** Everything inside one `rounded-2xl` card.
+
+---
+
+## Critical Implementation Rules
+
+### MUST DO:
+- ✅ **ONE container card** wraps: format chips (top) + textarea (middle) + toolbar & send button (bottom)
+- ✅ Container uses `bg-muted/20 rounded-2xl border border-border/60` — same as the old input box
+- ✅ Chips sit **inside the container at the top**, NOT floating above as a separate element
+- ✅ Chips use `text-sm` (NOT `text-xs`) and `px-3.5 py-2` for better visibility (~34px height)
+- ✅ Unselected chips use `bg-white/[0.06]` for visible-but-subtle dark theme contrast
+- ✅ Toolbar icons sit at **bottom-left** of the container
+- ✅ Send button sits at **bottom-right** of the container
+- ✅ Chips are **multi-select toggles** (clicking toggles selected/unselected)
+- ✅ Chips row **ONLY appears** when `taskState === "empty"` or `taskState === "completed"`
+- ✅ Chips row **HIDDEN** when `taskState === "in_progress"` or `taskState === "thinking"`
+- ✅ When user sends a message, selected chip labels are prepended as `[format tags]`
+
+### MUST NOT:
+- ❌ Do NOT render chips as a separate element outside the container card
+- ❌ Do NOT render toolbar as a separate element outside the container card
+- ❌ Do NOT use `text-xs` for chips — too small, use `text-sm`
+- ❌ Do NOT use `bg-muted/30` for unselected chips — too invisible, use `bg-white/[0.06]`
+- ❌ Do NOT add format indicator icons inside the textarea (v1 Change 4 is removed)
+- ❌ Do NOT make chips single-select — they MUST be multi-select toggles
+- ❌ Do NOT show chips during execution (`in_progress` / `thinking` states)
+
+---
+
+## What Stays the Same (from Doc 27-v2)
+
+- Dynamic placeholder text based on task state
+- `⋯` overflow menu on DynamicExecutionCard during execution
+- Dark theme styling throughout
+- Radix Tooltip for toolbar icons
+
+## What Changes From v1
+
+| Element | v1 (WRONG) | v2 (CORRECT) |
+|---------|-----------|--------------|
+| **Layout** | 3 separate layers (chips → input box → toolbar) | 1 unified container card |
+| **Chip size** | `text-xs px-3 py-1.5` (~28px) | `text-sm px-3.5 py-2` (~34px) |
+| **Chip unselected bg** | `bg-muted/30` (invisible) | `bg-white/[0.06]` (subtle but visible) |
+| **Chip icon size** | `text-[13px]` (too small) | `text-base` (16px, renders well) |
+| **Toolbar position** | Below input box, outside | Inside container, bottom-left |
+| **Send button position** | Inside input box, right side | Inside container, bottom-right |
+| **Format indicators in input** | Yes (Change 4) | **Removed** — redundant |
+| **Input box border** | Own `rounded-2xl border` card | No own border — shares container |
+
+---
+
+## Visual Layout — Unified Container
+
+```
+┌─ container: bg-muted/20 rounded-2xl border border-border/60 ──────────┐
+│                                                                         │
+│  ┌─ chips row (px-4 pt-3 pb-1) ──────────────────────────────────────┐ │
+│  │  📄 Report   📊 Table   🧠 Mind Map   ✅ Checklist   📝 Summary  │ │
+│  └───────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌─ textarea (px-4 py-3, no border, bg-transparent) ─────────────────┐ │
+│  │  Paste a URL or describe what you'd like to analyze...             │ │
+│  │                                                                     │ │
+│  │                                                                     │ │
+│  └───────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌─ bottom bar (px-4 pb-3) ──────────────────────────────────────────┐ │
+│  │  📎  @  ⚡  🌐                                          [➤ Send] │ │
+│  └───────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key visual rules:**
+- The outer container is the ONLY element with a border and background
+- Textarea has NO border, NO background — it blends into the container
+- Chips row has a subtle `border-b border-border/30` separator below it
+- Bottom bar has a subtle `border-t border-border/30` separator above it
+- These thin separators create visual zones WITHOUT breaking the unified feel
+
+---
+
+## Component Architecture
+
+```
+ChatInputArea (unified container)
+├── FormatChips (conditionally rendered based on taskState)
+├── ChatInput (textarea, no own border/bg)
+└── BottomBar
+    ├── ToolbarIcons (left: attach, mention, quick-actions, browse)
+    └── SendButton (right)
+```
+
+**File changes:**
+1. `FormatChips.tsx` — update chip sizing, contrast, icon size
+2. `ChatInputArea.tsx` — **NEW unified wrapper** that contains everything
+3. `ChatInput.tsx` — simplify: remove own border/bg, become a plain textarea
+4. `BottomBar.tsx` — toolbar icons + send button in a flex row
+
+---
+
+## Change 1 — FormatChips Component
+
+**File:** `client/src/components/chat/FormatChips.tsx`
+
+```tsx
+import { motion, AnimatePresence } from "framer-motion";
+
+interface FormatChip {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+const FORMAT_CHIPS: FormatChip[] = [
+  { id: "report", label: "Report", icon: "📄" },
+  { id: "table", label: "Table", icon: "📊" },
+  { id: "mindmap", label: "Mind Map", icon: "🧠" },
+  { id: "checklist", label: "Checklist", icon: "✅" },
+  { id: "summary", label: "Summary", icon: "📝" },
+];
+
+interface FormatChipsProps {
+  selectedFormats: string[];
+  onToggleFormat: (id: string) => void;
+  visible: boolean; // controlled by parent based on taskState
+}
+
+export function FormatChips({
+  selectedFormats,
+  onToggleFormat,
+  visible,
+}: FormatChipsProps) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="overflow-hidden"
+        >
+          <div className="flex flex-wrap gap-2 px-4 pt-3 pb-2 border-b border-border/30">
+            {FORMAT_CHIPS.map((chip) => {
+              const isSelected = selectedFormats.includes(chip.id);
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => onToggleFormat(chip.id)}
+                  className={`
+                    inline-flex items-center gap-1.5
+                    text-sm px-3.5 py-2 rounded-lg
+                    transition-all duration-150 cursor-pointer
+                    ${
+                      isSelected
+                        ? "bg-primary/20 text-primary border border-primary/40"
+                        : "bg-white/[0.06] text-muted-foreground border border-transparent hover:bg-white/[0.10] hover:text-foreground"
+                    }
+                  `}
+                >
+                  <span className="text-base leading-none">{chip.icon}</span>
+                  <span>{chip.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+```
+
+**Key details:**
+- `text-sm` (14px) for chip text — NOT `text-xs` (12px)
+- `px-3.5 py-2` gives ~34px chip height — comfortable touch target
+- `text-base` (16px) for emoji icons — renders clearly
+- Unselected: `bg-white/[0.06]` — subtle but visible on dark backgrounds
+- Selected: `bg-primary/20 text-primary border-primary/40` — clear active state
+- `border border-transparent` on unselected prevents layout shift when selecting
+- `AnimatePresence` + `motion.div` with `height: "auto"` for smooth show/hide
+- `border-b border-border/30` at bottom creates subtle separator from textarea
+
+---
+
+## Change 2 — ChatInputArea (Unified Container)
+
+**File:** `client/src/components/chat/ChatInputArea.tsx`
+
+This is the **core change**. Previously, chips, input box, and toolbar were 3 separate elements. Now they are all children of ONE container.
+
+```tsx
+import { useState, useRef } from "react";
+import { FormatChips } from "./FormatChips";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Paperclip, AtSign, Zap, Globe, ArrowUp } from "lucide-react";
+
+type TaskState = "empty" | "completed" | "in_progress" | "thinking";
+
+interface ChatInputAreaProps {
+  taskState: TaskState;
+  onSend: (message: string, formats: string[]) => void;
+}
+
+export function ChatInputArea({ taskState, onSend }: ChatInputAreaProps) {
+  const [message, setMessage] = useState("");
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const chipsVisible = taskState === "empty" || taskState === "completed";
+  const inputDisabled = taskState === "in_progress" || taskState === "thinking";
+
+  const placeholder =
+    taskState === "empty"
+      ? "Paste a URL or describe what you'd like to analyze..."
+      : taskState === "completed"
+        ? "Ask a follow-up question or start a new analysis..."
+        : taskState === "thinking"
+          ? "Agent is thinking..."
+          : "Agent is working...";
+
+  const handleToggleFormat = (id: string) => {
+    setSelectedFormats((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    );
+  };
+
+  const handleSend = () => {
+    if (!message.trim() || inputDisabled) return;
+    onSend(message.trim(), selectedFormats);
+    setMessage("");
+    setSelectedFormats([]);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    // ── THE UNIFIED CONTAINER ──
+    <div className="bg-muted/20 rounded-2xl border border-border/60">
+      {/* ── Top: Format Chips ── */}
+      <FormatChips
+        selectedFormats={selectedFormats}
+        onToggleFormat={handleToggleFormat}
+        visible={chipsVisible}
+      />
+
+      {/* ── Middle: Textarea ── */}
+      <textarea
+        ref={textareaRef}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={inputDisabled}
+        rows={3}
+        className="
+          w-full resize-none bg-transparent
+          px-4 py-3
+          text-sm text-foreground placeholder:text-muted-foreground/60
+          focus:outline-none
+          disabled:opacity-50 disabled:cursor-not-allowed
+        "
+      />
+
+      {/* ── Bottom: Toolbar + Send ── */}
+      <div className="flex items-center justify-between px-4 pb-3 border-t border-border/30">
+        {/* Left: toolbar icons */}
+        <div className="flex items-center gap-1 pt-2">
+          {[
+            { icon: Paperclip, label: "Attach file" },
+            { icon: AtSign, label: "Mention" },
+            { icon: Zap, label: "Quick actions" },
+            { icon: Globe, label: "Browse web" },
+          ].map(({ icon: Icon, label }) => (
+            <Tooltip key={label}>
+              <TooltipTrigger asChild>
+                <button
+                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/[0.06] transition-colors"
+                  onClick={() => {/* mock */}}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">{label}</TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+
+        {/* Right: send button */}
+        <button
+          onClick={handleSend}
+          disabled={!message.trim() || inputDisabled}
+          className="
+            mt-2 p-2 rounded-lg
+            bg-primary text-primary-foreground
+            hover:bg-primary/90
+            disabled:opacity-30 disabled:cursor-not-allowed
+            transition-colors
+          "
+        >
+          <ArrowUp className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Change 3 — Format Tag Prepending on Send
+
+When the user sends a message with selected format chips, prepend format tags to the message before passing it to the handler.
+
+**Logic (inside `handleSend` or the parent's `onSend` callback):**
+
+```tsx
+// Format chip ID → display label mapping
+const FORMAT_LABELS: Record<string, string> = {
+  report: "Report",
+  table: "Table",
+  mindmap: "Mind Map",
+  checklist: "Checklist",
+  summary: "Summary",
+};
+
+function buildMessageWithFormats(message: string, formats: string[]): string {
+  if (formats.length === 0) return message;
+  const tags = formats.map((f) => FORMAT_LABELS[f] || f).join(", ");
+  return `[Format: ${tags}] ${message}`;
+}
+
+// Example outputs:
+// formats=["report"]         → "[Format: Report] Analyze competitor pricing"
+// formats=["table","summary"] → "[Format: Table, Summary] Analyze competitor pricing"
+// formats=[]                  → "Analyze competitor pricing"
+```
+
+**Where this runs:** In the parent component that receives `onSend(message, formats)`. The `ChatInputArea` passes raw message + format IDs; the parent builds the final string and sends it to the mock agent.
+
+---
+
+## Change 4 — Integration in AIChatPanel
+
+**File:** `client/src/components/chat/AIChatPanel.tsx`
+
+Replace the old separate chips + input + toolbar layout with the single `ChatInputArea`:
+
+```tsx
+// BEFORE (v1 — WRONG: 3 separate layers)
+<div className="...">
+  <FormatChips ... />        {/* layer 1: floating chips */}
+  <ChatInput ... />          {/* layer 2: input box with own border */}
+  <Toolbar ... />            {/* layer 3: toolbar below */}
+</div>
+
+// AFTER (v2 — CORRECT: 1 unified container)
+<ChatInputArea
+  taskState={taskState}
+  onSend={(message, formats) => {
+    const finalMessage = buildMessageWithFormats(message, formats);
+    handleSendMessage(finalMessage);
+  }}
+/>
+```
+
+**Key point:** The old `ChatInput` component with its own `rounded-2xl border` styling is **no longer used directly**. Its textarea functionality is now embedded inside `ChatInputArea`. If you prefer to keep `ChatInput` as a sub-component, strip its border/background styles so it's just a plain textarea wrapper.
+
+---
+
+## Change 5 — Remove v1 Change 4 (Format Indicators in Input)
+
+If v1 added small format indicator icons inside the textarea area (e.g., showing selected format icons as badges near the input), **remove them entirely**. The chips themselves already show what's selected — duplicating this inside the textarea is visual clutter.
+
+---
+
+## State Management Summary
+
+```
+┌─────────────────────────────────────────────────┐
+│  Zustand store (or local state)                  │
+│                                                   │
+│  taskState: "empty" | "completed" |              │
+│             "in_progress" | "thinking"            │
+│                                                   │
+│  selectedFormats: string[]  ← chip toggle state  │
+│  message: string            ← textarea value     │
+│                                                   │
+│  Derived:                                         │
+│  chipsVisible = taskState ∈ {empty, completed}   │
+│  inputDisabled = taskState ∈ {in_progress,       │
+│                                thinking}          │
+└─────────────────────────────────────────────────┘
+```
+
+- `selectedFormats` and `message` can be **local state** inside `ChatInputArea` (no need for Zustand)
+- `taskState` comes from the parent / Zustand store
+- On send: clear both `message` and `selectedFormats`
+
+---
+
+## Animation Details
+
+| Element | Animation | Library |
+|---------|-----------|---------|
+| Chips row show/hide | `height: 0 → auto`, `opacity: 0 → 1` | Framer Motion `AnimatePresence` |
+| Chip select/deselect | `transition-all duration-150` (bg + border color) | Tailwind CSS transition |
+| Send button disabled state | `opacity: 0.3` | Tailwind CSS |
+
+**No spring animations** — use `ease: "easeInOut"` with `duration: 0.2` for the chips row. Keep it snappy.
+
+---
+
+## Implementation Checklist for Replit
+
+1. [ ] Create `FormatChips.tsx` with updated sizing (`text-sm`, `px-3.5 py-2`, `bg-white/[0.06]`)
+2. [ ] Create `ChatInputArea.tsx` as the unified container
+3. [ ] Move textarea into `ChatInputArea` (remove old `ChatInput` border/bg)
+4. [ ] Move toolbar icons + send button into `ChatInputArea` bottom bar
+5. [ ] Wire `taskState` to control chip visibility and input disabled state
+6. [ ] Implement `buildMessageWithFormats()` for format tag prepending
+7. [ ] Update `AIChatPanel.tsx` to use `<ChatInputArea>` instead of 3 separate layers
+8. [ ] Remove any v1 "format indicator" icons inside the textarea
+9. [ ] Test: chips visible in `empty`/`completed` states, hidden in `in_progress`/`thinking`
+10. [ ] Test: multi-select works (can select Report + Table simultaneously)
+11. [ ] Test: send prepends `[Format: ...]` tags correctly
+12. [ ] Visual check: unified container looks like ONE card, not 3 stacked strips

@@ -37,6 +37,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useRef } from "react";
+import { FormatChips } from "./FormatChips";
 
 interface ChatPanelProps {
   events: StoryEvent[];
@@ -577,51 +578,16 @@ function ExecutionOverflowMenu({ onAction }: { onAction: (item: any) => void }) 
   );
 }
 
-const FORMAT_CHIPS = [
-  { id: "report", icon: "📄", label: "Report" },
-  { id: "table", icon: "📊", label: "Table" },
-  { id: "mindmap", icon: "🧠", label: "Mind Map" },
-  { id: "checklist", icon: "✅", label: "Checklist" },
-  { id: "summary", icon: "📝", label: "Summary" },
-];
+// REMOVE the old FormatChips component and FORMAT_CHIPS constant from here
+// We will import the new one from ./FormatChips
 
-function FormatChips({ selectedFormats, onToggleFormat }: { selectedFormats: string[], onToggleFormat: (id: string) => void }) {
-  return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {FORMAT_CHIPS.map((chip) => {
-        const isSelected = selectedFormats.includes(chip.id);
-        return (
-          <button
-            key={chip.id}
-            onClick={() => onToggleFormat(chip.id)}
-            className={`
-              inline-flex items-center gap-1.5
-              px-3 py-1.5
-              rounded-full
-              text-xs font-medium
-              border
-              transition-all duration-150
-              cursor-pointer
-              select-none
-              whitespace-nowrap
-              ${isSelected
-                ? "bg-primary/15 border-primary/40 text-primary hover:bg-primary/20"
-                : "bg-muted/30 border-border/40 text-muted-foreground/70 hover:bg-muted/50 hover:text-muted-foreground hover:border-border/60"
-              }
-            `}
-          >
-            <span className="text-[13px] leading-none">{chip.icon}</span>
-            <span>{chip.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function ChatInput({ onSend, taskState, selectedFormats = [] }: { onSend: (msg: string) => void, taskState: string, selectedFormats?: string[] }) {
+function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string, onSend: (msg: string) => void, toolbarItems: { icon: string, tooltip: string }[] }) {
   const [inputValue, setInputValue] = useState("");
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const chipsVisible = taskState === "empty" || taskState === "completed";
+  const inputDisabled = taskState === "in_progress" || taskState === "thinking";
 
   const getPlaceholder = (state: string, formats: string[]) => {
     // During execution states, use task-state-based placeholders (unchanged)
@@ -636,14 +602,23 @@ function ChatInput({ onSend, taskState, selectedFormats = [] }: { onSend: (msg: 
     if (formats.length === 0) {
       // No chips selected — generic prompt
       if (state === "completed") {
-        return "Compare, dig deeper, or start a new analysis...";
+        return "Ask a follow-up question or start a new analysis...";
       }
       return "Paste a URL or describe what you'd like to analyze...";
     }
 
     // One or more chips selected — format-aware prompt
     const formatNames = formats
-      .map((id) => FORMAT_CHIPS.find((c) => c.id === id)?.label)
+      .map((id) => {
+        // We need to import FORMAT_CHIPS or define a helper to get label by ID
+        // For now, let's hardcode or re-import. Since FormatChips component exports it privately or we need to expose it.
+        // Let's just use a simple mapping here for placeholder logic to keep it self contained or move FORMAT_CHIPS to a shared place.
+        // Simpler: Just map id to label.
+        const map: Record<string, string> = {
+            report: "Report", table: "Table", mindmap: "Mind Map", checklist: "Checklist", summary: "Summary"
+        };
+        return map[id];
+      })
       .filter(Boolean);
 
     if (formatNames.length === 1) {
@@ -655,15 +630,34 @@ function ChatInput({ onSend, taskState, selectedFormats = [] }: { onSend: (msg: 
   };
 
   const placeholder = getPlaceholder(taskState, selectedFormats);
-  const hasContent = inputValue.trim().length > 0;
-  const hasFormats = selectedFormats && selectedFormats.length > 0;
+
+  const handleToggleFormat = (id: string) => {
+    setSelectedFormats((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    );
+  };
 
   const handleSend = () => {
-    if (!hasContent) return;
-    onSend(inputValue.trim());
+    if (!inputValue.trim() || inputDisabled) return;
+    
+    // Construct message with tags
+    const formatLabels = selectedFormats
+      .map((id) => {
+          const map: Record<string, string> = {
+              report: "Report", table: "Table", mindmap: "Mind Map", checklist: "Checklist", summary: "Summary"
+          };
+          return map[id];
+      })
+      .filter(Boolean);
+      
+    const prefix = formatLabels.map((l) => `[${l}]`).join(" ");
+    const finalMsg = prefix ? `${prefix} ${inputValue.trim()}` : inputValue.trim();
+
+    onSend(finalMsg);
     setInputValue("");
+    setSelectedFormats([]);
     if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = "auto";
     }
   };
 
@@ -673,155 +667,84 @@ function ChatInput({ onSend, taskState, selectedFormats = [] }: { onSend: (msg: 
       handleSend();
     }
   };
-
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  
+    const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
     // Auto-resize textarea
     e.target.style.height = "auto";
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
   };
 
-  return (
-    <div className="flex items-end gap-2
-      bg-muted/20 rounded-2xl
-      border border-border/60
-      focus-within:border-primary/50
-      focus-within:ring-1 focus-within:ring-primary/20
-      px-4 py-3
-      transition-all duration-200">
-
-      {/* Format indicator tags — inside input box, before textarea */}
-      {hasFormats && (
-        <div className="flex items-center gap-1 shrink-0 self-center">
-          {selectedFormats.map((id) => {
-            const chip = FORMAT_CHIPS.find((c) => c.id === id);
-            if (!chip) return null;
-            return (
-              <span
-                key={id}
-                className="inline-flex items-center
-                  px-1.5 py-0.5
-                  rounded-md
-                  bg-primary/10 text-primary
-                  text-[10px] font-medium
-                  leading-tight"
-              >
-                {chip.icon}
-              </span>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Textarea */}
-      <textarea
-        ref={textareaRef}
-        value={inputValue}
-        onChange={handleInput}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        className="flex-1 bg-transparent resize-none outline-none
-          text-sm text-foreground
-          placeholder:text-muted-foreground/40
-          min-h-[20px] max-h-[120px]"
-        rows={1}
-      />
-
-      {/* Send button — INSIDE the input box */}
-      <button
-        onClick={handleSend}
-        disabled={!hasContent}
-        className={`shrink-0 p-1.5 rounded-lg transition-all duration-150
-          ${hasContent
-            ? "bg-primary text-primary-foreground hover:bg-primary/80 cursor-pointer"
-            : "bg-muted/50 text-muted-foreground/30 cursor-default"
-          }`}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-          xmlns="http://www.w3.org/2000/svg">
-          <path d="M2 8L14 8M14 8L8 2M14 8L8 14"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round"
-            transform="rotate(-45 8 8)" />
-        </svg>
-      </button>
-    </div>
-  );
-}
-
-function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string, onSend: (msg: string) => void, toolbarItems: { icon: string, tooltip: string }[] }) {
-  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
-
-  const showChips = taskState === "empty" || taskState === "completed";
-
-  const handleToggleFormat = (formatId: string) => {
-    setSelectedFormats((prev) =>
-      prev.includes(formatId)
-        ? prev.filter((id) => id !== formatId)
-        : [...prev, formatId]
-    );
-  };
-
-  const handleSend = (message: string) => {
-    // Prepend selected format tags to the message
-    if (selectedFormats.length > 0) {
-      const formatLabels = selectedFormats
-        .map((id) => FORMAT_CHIPS.find((c) => c.id === id)?.label)
-        .filter(Boolean);
-      const prefix = formatLabels.map((l) => `[${l}]`).join(" ");
-      onSend(`${prefix} ${message}`);
-    } else {
-      onSend(message);
-    }
-    // Reset chip selection after sending
-    setSelectedFormats([]);
-  };
 
   return (
-    <div className="border-t border-border bg-[var(--chat-background)] flex flex-col relative">
+    <div className="border-t border-border bg-[var(--chat-background)] flex flex-col relative pt-4 px-4 pb-4">
       {/* Gradient fade — separates conversation from input area */}
       <div className="absolute -top-4 left-0 right-0 h-4 bg-gradient-to-t from-[var(--chat-background)] to-transparent pointer-events-none" />
 
-      {/* Format Chips — only visible in empty/completed states */}
-      <AnimatePresence>
-        {showChips && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="px-4 pb-2 pt-3 overflow-hidden"
-          >
-            <FormatChips
-              selectedFormats={selectedFormats}
-              onToggleFormat={handleToggleFormat}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Input box with inline send button */}
-      <div className="px-4 pb-2 pt-2">
-        <ChatInput
-          onSend={handleSend}
-          taskState={taskState}
-          selectedFormats={selectedFormats}
+      {/* ── THE UNIFIED CONTAINER ── */}
+      <div className="bg-muted/20 rounded-2xl border border-border/60 flex flex-col transition-colors focus-within:border-primary/40 focus-within:bg-muted/30">
+        
+        {/* ── Top: Format Chips ── */}
+        <FormatChips
+            selectedFormats={selectedFormats}
+            onToggleFormat={handleToggleFormat}
+            visible={chipsVisible}
         />
-      </div>
 
-      {/* Toolbar — 4 icons with Radix Tooltips */}
-      <div className="flex items-center gap-1 px-5 pb-3">
-        {toolbarItems.map((item, i) => (
-          <ToolbarButton
-            key={i}
-            icon={item.icon}
-            tooltip={item.tooltip}
-          />
-        ))}
+        {/* ── Middle: Textarea ── */}
+        <textarea
+            ref={textareaRef}
+            value={inputValue}
+            onChange={handleInput}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={inputDisabled}
+            className="w-full bg-transparent resize-none outline-none
+            text-sm text-foreground
+            placeholder:text-muted-foreground/40
+            min-h-[24px] max-h-[200px]
+            px-4 py-3"
+            rows={1}
+        />
+
+        {/* ── Bottom Bar: Toolbar & Send ── */}
+        <div className="flex items-center justify-between px-3 pb-3 pt-1 border-t border-border/10">
+            {/* Left: Toolbar Icons */}
+            <div className="flex items-center gap-1">
+                {toolbarItems.map((item, i) => (
+                    <ToolbarButton
+                        key={i}
+                        icon={item.icon}
+                        tooltip={item.tooltip}
+                    />
+                ))}
+            </div>
+
+            {/* Right: Send Button */}
+             <button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || inputDisabled}
+                className={`shrink-0 p-2 rounded-lg transition-all duration-150 flex items-center justify-center
+                ${inputValue.trim() && !inputDisabled
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-sm"
+                    : "bg-muted/50 text-muted-foreground/30 cursor-default"
+                }`}
+            >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 8L14 8M14 8L8 2M14 8L8 14"
+                    stroke="currentColor" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round"
+                    transform="rotate(-45 8 8)" />
+                </svg>
+            </button>
+        </div>
+
       </div>
     </div>
   );
 }
+
 
 function ToolbarButton({ icon, tooltip, onClick }: { icon: string, tooltip: string, onClick?: () => void }) {
   return (
