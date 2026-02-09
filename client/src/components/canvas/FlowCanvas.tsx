@@ -139,7 +139,7 @@ const Controls = ({ onScreenshot, scale, setScale }: { onScreenshot: () => void,
   return (
     <>
         {/* Original Left Controls (Restored) */}
-        <div className="absolute bottom-20 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
+        <div className="absolute bottom-8 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
           <button 
             onClick={() => zoomIn()} 
             className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
@@ -169,25 +169,6 @@ const Controls = ({ onScreenshot, scale, setScale }: { onScreenshot: () => void,
           >
             <Crop className="w-4 h-4" />
           </button>
-        </div>
-
-        {/* New Bottom Right Zoom Control (Miro-style) */}
-        <div className="absolute bottom-8 right-8 z-50">
-            <div className="bg-white/95 backdrop-blur shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-black/[0.03] rounded-xl flex items-center p-1.5 gap-1">
-                <button 
-                    onClick={() => zoomOut()}
-                    className="w-9 h-9 flex items-center justify-center hover:bg-black/[0.04] rounded-lg text-black/80 transition-colors active:scale-95 duration-100"
-                >
-                    <ZoomOut className="w-5 h-5" strokeWidth={1.5} />
-                </button>
-                
-                <button 
-                    onClick={() => zoomIn()}
-                    className="w-9 h-9 flex items-center justify-center hover:bg-black/[0.04] rounded-lg text-black/80 transition-colors active:scale-95 duration-100"
-                >
-                    <ZoomIn className="w-5 h-5" strokeWidth={1.5} />
-                </button>
-            </div>
         </div>
     </>
   );
