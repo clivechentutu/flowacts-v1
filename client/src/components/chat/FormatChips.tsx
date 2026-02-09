@@ -10,14 +10,14 @@ const FORMAT_CHIPS: FormatChip[] = [
   { id: "report", label: "Report", icon: "📄" },
   { id: "table", label: "Table", icon: "📊" },
   { id: "mindmap", label: "Mind Map", icon: "🧠" },
-  { id: "checklist", label: "Checklist", icon: "✅" },
-  { id: "summary", label: "Summary", icon: "📝" },
+  { id: "checklist", label: "List", icon: "✅" },
+  { id: "summary", label: "Brief", icon: "📝" },
 ];
 
 interface FormatChipsProps {
   selectedFormats: string[];
   onToggleFormat: (id: string) => void;
-  visible: boolean; // controlled by parent based on taskState
+  visible: boolean;
 }
 
 export function FormatChips({
@@ -32,10 +32,10 @@ export function FormatChips({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
           className="overflow-hidden"
         >
-          <div className="flex flex-wrap gap-2 px-4 pt-3 pb-2 border-b border-border/30">
+          <div className="flex flex-wrap gap-1.5 px-4 pt-3 pb-1">
             {FORMAT_CHIPS.map((chip) => {
               const isSelected = selectedFormats.includes(chip.id);
               return (
@@ -44,16 +44,16 @@ export function FormatChips({
                   onClick={() => onToggleFormat(chip.id)}
                   className={`
                     inline-flex items-center gap-1.5
-                    text-sm px-3.5 py-2 rounded-lg
-                    transition-all duration-150 cursor-pointer
+                    text-sm px-3 py-1.5 rounded-md
+                    transition-all duration-100 cursor-pointer
                     ${
                       isSelected
-                        ? "bg-primary/20 text-primary border border-primary/40"
-                        : "bg-white/[0.06] text-muted-foreground border border-transparent hover:bg-white/[0.10] hover:text-foreground"
+                        ? "bg-white/[0.08] text-foreground"
+                        : "bg-transparent text-muted-foreground/70 hover:bg-white/[0.05] hover:text-muted-foreground"
                     }
                   `}
                 >
-                  <span className="text-base leading-none">{chip.icon}</span>
+                  <span className="text-sm leading-none">{chip.icon}</span>
                   <span>{chip.label}</span>
                 </button>
               );

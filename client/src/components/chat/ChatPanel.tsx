@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useRef } from "react";
 import { FormatChips } from "./FormatChips";
+import { CanvasContextBar } from "./CanvasContextBar";
 
 interface ChatPanelProps {
   events: StoryEvent[];
@@ -584,18 +585,28 @@ function ExecutionOverflowMenu({ onAction }: { onAction: (item: any) => void }) 
 function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string, onSend: (msg: string) => void, toolbarItems: { icon: string, tooltip: string }[] }) {
   const [inputValue, setInputValue] = useState("");
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  // Mock canvas selection state - for demonstration purposes, user can clear it but not add to it here
+  const [mockSelectedNodes, setMockSelectedNodes] = useState<{id: string, label: string}[]>([
+      { id: "1", label: "Competitor Analysis" },
+      { id: "2", label: "Market Overview" },
+  ]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const chipsVisible = taskState === "empty" || taskState === "completed";
   const inputDisabled = taskState === "in_progress" || taskState === "thinking";
+  const contextBarVisible = !inputDisabled && mockSelectedNodes.length > 0;
 
-  const getPlaceholder = (state: string, formats: string[]) => {
+  const getPlaceholder = (state: string, formats: string[], selectedNodesCount: number) => {
     // During execution states, use task-state-based placeholders (unchanged)
     if (state === "in_progress") {
-      return "Type to redirect or intervene...";
+      return "Agent is working...";
     }
     if (state === "thinking") {
-      return "Type to redirect or wait for results...";
+      return "Agent is thinking...";
+    }
+
+    if (selectedNodesCount > 0) {
+        return "What would you like to do with these?";
     }
 
     // For empty/completed states, adjust based on selected format chips
@@ -610,12 +621,9 @@ function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string,
     // One or more chips selected — format-aware prompt
     const formatNames = formats
       .map((id) => {
-        // We need to import FORMAT_CHIPS or define a helper to get label by ID
-        // For now, let's hardcode or re-import. Since FormatChips component exports it privately or we need to expose it.
-        // Let's just use a simple mapping here for placeholder logic to keep it self contained or move FORMAT_CHIPS to a shared place.
-        // Simpler: Just map id to label.
+          // Mapping based on new chip labels
         const map: Record<string, string> = {
-            report: "Report", table: "Table", mindmap: "Mind Map", checklist: "Checklist", summary: "Summary"
+            report: "Report", table: "Table", mindmap: "Mind Map", checklist: "List", summary: "Brief"
         };
         return map[id];
       })
@@ -629,12 +637,16 @@ function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string,
     return `Enter a URL or topic to generate ${formatNames.length} outputs...`;
   };
 
-  const placeholder = getPlaceholder(taskState, selectedFormats);
+  const placeholder = getPlaceholder(taskState, selectedFormats, mockSelectedNodes.length);
 
   const handleToggleFormat = (id: string) => {
     setSelectedFormats((prev) =>
       prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
     );
+  };
+  
+  const handleClearSelection = () => {
+      setMockSelectedNodes([]);
   };
 
   const handleSend = () => {
@@ -644,18 +656,30 @@ function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string,
     const formatLabels = selectedFormats
       .map((id) => {
           const map: Record<string, string> = {
-              report: "Report", table: "Table", mindmap: "Mind Map", checklist: "Checklist", summary: "Summary"
+              report: "Report", table: "Table", mindmap: "Mind Map", checklist: "List", summary: "Brief"
           };
           return map[id];
       })
       .filter(Boolean);
       
-    const prefix = formatLabels.map((l) => `[${l}]`).join(" ");
-    const finalMsg = prefix ? `${prefix} ${inputValue.trim()}` : inputValue.trim();
+    // Also include context in message if nodes are selected (mock behavior)
+    let contextPrefix = "";
+    if (mockSelectedNodes.length > 0) {
+        contextPrefix = `[Context: ${mockSelectedNodes.map(n => n.label).join(", ")}] `;
+    }
+
+    const formatPrefix = formatLabels.map((l) => `[${l}]`).join(" ");
+    
+    // Combine context + format + message
+    let finalMsg = inputValue.trim();
+    if (formatPrefix) finalMsg = `${formatPrefix} ${finalMsg}`;
+    if (contextPrefix) finalMsg = `${contextPrefix} ${finalMsg}`;
 
     onSend(finalMsg);
     setInputValue("");
     setSelectedFormats([]);
+    // Optionally clear selection after send
+    // setMockSelectedNodes([]); 
     if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
     }
@@ -677,14 +701,22 @@ function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string,
 
 
   return (
-    <div className="border-t border-border bg-[var(--chat-background)] flex flex-col relative pt-4 px-4 pb-4">
+    <div className="border-t border-border bg-[var(--chat-background)] flex flex-col relative pt-2 px-4 pb-4">
       {/* Gradient fade — separates conversation from input area */}
       <div className="absolute -top-4 left-0 right-0 h-4 bg-gradient-to-t from-[var(--chat-background)] to-transparent pointer-events-none" />
 
-      {/* ── THE UNIFIED CONTAINER ── */}
+      {/* ── Context Bar (New) ── */}
+      {contextBarVisible && (
+        <CanvasContextBar 
+            selectedNodes={mockSelectedNodes} 
+            onClear={handleClearSelection} 
+        />
+      )}
+
+      {/* ── THE UNIFIED CONTAINER (v3 Minimal) ── */}
       <div className="bg-muted/20 rounded-2xl border border-border/60 flex flex-col transition-colors focus-within:border-primary/40 focus-within:bg-muted/30">
         
-        {/* ── Top: Format Chips ── */}
+        {/* ── Top: Format Chips (v3 Light) ── */}
         <FormatChips
             selectedFormats={selectedFormats}
             onToggleFormat={handleToggleFormat}
@@ -708,9 +740,9 @@ function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string,
         />
 
         {/* ── Bottom Bar: Toolbar & Send ── */}
-        <div className="flex items-center justify-between px-3 pb-3 pt-1 border-t border-border/10">
-            {/* Left: Toolbar Icons */}
-            <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between px-3 pb-3 pt-1">
+            {/* Left: Toolbar Icons (v3 Subtle) */}
+            <div className="flex items-center gap-1 text-muted-foreground/60">
                 {toolbarItems.map((item, i) => (
                     <ToolbarButton
                         key={i}
@@ -730,13 +762,17 @@ function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string,
                     : "bg-muted/50 text-muted-foreground/30 cursor-default"
                 }`}
             >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-                xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 8L14 8M14 8L8 2M14 8L8 14"
-                    stroke="currentColor" strokeWidth="2"
-                    strokeLinecap="round" strokeLinejoin="round"
-                    transform="rotate(-45 8 8)" />
-                </svg>
+                {inputDisabled ? (
+                    <div className="w-3 h-3 bg-current rounded-sm" /> // Stop/Pause icon
+                ) : (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 8L14 8M14 8L8 2M14 8L8 14"
+                        stroke="currentColor" strokeWidth="2"
+                        strokeLinecap="round" strokeLinejoin="round"
+                        transform="rotate(-45 8 8)" />
+                    </svg>
+                )}
             </button>
         </div>
 

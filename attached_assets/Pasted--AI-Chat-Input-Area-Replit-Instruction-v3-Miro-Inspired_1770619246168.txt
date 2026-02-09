@@ -1,0 +1,591 @@
+# AI Chat Input Area — Replit Instruction v3 (Miro-Inspired)
+
+> **Replaces v2.** Four design upgrades inspired by Miro's AI Chat input area: (1) lighter chip visuals, (2) canvas-selection linkage bar, (3) overall minimal aesthetic, (4) better chip interaction. Keeps the unified container from v2. No backend changes — use mock state.
+
+---
+
+## Design Philosophy: What We Learn From Miro
+
+Miro's AI Chat input area feels clean because of **two design layers**:
+
+1. **Context bar (above input)** — a small, subtle horizontal strip that shows what's selected on the canvas. This links the user's canvas actions to the AI conversation without cluttering the input area itself.
+2. **Input container (chips + textarea + toolbar)** — chips are visually lightweight (not heavy buttons), the textarea is spacious, and the toolbar is minimal. Everything feels like ONE quiet surface.
+
+**What v2 got wrong:**
+- Chips were too heavy — `px-3.5 py-2` with visible borders made them look like buttons, not lightweight tags
+- No canvas linkage — the input area was disconnected from what the user was doing on the React Flow canvas
+- Too much visual weight — borders, separators, and chip backgrounds competed for attention
+
+**v3 principles:**
+- **Quiet by default** — the input area should feel like a calm text field, not a control panel
+- **Context from canvas** — selected nodes appear in a subtle bar above the input
+- **Chips as gentle suggestions** — visually light, not demanding attention
+- **One surface** — container, chips, textarea, toolbar all share one visual card
+
+---
+
+## Visual Layout
+
+### State A: Nothing selected on canvas (default)
+
+```
+┌─ unified container ─────────────────────────────────┐
+│                                                       │
+│  📄 Report  📊 Table  🧠 Mind Map  ✅ List  📝 Brief │
+│                                                       │
+│  Paste a URL or describe what you'd like to analyze...│
+│                                                       │
+│                                                       │
+│  📎  🌐  ⚡                                   [➤]   │
+└───────────────────────────────────────────────────────┘
+```
+
+### State B: Nodes selected on canvas
+
+```
+┌─ context bar (subtle) ──────────────────────────────┐
+│  📌 Competitor Analysis, Market Overview     ✕ clear │
+└─────────────────────────────────────────────────────┘
+┌─ unified container ─────────────────────────────────┐
+│                                                       │
+│  📄 Report  📊 Table  🧠 Mind Map  ✅ List  📝 Brief │
+│                                                       │
+│  What would you like to do with these?                │
+│                                                       │
+│                                                       │
+│  📎  🌐  ⚡                                   [➤]   │
+└───────────────────────────────────────────────────────┘
+```
+
+### State C: During execution (`in_progress` / `thinking`)
+
+```
+┌─ unified container ─────────────────────────────────┐
+│                                                       │
+│  Agent is working...                                  │
+│                                                       │
+│  📎  🌐  ⚡                                   [■]   │
+└───────────────────────────────────────────────────────┘
+```
+
+- Chips row **HIDDEN** during execution
+- Context bar **HIDDEN** during execution
+- Textarea disabled, placeholder changes
+- Send button becomes stop button
+
+---
+
+## Critical Implementation Rules
+
+### MUST DO:
+- ✅ **ONE unified container** wraps: chips (top) + textarea (middle) + toolbar & send (bottom)
+- ✅ Container: `bg-muted/20 rounded-2xl border border-border/60`
+- ✅ **Context bar** sits ABOVE the container (separate element), only when nodes are selected
+- ✅ Chips are **visually lightweight** — no visible border on unselected state, ghost-style
+- ✅ Chips use `text-sm px-3 py-1.5 rounded-md` — compact, not bulky
+- ✅ Unselected chips: `bg-transparent text-muted-foreground hover:bg-white/[0.06]`
+- ✅ Selected chips: `bg-white/[0.08] text-foreground` — subtle highlight, no heavy border
+- ✅ Chips are **multi-select toggles**
+- ✅ Chips row visible in `empty` / `completed` states, hidden in `in_progress` / `thinking`
+- ✅ No internal separators (no `border-b`, no `border-t`) — keep the surface clean
+- ✅ Toolbar icons: `text-muted-foreground/60` — very subtle, not competing with chips
+
+### MUST NOT:
+- ❌ Do NOT use `border border-primary/40` on selected chips — too heavy
+- ❌ Do NOT use `border-b` / `border-t` separators inside the container
+- ❌ Do NOT use `px-3.5 py-2` for chips — too bulky, use `px-3 py-1.5`
+- ❌ Do NOT show context bar when no nodes are selected
+- ❌ Do NOT show chips during execution states
+
+---
+
+## v2 → v3 Changes
+
+| Element | v2 | v3 |
+|---------|----|----|
+| **Chip unselected** | `bg-white/[0.06] border border-transparent` | `bg-transparent` (ghost) |
+| **Chip selected** | `bg-primary/20 border border-primary/40` | `bg-white/[0.08] text-foreground` (subtle) |
+| **Chip padding** | `px-3.5 py-2` (34px height) | `px-3 py-1.5` (30px height) |
+| **Internal separators** | `border-b border-border/30` between zones | **None** — clean surface |
+| **Canvas linkage** | None | Context bar above container |
+| **Toolbar icon opacity** | `text-muted-foreground` | `text-muted-foreground/60` (quieter) |
+| **Overall feel** | Structured card with zones | Quiet, minimal surface |
+
+---
+
+## Component Architecture
+
+```
+AIChatPanel
+├── CanvasContextBar (above container, conditional)
+└── ChatInputArea (unified container)
+    ├── FormatChips (lightweight, conditional by taskState)
+    ├── textarea (no own border/bg)
+    └── BottomToolbar
+        ├── icons (left: attach, browse, quick-actions)
+        └── SendButton (right)
+```
+
+---
+
+## Change 1 — CanvasContextBar (NEW)
+
+**File:** `client/src/components/chat/CanvasContextBar.tsx`
+
+A small, subtle bar that appears above the input container when the user selects node(s) on the React Flow canvas. This is the **canvas ↔ AI chat linkage**.
+
+```tsx
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+
+interface SelectedNode {
+  id: string;
+  label: string;
+}
+
+interface CanvasContextBarProps {
+  selectedNodes: SelectedNode[];
+  onClear: () => void;
+}
+
+export function CanvasContextBar({ selectedNodes, onClear }: CanvasContextBarProps) {
+  if (selectedNodes.length === 0) return null;
+
+  const displayText =
+    selectedNodes.length <= 2
+      ? selectedNodes.map((n) => n.label).join(", ")
+      : `${selectedNodes[0].label} and ${selectedNodes.length - 1} more`;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 4 }}
+        transition={{ duration: 0.15 }}
+        className="
+          flex items-center justify-between
+          px-3 py-1.5 mb-1.5 rounded-lg
+          bg-white/[0.04] text-muted-foreground text-xs
+        "
+      >
+        <span className="truncate">
+          <span className="text-muted-foreground/60 mr-1.5">Selected:</span>
+          {displayText}
+        </span>
+        <button
+          onClick={onClear}
+          className="ml-2 p-0.5 rounded hover:bg-white/[0.06] text-muted-foreground/40 hover:text-muted-foreground transition-colors flex-shrink-0"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+```
+
+**Key design decisions:**
+- `text-xs` — smaller than chips, this is secondary info
+- `bg-white/[0.04]` — barely visible background, extremely subtle
+- `py-1.5` — thin bar, not competing with the input container
+- `mb-1.5` — small gap between context bar and input container
+- `rounded-lg` — NOT `rounded-2xl`, visually distinct from the main container
+- Truncates long node names with `truncate`
+- Shows "X and N more" when >2 nodes selected
+- ✕ button to clear selection (deselects nodes on canvas)
+
+**Mock data for Replit:**
+```tsx
+// In parent component, mock the canvas selection state:
+const [mockSelectedNodes, setMockSelectedNodes] = useState<SelectedNode[]>([]);
+
+// Toggle mock selection with a debug button or hardcode:
+// setMockSelectedNodes([
+//   { id: "1", label: "Competitor Analysis" },
+//   { id: "2", label: "Market Overview" },
+// ]);
+```
+
+---
+
+## Change 2 — FormatChips (Lighter, Ghost-Style)
+
+**File:** `client/src/components/chat/FormatChips.tsx`
+
+Redesigned to be **visually lightweight** — ghost-style unselected, subtle highlight on selected. No visible borders. Feels like gentle suggestions, not heavy buttons.
+
+```tsx
+import { motion, AnimatePresence } from "framer-motion";
+
+interface FormatChip {
+  id: string;
+  label: string;
+  icon: string;
+}
+
+const FORMAT_CHIPS: FormatChip[] = [
+  { id: "report", label: "Report", icon: "📄" },
+  { id: "table", label: "Table", icon: "📊" },
+  { id: "mindmap", label: "Mind Map", icon: "🧠" },
+  { id: "checklist", label: "List", icon: "✅" },
+  { id: "summary", label: "Brief", icon: "📝" },
+];
+
+interface FormatChipsProps {
+  selectedFormats: string[];
+  onToggleFormat: (id: string) => void;
+  visible: boolean;
+}
+
+export function FormatChips({
+  selectedFormats,
+  onToggleFormat,
+  visible,
+}: FormatChipsProps) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="overflow-hidden"
+        >
+          <div className="flex flex-wrap gap-1.5 px-4 pt-3 pb-1">
+            {FORMAT_CHIPS.map((chip) => {
+              const isSelected = selectedFormats.includes(chip.id);
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => onToggleFormat(chip.id)}
+                  className={`
+                    inline-flex items-center gap-1.5
+                    text-sm px-3 py-1.5 rounded-md
+                    transition-all duration-100 cursor-pointer
+                    ${
+                      isSelected
+                        ? "bg-white/[0.08] text-foreground"
+                        : "bg-transparent text-muted-foreground/70 hover:bg-white/[0.05] hover:text-muted-foreground"
+                    }
+                  `}
+                >
+                  <span className="text-sm leading-none">{chip.icon}</span>
+                  <span>{chip.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+```
+
+**v2 → v3 chip design changes:**
+
+| Property | v2 (heavy) | v3 (light) |
+|----------|-----------|-----------|
+| Unselected bg | `bg-white/[0.06]` | `bg-transparent` (ghost) |
+| Unselected text | `text-muted-foreground` | `text-muted-foreground/70` (dimmer) |
+| Selected bg | `bg-primary/20` | `bg-white/[0.08]` (neutral, not branded) |
+| Selected text | `text-primary` | `text-foreground` (white, not accent color) |
+| Selected border | `border border-primary/40` | **None** |
+| Unselected border | `border border-transparent` | **None** |
+| Padding | `px-3.5 py-2` (34px) | `px-3 py-1.5` (30px) |
+| Gap between chips | `gap-2` | `gap-1.5` (tighter) |
+| Icon size | `text-base` (16px) | `text-sm` (14px) |
+| Rounded | `rounded-lg` | `rounded-md` (less round) |
+| Transition | `duration-150` | `duration-100` (snappier) |
+| Bottom separator | `border-b border-border/30` | **None** |
+
+**Why ghost-style works better:**
+- On dark backgrounds, ghost chips (transparent bg) feel like they're part of the surface
+- They don't compete with the textarea for attention
+- Selected state is a subtle "glow" (`bg-white/[0.08]`), not a heavy highlight
+- The overall input area feels calmer and more unified
+
+---
+
+## Change 3 — ChatInputArea (Unified Container, Minimal)
+
+**File:** `client/src/components/chat/ChatInputArea.tsx`
+
+The unified container. Cleaner than v2: no internal separators, quieter toolbar, ghost-style chips.
+
+```tsx
+import { useState, useRef } from "react";
+import { FormatChips } from "./FormatChips";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Paperclip, Globe, Zap, ArrowUp, Square } from "lucide-react";
+
+type TaskState = "empty" | "completed" | "in_progress" | "thinking";
+
+interface ChatInputAreaProps {
+  taskState: TaskState;
+  onSend: (message: string, formats: string[]) => void;
+  onStop?: () => void;
+}
+
+export function ChatInputArea({ taskState, onSend, onStop }: ChatInputAreaProps) {
+  const [message, setMessage] = useState("");
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const chipsVisible = taskState === "empty" || taskState === "completed";
+  const isExecuting = taskState === "in_progress" || taskState === "thinking";
+
+  const placeholder =
+    taskState === "empty"
+      ? "Paste a URL or describe what you'd like to analyze..."
+      : taskState === "completed"
+        ? "Ask a follow-up or start a new analysis..."
+        : "Agent is working...";
+
+  const handleToggleFormat = (id: string) => {
+    setSelectedFormats((prev) =>
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+    );
+  };
+
+  const handleSend = () => {
+    if (!message.trim() || isExecuting) return;
+    onSend(message.trim(), selectedFormats);
+    setMessage("");
+    setSelectedFormats([]);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    <div className="bg-muted/20 rounded-2xl border border-border/60">
+      {/* Chips — ghost style, no separator */}
+      <FormatChips
+        selectedFormats={selectedFormats}
+        onToggleFormat={handleToggleFormat}
+        visible={chipsVisible}
+      />
+
+      {/* Textarea — no border, no bg, blends into container */}
+      <textarea
+        ref={textareaRef}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        disabled={isExecuting}
+        rows={3}
+        className="
+          w-full resize-none bg-transparent
+          px-4 py-3
+          text-sm text-foreground placeholder:text-muted-foreground/50
+          focus:outline-none
+          disabled:opacity-40 disabled:cursor-not-allowed
+        "
+      />
+
+      {/* Bottom toolbar — no separator, quiet icons */}
+      <div className="flex items-center justify-between px-3 pb-2.5">
+        <div className="flex items-center gap-0.5">
+          {[
+            { icon: Paperclip, label: "Attach" },
+            { icon: Globe, label: "Browse" },
+            { icon: Zap, label: "Actions" },
+          ].map(({ icon: Icon, label }) => (
+            <Tooltip key={label}>
+              <TooltipTrigger asChild>
+                <button
+                  className="p-2 rounded-lg text-muted-foreground/50 hover:text-muted-foreground hover:bg-white/[0.04] transition-colors"
+                  onClick={() => {}}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">{label}</TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+
+        {/* Send / Stop button */}
+        {isExecuting ? (
+          <button
+            onClick={onStop}
+            className="p-2 rounded-lg bg-white/[0.06] text-muted-foreground hover:bg-white/[0.10] transition-colors"
+          >
+            <Square className="w-3.5 h-3.5" />
+          </button>
+        ) : (
+          <button
+            onClick={handleSend}
+            disabled={!message.trim()}
+            className="
+              p-2 rounded-lg
+              bg-primary text-primary-foreground
+              hover:bg-primary/90
+              disabled:opacity-20 disabled:cursor-not-allowed
+              transition-colors
+            "
+          >
+            <ArrowUp className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+**Key differences from v2:**
+- **No `border-t` / `border-b` separators** — the surface is clean
+- **Toolbar icons at `text-muted-foreground/50`** — very quiet, almost invisible until hover
+- **Toolbar gap `gap-0.5`** — tighter icon spacing
+- **Placeholder at `/50` opacity** — dimmer, less distracting
+- **Stop button** during execution (replaces send)
+- **3 toolbar icons** instead of 4 (removed `@` mention — less clutter)
+- **`pb-2.5`** instead of `pb-3` — slightly tighter bottom padding
+
+---
+
+## Change 4 — Integration in AIChatPanel
+
+**File:** `client/src/components/chat/AIChatPanel.tsx`
+
+```tsx
+import { CanvasContextBar } from "./CanvasContextBar";
+import { ChatInputArea } from "./ChatInputArea";
+
+// In the component:
+const [selectedNodes, setSelectedNodes] = useState<SelectedNode[]>([]);
+// ↑ In real app, this comes from React Flow's useOnSelectionChange()
+// For mock: hardcode or toggle with a debug button
+
+const FORMAT_LABELS: Record<string, string> = {
+  report: "Report", table: "Table", mindmap: "Mind Map",
+  checklist: "List", summary: "Brief",
+};
+
+function buildMessageWithFormats(
+  message: string,
+  formats: string[],
+  nodes: SelectedNode[]
+): string {
+  let result = message;
+  if (formats.length > 0) {
+    const tags = formats.map((f) => FORMAT_LABELS[f] || f).join(", ");
+    result = `[Format: ${tags}] ${result}`;
+  }
+  if (nodes.length > 0) {
+    const nodeNames = nodes.map((n) => n.label).join(", ");
+    result = `[Context: ${nodeNames}] ${result}`;
+  }
+  return result;
+}
+
+// In JSX — the entire input area is just these two components:
+return (
+  <div className="px-4 pb-4">
+    <CanvasContextBar
+      selectedNodes={selectedNodes}
+      onClear={() => setSelectedNodes([])}
+    />
+    <ChatInputArea
+      taskState={taskState}
+      onSend={(message, formats) => {
+        const final = buildMessageWithFormats(message, formats, selectedNodes);
+        handleSendMessage(final);
+      }}
+      onStop={handleStopExecution}
+    />
+  </div>
+);
+```
+
+**Key points:**
+- `CanvasContextBar` sits ABOVE `ChatInputArea` — they are siblings, not nested
+- Context bar is visually lighter and smaller than the main container
+- `buildMessageWithFormats` now also includes `[Context: ...]` tags for selected nodes
+- The two components together create the Miro-like two-layer experience
+
+---
+
+## Change 5 — Format Tag Prepending on Send
+
+Same logic as v2, but now also includes canvas context:
+
+```tsx
+// Example outputs:
+// No formats, no nodes:
+//   "Analyze competitor pricing"
+//
+// With formats:
+//   "[Format: Report, Table] Analyze competitor pricing"
+//
+// With nodes selected:
+//   "[Context: Competitor Analysis] Summarize this"
+//
+// With both:
+//   "[Format: Report] [Context: Competitor Analysis, Market Data] Compare these"
+```
+
+---
+
+## State Management
+
+```
+┌──────────────────────────────────────────────┐
+│  From Zustand / parent:                       │
+│    taskState: "empty"|"completed"|            │
+│               "in_progress"|"thinking"         │
+│    selectedNodes: SelectedNode[]  ← canvas    │
+│                                                │
+│  Local state (inside ChatInputArea):          │
+│    message: string                             │
+│    selectedFormats: string[]                   │
+│                                                │
+│  Derived:                                      │
+│    chipsVisible = taskState ∈ {empty,completed}│
+│    isExecuting = taskState ∈ {in_progress,     │
+│                               thinking}        │
+│    contextBarVisible = selectedNodes.length > 0│
+│                        && !isExecuting         │
+└──────────────────────────────────────────────┘
+```
+
+---
+
+## Animation Summary
+
+| Element | Animation | Duration |
+|---------|-----------|----------|
+| Context bar appear/disappear | `opacity + y:4→0` | 150ms ease |
+| Chips row show/hide | `opacity + height:0→auto` | 150ms easeOut |
+| Chip select/deselect | `bg-color transition` | 100ms |
+| Toolbar icon hover | `color + bg transition` | 150ms (CSS) |
+
+No spring animations. Keep everything snappy and subtle.
+
+---
+
+## Implementation Checklist for Replit
+
+1. [ ] Create `CanvasContextBar.tsx` — subtle bar above input, shows selected node names
+2. [ ] Create `FormatChips.tsx` — ghost-style chips (transparent bg, no borders)
+3. [ ] Create `ChatInputArea.tsx` — unified container, no internal separators
+4. [ ] Chips: `bg-transparent` unselected, `bg-white/[0.08]` selected, `text-sm px-3 py-1.5`
+5. [ ] Toolbar icons at `text-muted-foreground/50` — very quiet
+6. [ ] No `border-b` / `border-t` inside the container — clean surface
+7. [ ] Context bar: `text-xs bg-white/[0.04]` — lighter than everything else
+8. [ ] Stop button replaces send button during execution
+9. [ ] Wire `buildMessageWithFormats()` with both format tags and context tags
+10. [ ] Update `AIChatPanel.tsx` — CanvasContextBar + ChatInputArea as siblings
+11. [ ] Mock `selectedNodes` state for testing canvas linkage
+12. [ ] Test: chips hidden during `in_progress`/`thinking`, context bar hidden too
+13. [ ] Test: multi-select chips work, format tags prepended correctly
+14. [ ] Visual check: input area feels like ONE quiet surface, not a control panel
