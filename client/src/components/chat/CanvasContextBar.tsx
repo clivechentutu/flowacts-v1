@@ -39,8 +39,8 @@ export function CanvasContextBar({ selectedNodes, onClear }: CanvasContextBarPro
                 key={node.id}
                 className="
                   flex items-center whitespace-nowrap
-                  bg-muted/40 border border-border/60
-                  rounded px-1.5 py-0.5 text-xs text-foreground/80
+                  bg-orange-500/10 border border-orange-500/20
+                  rounded px-1.5 py-0.5 text-xs text-orange-200/90
                   shadow-sm
                 "
               >
