@@ -88,25 +88,25 @@ export function Canvas({ events }: CanvasProps) {
 
       {/* Zoom Controls (Bottom Right) */}
       <div className="absolute bottom-6 right-6 z-50">
-        <div className="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.1)] rounded-2xl p-1.5 flex items-center gap-1">
+        <div className="bg-white border border-border/40 shadow-lg rounded-lg flex items-center p-1">
           <button 
             onClick={handleZoomOut}
-            className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors"
+            className="w-8 h-8 flex items-center justify-center hover:bg-muted/50 rounded-md text-foreground/80 transition-colors"
           >
-            <Minus className="w-4 h-4" strokeWidth={2.5} />
+            <Minus className="w-4 h-4" />
           </button>
           
-          <div className="px-3 min-w-[60px] text-center border-x border-slate-100 mx-1">
-            <span className="text-[13px] font-bold text-slate-800 tabular-nums">
+          <div className="w-[48px] text-center select-none">
+            <span className="text-sm font-medium text-foreground/90 tabular-nums">
               {zoom}%
             </span>
           </div>
 
           <button 
             onClick={handleZoomIn}
-            className="p-2 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors"
+            className="w-8 h-8 flex items-center justify-center hover:bg-muted/50 rounded-md text-foreground/80 transition-colors"
           >
-            <Plus className="w-4 h-4" strokeWidth={2.5} />
+            <Plus className="w-4 h-4" />
           </button>
         </div>
       </div>
