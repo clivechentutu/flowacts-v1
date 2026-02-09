@@ -128,38 +128,67 @@ function toRenderNodes(actionEvents: StoryEvent[]): RenderNode[] {
 
 // Zoom Controls Component
 const Controls = ({ onScreenshot }: { onScreenshot: () => void }) => {
-  const { zoomIn, zoomOut, resetTransform } = useControls();
+  const { zoomIn, zoomOut, instance } = useControls();
+  const [zoomLevel, setZoomLevel] = useState(100);
+
+  // Use a ref to track if we're mounted to avoid state updates on unmounted component
+  // However, useControls doesn't expose a direct listener for zoom changes easily without context.
+  // But TransformWrapper provides `onTransformed` callback to the wrapper, not here.
+  // We can poll or use the internal state if accessible.
+  // Actually, we can just use a simple interval or rely on re-renders if the parent causes them.
+  // Better yet, let's just show the current scale from the instance if available, 
+  // but instance.transformState might not trigger re-render.
+  // We can force re-render on click.
+  
+  const updateZoom = () => {
+      if (instance) {
+          setZoomLevel(Math.round(instance.transformState.scale * 100));
+      }
+  };
+
+  useEffect(() => {
+      // Initial update
+      updateZoom();
+      // Poll for changes (not ideal but works for external updates)
+      const interval = setInterval(updateZoom, 100);
+      return () => clearInterval(interval);
+  }, [instance]);
+
+  const handleZoomIn = () => {
+      zoomIn();
+      updateZoom();
+  };
+
+  const handleZoomOut = () => {
+      zoomOut();
+      updateZoom();
+  };
+
   return (
-    <div className="absolute bottom-20 left-8 bg-background/90 backdrop-blur border border-border rounded-lg p-2 shadow-lg flex flex-col gap-2 z-50">
-      <button 
-        onClick={() => zoomIn()} 
-        className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-        title="Zoom In"
-      >
-        <ZoomIn className="w-4 h-4" />
-      </button>
-      <button 
-        onClick={() => zoomOut()} 
-        className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-        title="Zoom Out"
-      >
-        <ZoomOut className="w-4 h-4" />
-      </button>
-      <button 
-        onClick={() => resetTransform()} 
-        className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-        title="Reset View"
-      >
-        <Maximize className="w-4 h-4" />
-      </button>
-      <div className="w-full h-px bg-border my-1" />
-      <button 
-        onClick={onScreenshot} 
-        className="w-8 h-8 flex items-center justify-center hover:bg-muted rounded text-muted-foreground hover:text-foreground transition-colors"
-        title="Screenshot Area"
-      >
-        <Crop className="w-4 h-4" />
-      </button>
+    <div className="absolute bottom-6 right-6 z-50">
+        <div className="bg-white shadow-[0_2px_12px_rgba(0,0,0,0.08)] rounded-xl flex items-center p-1.5 gap-1 border border-border/10">
+          <button 
+            onClick={handleZoomOut}
+            className="w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-lg text-black/80 transition-colors"
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+          
+          <div className="w-[48px] text-center select-none">
+            <span className="text-sm font-medium text-black/90 tabular-nums">
+              {zoomLevel}%
+            </span>
+          </div>
+
+          <button 
+            onClick={handleZoomIn}
+            className="w-8 h-8 flex items-center justify-center hover:bg-black/5 rounded-lg text-black/80 transition-colors"
+            title="Zoom In"
+          >
+            <ZoomIn className="w-5 h-5" strokeWidth={1.5} />
+          </button>
+        </div>
     </div>
   );
 };
