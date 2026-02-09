@@ -87,26 +87,24 @@ export function Canvas({ events }: CanvasProps) {
       </div>
 
       {/* Zoom Controls (Bottom Right) */}
-      <div className="absolute bottom-6 right-6 z-50">
-        <div className="bg-white shadow-[0_4px_16px_rgba(0,0,0,0.1)] rounded-lg flex items-center p-1 gap-2 border border-slate-100/50">
+      <div className="absolute bottom-8 right-8 z-50">
+        <div className="bg-white/95 backdrop-blur shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-black/[0.03] rounded-xl flex items-center p-1.5 gap-1">
           <button 
             onClick={handleZoomOut}
-            className="w-7 h-7 flex items-center justify-center hover:bg-slate-50 rounded text-slate-600 transition-colors"
+            className="w-9 h-9 flex items-center justify-center hover:bg-black/[0.04] rounded-lg text-black/80 transition-colors active:scale-95 duration-100"
           >
-            <Minus className="w-4 h-4" strokeWidth={2} />
+            <Minus className="w-5 h-5" strokeWidth={1.5} />
           </button>
           
-          <div className="min-w-[40px] text-center select-none">
-            <span className="text-[13px] font-medium text-slate-700 tabular-nums">
-              {zoom}%
-            </span>
+          <div className="min-w-[56px] text-center select-none font-medium text-black/90 text-sm tabular-nums">
+            {zoom}%
           </div>
 
           <button 
             onClick={handleZoomIn}
-            className="w-7 h-7 flex items-center justify-center hover:bg-slate-50 rounded text-slate-600 transition-colors"
+            className="w-9 h-9 flex items-center justify-center hover:bg-black/[0.04] rounded-lg text-black/80 transition-colors active:scale-95 duration-100"
           >
-            <Plus className="w-4 h-4" strokeWidth={2} />
+            <Plus className="w-5 h-5" strokeWidth={1.5} />
           </button>
         </div>
       </div>
