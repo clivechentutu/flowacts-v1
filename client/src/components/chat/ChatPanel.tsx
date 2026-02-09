@@ -784,7 +784,7 @@ function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string,
 
 function ToolbarButton({ icon, tooltip, onClick }: { icon: string, tooltip: string, onClick?: () => void }) {
   return (
-    <TooltipProvider delayDuration={300}>
+    <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -799,10 +799,12 @@ function ToolbarButton({ icon, tooltip, onClick }: { icon: string, tooltip: stri
         </TooltipTrigger>
         <TooltipContent
           side="top"
-          className="bg-popover border border-border rounded-lg
-            px-2.5 py-1.5 shadow-lg text-xs"
+          className="bg-[#1a1a1a] border border-white/10 rounded-lg
+            px-3 py-2 shadow-xl text-xs text-white font-medium
+            animate-in fade-in zoom-in-95 duration-150"
         >
           {tooltip}
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#1a1a1a] border-b border-r border-white/10 rotate-45" />
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
