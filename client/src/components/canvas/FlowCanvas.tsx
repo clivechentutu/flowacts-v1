@@ -856,78 +856,26 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                         Participating Team
                       </div>
                       <div className="text-[11px] text-muted-foreground" data-testid="text-team-menu-subtitle">
-                        AI agents & invited collaborators
+                        Invited collaborators
                       </div>
 
-                      <div className="mt-2 flex items-center gap-1" data-testid="tabs-team-menu">
-                        <div className="flex flex-1 items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
-                          <div className="relative flex-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTeamMenuTab('ai');
-                                setIsAddMemberOpen(false);
-                              }}
-                              className={cn(
-                                "w-full rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
-                                teamMenuTab === 'ai' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                              )}
-                              data-testid="tab-team-ai"
-                            >
-                              AI team
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTeamMenuTab('ai');
-                                setIsAddMemberOpen(true);
-                                setAddMemberDraft({ name: '', role: '' });
-                              }}
-                              className={cn(
-                                "absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md border border-border/60 bg-background/70 hover:bg-background shadow-sm inline-flex items-center justify-center transition-colors",
-                                teamMenuTab === 'ai' && isAddMemberOpen ? "ring-1 ring-primary/30" : ""
-                              )}
-                              title="Add AI member"
-                              data-testid="button-add-ai-member"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
-                          <div className="relative flex-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTeamMenuTab('human');
-                                setIsAddMemberOpen(false);
-                              }}
-                              className={cn(
-                                "w-full rounded-md px-2 py-1 text-[11px] font-semibold transition-all",
-                                teamMenuTab === 'human' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-                              )}
-                              data-testid="tab-team-human"
-                            >
-                              Human team
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTeamMenuTab('human');
-                                setIsAddMemberOpen(true);
-                                setAddMemberDraft({ name: '', role: '' });
-                              }}
-                              className={cn(
-                                "absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md border border-border/60 bg-background/70 hover:bg-background shadow-sm inline-flex items-center justify-center transition-colors",
-                                teamMenuTab === 'human' && isAddMemberOpen ? "ring-1 ring-primary/30" : ""
-                              )}
-                              title="Invite human collaborator"
-                              data-testid="button-add-human-member"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                      <div className="mt-2" data-testid="tabs-team-menu">
+                        <div className="flex items-center justify-between gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+                          <div className="text-[11px] font-semibold text-foreground px-2">Collaborators</div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setTeamMenuTab('human');
+                              setIsAddMemberOpen(true);
+                              setAddMemberDraft({ name: '', role: '' });
+                            }}
+                            className="h-6 w-6 rounded-md border border-border/60 bg-background/70 hover:bg-background shadow-sm inline-flex items-center justify-center transition-colors"
+                            title="Invite human collaborator"
+                            data-testid="button-add-human-member"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -939,16 +887,16 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                             <input
                               value={addMemberDraft.name}
                               onChange={(e) => setAddMemberDraft((d) => ({ ...d, name: e.target.value }))}
-                              placeholder={teamMenuTab === 'ai' ? 'AI role name (e.g., Pricing Analyst)' : 'Collaborator name'}
+                              placeholder="Collaborator name"
                               className="h-8 w-full rounded-md border border-border bg-background/80 px-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
-                              data-testid={teamMenuTab === 'ai' ? 'input-add-ai-name' : 'input-add-human-name'}
+                              data-testid="input-add-human-name"
                             />
                             <input
                               value={addMemberDraft.role}
                               onChange={(e) => setAddMemberDraft((d) => ({ ...d, role: e.target.value }))}
-                              placeholder={teamMenuTab === 'ai' ? 'Short role label (e.g., CI)' : 'Role (e.g., PM, Design)'}
+                              placeholder="Role (e.g., PM, Design)"
                               className="h-8 w-full rounded-md border border-border bg-background/80 px-2 text-xs outline-none focus:ring-2 focus:ring-primary/20"
-                              data-testid={teamMenuTab === 'ai' ? 'input-add-ai-role' : 'input-add-human-role'}
+                              data-testid="input-add-human-role"
                             />
                           </div>
 
@@ -968,56 +916,49 @@ export function FlowCanvas({ events, droppedFiles, onFileDrop, onFileDelete }: F
                                 const role = addMemberDraft.role.trim();
                                 if (!name) return;
 
-                                const idPrefix = teamMenuTab === 'ai' ? 'p' : 'h';
-                                const newId = `${idPrefix}-${Date.now()}`;
+                                const newId = `h-${Date.now()}`;
                                 const avatarSeed = encodeURIComponent(name);
-                                const avatar = teamMenuTab === 'ai'
-                                  ? `https://api.dicebear.com/7.x/thumbs/svg?seed=${avatarSeed}`
-                                  : `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
+                                const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`;
 
                                 const newMember: TeamMember = {
                                   id: newId,
                                   name,
-                                  role: role || (teamMenuTab === 'ai' ? 'AI' : 'Collaborator'),
+                                  role: role || 'Collaborator',
                                   avatar,
                                 };
 
-                                if (teamMenuTab === 'ai') {
-                                  setParticipatingAiTeamMembers((prev) => [newMember, ...prev]);
-                                } else {
-                                  setParticipatingHumanTeamMembers((prev) => [newMember, ...prev]);
-                                }
+                                setParticipatingHumanTeamMembers((prev) => [newMember, ...prev]);
 
                                 setIsAddMemberOpen(false);
                                 setAddMemberDraft({ name: '', role: '' });
                               }}
                               className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
-                              data-testid={teamMenuTab === 'ai' ? 'button-add-ai-confirm' : 'button-add-human-confirm'}
+                              data-testid="button-add-human-confirm"
                             >
-                              {teamMenuTab === 'ai' ? 'Add' : 'Invite'}
+                              Invite
                             </button>
                           </div>
                         </div>
                       )}
 
                       <div className="flex flex-wrap gap-2" data-testid="list-team-members">
-                        {(teamMenuTab === 'ai' ? participatingAiTeamMembers : participatingHumanTeamMembers).map((m) => (
+                        {participatingHumanTeamMembers.map((m) => (
                           <div
                             key={m.id}
                             className="flex items-center gap-2 rounded-lg border border-border/60 bg-card px-2 py-1.5"
-                            data-testid={`chip-team-member-${teamMenuTab}-${m.id}`}
+                            data-testid={`chip-team-member-human-${m.id}`}
                             title={m.name}
                           >
                             <img
                               src={m.avatar}
                               alt={m.name}
                               className="h-6 w-6 rounded-full border border-border/60"
-                              data-testid={`img-team-avatar-${teamMenuTab}-${m.id}`}
+                              data-testid={`img-team-avatar-human-${m.id}`}
                             />
                             <div className="min-w-0">
-                              <div className="text-xs font-medium text-foreground truncate" data-testid={`text-team-name-${teamMenuTab}-${m.id}`}>{m.name}</div>
+                              <div className="text-xs font-medium text-foreground truncate" data-testid={`text-team-name-human-${m.id}`}>{m.name}</div>
                               {m.role && (
-                                <div className="text-[10px] text-muted-foreground" data-testid={`text-team-role-${teamMenuTab}-${m.id}`}>{m.role}</div>
+                                <div className="text-[10px] text-muted-foreground" data-testid={`text-team-role-human-${m.id}`}>{m.role}</div>
                               )}
                             </div>
                           </div>
