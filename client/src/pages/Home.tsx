@@ -823,9 +823,13 @@ const generateProjectName = (text: string): string => {
     return name;
 }
 
+import { AvatarStack } from "@/components/collaboration/AvatarStack";
+import { ShareModal } from "@/components/collaboration/ShareModal";
+
 export default function Home() {
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list' | 'library'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
@@ -2104,25 +2108,33 @@ export default function Home() {
             {/* Page Management - Only visible in Canvas mode */}
             {viewMode === 'canvas' && (
                 <div className="absolute top-0 left-0 right-0 z-40 bg-transparent pointer-events-none">
-                     {/* We inject the Project Header into the Shell's header area via portal or absolute positioning if feasible. 
-                         However, Shell structure might be rigid. 
-                         Looking at the Shell usage, it has a 'nav' prop which is the sidebar.
-                         It seems the top header is part of Shell?
-                         Actually, let's look at where we are rendering. 
-                         We are inside renderContent(), inside activeTab === 'project'.
-                         
-                         If we want this "Project Name" to be in the "Canvas Header", we might need to place it 
-                         where the tabs [Canvas] [Files] are usually located if they exist, or just at the top left of this container.
-                         
-                         Let's put it absolutely at top-left of the content area for now, assuming standard layout.
-                     */}
-                     <div className="absolute top-4 left-4 pointer-events-auto bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 shadow-sm z-50">
-                        <ProjectHeader 
-                            project={projectInfo}
-                            onRename={handleRenameProject}
-                            onNewProject={handleNewProject}
-                        />
+                     <div className="absolute top-4 left-0 right-0 px-4 pointer-events-none flex justify-between items-start z-50">
+                       <div className="pointer-events-auto bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 shadow-sm">
+                           <ProjectHeader 
+                               project={projectInfo}
+                               onRename={(name) => setProjectInfo(prev => ({ ...prev, name }))}
+                               onNewProject={() => {}}
+                           />
+                       </div>
+                       
+                       <div className="pointer-events-auto flex items-center gap-2 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 shadow-sm p-1">
+                           <AvatarStack onManageMembers={() => setIsShareModalOpen(true)} />
+                           <Button 
+                             variant="ghost" 
+                             size="sm" 
+                             onClick={() => setIsShareModalOpen(true)} 
+                             className="h-7 text-xs font-medium gap-1.5 px-2 hover:bg-background/80"
+                           >
+                             Share
+                           </Button>
+                       </div>
                      </div>
+                     
+                     <ShareModal 
+                        open={isShareModalOpen} 
+                        onOpenChange={setIsShareModalOpen} 
+                        canvasTitle={projectInfo.name} 
+                     />
                 </div>
             )}
             
