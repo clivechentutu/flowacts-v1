@@ -1,10 +1,9 @@
 import React, { useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -25,12 +24,13 @@ import { ChevronDown, Loader2 } from "lucide-react";
 import { Member, DEMO_MEMBERS, CURRENT_CANVAS_TITLE } from "@/lib/collaboration-data";
 import { cn } from "@/lib/utils";
 
-interface CollaborationModalProps {
+interface CollaborationPopoverProps {
+  children: React.ReactNode;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function CollaborationModal({ isOpen, onOpenChange }: CollaborationModalProps) {
+export function CollaborationPopover({ children, isOpen, onOpenChange }: CollaborationPopoverProps) {
   const [inviteEmail, setInviteEmail] = useState("");
   const [invitePermission, setInvitePermission] = useState("can-comment");
   const [isSending, setIsSending] = useState(false);
@@ -62,12 +62,15 @@ export function CollaborationModal({ isOpen, onOpenChange }: CollaborationModalP
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden gap-0">
+    <Popover open={isOpen} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        {children}
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-[400px] p-0 overflow-hidden gap-0">
         <div className="px-6 py-4 border-b">
-            <DialogTitle className="text-lg font-semibold">
+            <h3 className="text-lg font-semibold">
             Collaborate on "{CURRENT_CANVAS_TITLE}"
-            </DialogTitle>
+            </h3>
         </div>
 
         <div className="p-6 space-y-6">
@@ -188,7 +191,7 @@ export function CollaborationModal({ isOpen, onOpenChange }: CollaborationModalP
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   );
 }
