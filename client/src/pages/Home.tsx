@@ -825,7 +825,7 @@ const generateProjectName = (text: string): string => {
 
 export default function Home() {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'library' | 'projects-list'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
