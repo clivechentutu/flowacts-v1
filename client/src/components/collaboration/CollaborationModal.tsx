@@ -1,33 +1,23 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Check, ChevronDown, Copy, Globe, User } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { DEMO_MEMBERS, Member } from "./types";
 import { useToast } from "@/hooks/use-toast";
 
-interface ShareModalProps {
+interface CollaborationModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     canvasTitle: string;
 }
 
-export function ShareModal({ open, onOpenChange, canvasTitle }: ShareModalProps) {
+export function CollaborationModal({ open, onOpenChange, canvasTitle }: CollaborationModalProps) {
     const { toast } = useToast();
     const [members, setMembers] = useState<Member[]>(DEMO_MEMBERS);
     const [inviteEmail, setInviteEmail] = useState("");
-    const [linkPermission, setLinkPermission] = useState<"can-view" | "can-comment" | "can-edit">("can-view");
-
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText(`https://replit.com/studio/${canvasTitle.toLowerCase().replace(/\s+/g, '-')}`);
-        toast({
-            title: "Copied!",
-            description: "Link copied to clipboard",
-        });
-    };
 
     const handleInvite = () => {
         if (!inviteEmail) return;
@@ -78,7 +68,7 @@ export function ShareModal({ open, onOpenChange, canvasTitle }: ShareModalProps)
                         <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                             People with access
                         </div>
-                        <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                              {members.map(member => (
                                 <div key={member.id} className="flex items-center justify-between group">
                                     <div className="flex items-center gap-2.5 overflow-hidden">
@@ -140,37 +130,6 @@ export function ShareModal({ open, onOpenChange, canvasTitle }: ShareModalProps)
                                 </div>
                              ))}
                         </div>
-                    </div>
-                </div>
-
-                <Separator />
-                
-                <div className="p-4 bg-muted/20 space-y-3">
-                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                        Share link
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 bg-background border rounded-md p-1 pl-3 h-9">
-                            <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-                            <div className="flex-1 text-sm text-muted-foreground">Anyone with link</div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 hover:bg-muted font-normal px-2">
-                                        {getPermissionLabel(linkPermission)}
-                                        <ChevronDown className="w-3 h-3 opacity-50" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => setLinkPermission('can-view')}>Can view</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setLinkPermission('can-comment')}>Can comment</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setLinkPermission('can-edit')}>Can edit</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <Button size="sm" variant="secondary" className="h-9 gap-2 shrink-0" onClick={handleCopyLink}>
-                            <Copy className="w-3.5 h-3.5" />
-                            Copy link
-                        </Button>
                     </div>
                 </div>
             </DialogContent>

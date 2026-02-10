@@ -824,10 +824,12 @@ const generateProjectName = (text: string): string => {
 }
 
 import { AvatarStack } from "@/components/collaboration/AvatarStack";
-import { ShareModal } from "@/components/collaboration/ShareModal";
+import { CollaborationModal } from "@/components/collaboration/CollaborationModal";
+import { ShareLinkModal } from "@/components/collaboration/ShareLinkModal";
 
 export default function Home() {
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCollaborationModalOpen, setIsCollaborationModalOpen] = useState(false);
+  const [isShareLinkModalOpen, setIsShareLinkModalOpen] = useState(false);
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list' | 'library'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
@@ -2118,11 +2120,11 @@ export default function Home() {
                        </div>
                        
                        <div className="pointer-events-auto flex items-center gap-2 bg-background/50 backdrop-blur-sm rounded-lg border border-border/50 shadow-sm p-1">
-                           <AvatarStack onManageMembers={() => setIsShareModalOpen(true)} />
+                           <AvatarStack onManageMembers={() => setIsCollaborationModalOpen(true)} />
                            <Button 
                              variant="ghost" 
                              size="sm" 
-                             onClick={() => setIsShareModalOpen(true)} 
+                             onClick={() => setIsShareLinkModalOpen(true)} 
                              className="h-7 text-xs font-medium gap-1.5 px-2 hover:bg-background/80"
                            >
                              Share
@@ -2130,9 +2132,14 @@ export default function Home() {
                        </div>
                      </div>
                      
-                     <ShareModal 
-                        open={isShareModalOpen} 
-                        onOpenChange={setIsShareModalOpen} 
+                     <CollaborationModal 
+                        open={isCollaborationModalOpen} 
+                        onOpenChange={setIsCollaborationModalOpen} 
+                        canvasTitle={projectInfo.name} 
+                     />
+                     <ShareLinkModal 
+                        open={isShareLinkModalOpen} 
+                        onOpenChange={setIsShareLinkModalOpen} 
                         canvasTitle={projectInfo.name} 
                      />
                 </div>
