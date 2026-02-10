@@ -1,0 +1,361 @@
+# Studio Collaboration Optimization — Replit Instructions
+
+> Scope: Implement collaboration features (member display, invite & permission management) and public share link functionality as **two separate entry points**.
+> Reference: Document 41 (Studio真人协作功能设计与交互优化方案)
+> Tech stack: React + Tailwind CSS + Radix UI + Framer Motion (as inferred from other Replit instructions)
+
+---
+
+## Important: What NOT to Change
+
+The following components and functionalities are explicitly out of scope for this task and must NOT be modified:
+- **AI Chat panel**: The entire left panel, including message flow, input area, and any AI-related elements.
+- **Canvas content**: Existing Canvas cards (ScreenshotCard, SummaryCard), FlowConnectors, or their content/layout. Only UI elements *around* the Canvas are affected.
+- **Commenting system**: The design and interaction for comments/annotations are covered in a later phase and should not be implemented now.
+- **Current "Participating Team" panel**: This panel is to be replaced; ensure its removal or complete overhaul as specified in this document.
+
+---
+
+## Overall Information Architecture
+
+The current "Participating Team" right-side panel will be replaced by **two separate, adjacent entry points** in the top-right toolbar area. Collaboration (invite & manage collaborators) and Share (generate public read-only link) are distinct functions with distinct triggers:
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  ← Back    Canvas Title              👤👤👤 +2  [👥]  [Share]  │ ← Top Right Toolbar
+└──────────────────────────────────────────────────────────┘
+                                              │       │
+                                              │       └─→ Share Popover (public link)
+                                              └─────────→ Collaboration Modal (invite & manage)
+```
+
+- **[👥] Collaboration icon**: Opens the Collaboration Modal for inviting collaborators and managing member permissions.
+- **[Share] text tab**: Opens the Share Popover for generating a public read-only link. When the user confirms public sharing, the URL is automatically copied to the clipboard.
+
+---
+
+## Task 1: Replace "Participating Team" panel with Top-Right Avatar Stack & Collaboration Icon
+
+The existing "Participating Team" panel should be removed. In its place, implement an avatar stack, a Collaboration icon button, and a "Share" text tab in the top-right corner of the Studio canvas area, alongside the canvas title.
+
+### Component A: Avatar Stack (Members Display)
+
+**Location**: Studio page top-right, next to the Canvas Title and to the left of the Collaboration icon [👥].
+
+**Design Rules**:
+- Display a maximum of 3 user avatars. Any additional participants should be represented by a `+N` count.
+- Online users' avatars should have a small green status dot (8px diameter, 2px white border, positioned at the bottom-right of the avatar).
+- On mouse hover over any avatar or the `+N` count, a tooltip should appear showing: `Name / Role · Online/Offline`.
+- Clicking the avatar stack area (or the `+N` count) should trigger a lightweight dropdown (Member Quick Preview).
+
+**Avatar Stack Mockup**:
+```
+┌──────────────────────────────────────────────────────────┐
+│  ← Back    Canvas Title              👤👤👤 +2  [👥]  [Share]  │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Member Quick Preview Dropdown (on click)**:
+- This dropdown should list all current members, showing their avatar, name, role, and online/offline status.
+- At the bottom of the list, include a `[Manage Members]` button. Clicking this button should open the full Collaboration Modal (Task 2).
+
+```
+┌──────────────────────────┐
+│  Alice Chen              │
+│  Design Lead · Online    │
+├──────────────────────────┤
+│  Bo Zhang                │
+│  PM · Online             │
+├──────────────────────────┤
+│  Chris Li                │
+│  Research · Offline      │
+├──────────────────────────┤
+│  [Manage Members]        │
+└──────────────────────────┘
+```
+
+**Styling**:
+- Avatar size: `28px x 28px` (circular).
+- Stack overlap: Avatars should overlap by `8px` (each avatar exposes `20px`).
+- `+N` style: Gray circular background with white numbers.
+
+**Data Model for Members**:
+```typescript
+interface Member {
+  id: string;
+  name: string;
+  role: string;
+  avatarUrl: string; // URL to the user's profile picture
+  isOnline: boolean;
+  permission: "owner" | "can-edit" | "can-comment" | "can-view"; // Used in Task 2 (Collaboration Modal)
+}
+```
+
+**Mock Data for Demo**:
+```javascript
+const DEMO_MEMBERS = [
+  { id: "1", name: "Alice Chen", role: "Design Lead", avatarUrl: "/avatars/alice.png", isOnline: true, permission: "can-edit" },
+  { id: "2", name: "Bo Zhang", role: "PM", avatarUrl: "/avatars/bo.png", isOnline: true, permission: "owner" },
+  { id: "3", name: "Chris Li", role: "Research", avatarUrl: "/avatars/chris.png", isOnline: false, permission: "can-view" },
+  { id: "4", name: "David Wang", role: "Developer", avatarUrl: "/avatars/david.png", isOnline: false, permission: "can-comment" }, // This one should be in +N
+  { id: "5", name: "Eva Green", role: "Marketing", avatarUrl: "/avatars/eva.png", isOnline: true, permission: "can-view" },   // This one should be in +N
+];
+```
+
+---
+
+## Task 2: Implement Collaboration Icon Button and Collaboration Modal
+
+Implement a Collaboration icon button [👥] to the right of the Avatar Stack. Clicking this icon opens the Collaboration Modal for inviting collaborators and managing member permissions.
+
+### Component B: Collaboration Icon Button
+
+**Location**: To the right of the Avatar Stack (Component A), to the left of the [Share] text tab.
+
+**Design**: An icon-only button using a "people/group" icon (e.g., `Users` icon from Lucide). No text label — icon only.
+
+### Component C: Collaboration Modal
+
+**Trigger**: Clicking the [👥] Collaboration icon button, or the `[Manage Members]` button in the Member Quick Preview dropdown.
+
+**Modal Structure**:
+- **Title**: `Collaborate on "Canvas Name"` (dynamically include the current canvas's title).
+- **Invite People Section**:
+    - An input field: `Enter email or name...`
+    - A permission dropdown next to the input (default "Can comment"), allowing the inviter to pre-select the permission level before sending.
+    - A `[Send Invite]` button next to the dropdown.
+- **People with Access Section**:
+    - A list of all members currently having access to the canvas.
+    - Each entry shows: Avatar, Name, Role (if available), online/offline status dot.
+    - Next to each member, a dropdown for **Permission Management** (see Permission Levels below).
+    - For the current user, it should show `👤 You (Owner)` or their respective permission.
+    - The Owner's permission level is not changeable (no dropdown, just a label).
+
+**Collaboration Modal Mockup**:
+```
+┌─────────────────────────────────────┐
+│  Collaborate on "Competitive Analysis" │  ← Title dynamically set
+├─────────────────────────────────────┤
+│                                     │
+│  Invite people                      │
+│  ┌───────────────────┐             │
+│  │ Enter email or name│ Can comment▾│
+│  └───────────────────┘  [Send Invite]│
+│                                     │
+│  People with access                 │
+│  ┌─────────────────────────────┐   │
+│  │ 🟢 You (Owner)        Owner │   │  ← No dropdown, label only
+│  │ 🟢 Alice Chen     Can edit ▾│   │
+│  │ 🟢 Bo Zhang      Can comment▾│   │
+│  │ ⚫ Chris Li       Can view ▾│   │  ← Offline dot
+│  └─────────────────────────────┘   │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Styling**:
+- Modal width: `400px`.
+- It should pop up from below the [👥] Collaboration icon button.
+- The invite input field should support auto-completion if a user system is available.
+- Online/offline status dots should be consistent with the Avatar Stack styling (green for online, gray for offline).
+
+**Mock Data for Canvas Title**:
+```javascript
+const CURRENT_CANVAS_TITLE = "Competitive Analysis";
+```
+
+---
+
+## Task 2 (cont.): Permission Management within Collaboration Modal
+
+Within the "People with access" section of the Collaboration Modal, implement a dropdown for each member to manage their permission level.
+
+### Permission Levels:
+
+| Permission    | What they can do                                    | Use Case                 |
+| ------------- | --------------------------------------------------- | ------------------------ |
+| **Owner**     | All operations + delete Canvas + manage members     | Canvas creator           |
+| **Can edit**  | Edit Canvas content + add comments + interact with AI | Core collaborator        |
+| **Can comment** | View + add comments/annotations                   | Reviewer / Stakeholder   |
+| **Can view**  | Read-only access                                    | External sharing / Report |
+
+**Interaction**:
+- Clicking the permission level text (e.g., "Can edit ▾") should open a dropdown menu with the permission options and a "Remove" option.
+- The **Owner** row does NOT have a dropdown — it displays a static "Owner" label.
+- Selecting a new permission level should immediately update the member's access.
+- Each option in the dropdown should include a short description (e.g., "Can edit — Can modify canvas content").
+- The "Remove" option should be styled in red/destructive color to indicate danger.
+
+---
+
+## Task 3: Implement "Share" Text Tab and Share Popover (Public Link)
+
+Implement a "Share" text tab to the right of the Collaboration icon [👥]. This is a **separate entry point** from the Collaboration Modal. Its sole purpose is to generate a public read-only link for the canvas.
+
+### Component D: Share Text Tab
+
+**Location**: To the right of the Collaboration icon button [👥], as the rightmost element in the top-right toolbar.
+
+**Design**: A text-style button/tab labeled `Share`. Styled as a subtle text button (not a primary filled button) to differentiate it from the Collaboration icon.
+
+### Component E: Share Popover
+
+**Trigger**: Clicking the `[Share]` text tab.
+
+**Popover Structure**:
+- **Title**: `Share "Canvas Name"` (dynamically include the current canvas's title).
+- **Description text**: A brief explanation, e.g., `Generate a public read-only link. Anyone with this link can view the canvas.`
+- **Toggle or Confirm button**:
+    - If public sharing is **not yet enabled**: Show a `[Enable Public Link]` button. Clicking it generates the public URL and immediately copies it to the clipboard, with a "Link copied!" feedback message.
+    - If public sharing is **already enabled**: Show the generated URL in a read-only text field, with a `[Copy Link]` button next to it. Clicking `[Copy Link]` copies the URL and shows "Copied!" feedback. Also show a `[Disable Public Link]` button (styled in destructive/red) to revoke the link.
+
+**Share Popover Mockup (before enabling)**:
+```
+┌─────────────────────────────────┐
+│  Share "Competitive Analysis"    │
+├─────────────────────────────────┤
+│                                 │
+│  Generate a public read-only    │
+│  link. Anyone with this link    │
+│  can view the canvas.           │
+│                                 │
+│       [Enable Public Link]      │
+│                                 │
+└─────────────────────────────────┘
+```
+
+**Share Popover Mockup (after enabling)**:
+```
+┌─────────────────────────────────┐
+│  Share "Competitive Analysis"    │
+├─────────────────────────────────┤
+│                                 │
+│  Public link (read-only)        │
+│  ┌─────────────────────────┐   │
+│  │ https://app.io/c/abc123 │   │
+│  └─────────────────────────┘   │
+│           [Copy Link]  ✓ Copied!│
+│                                 │
+│  [Disable Public Link]          │ ← Destructive style
+│                                 │
+└─────────────────────────────────┘
+```
+
+**Behavior**:
+- When the user clicks `[Enable Public Link]`, the public URL is generated (mock: `https://flowacts.app/canvas/{canvasId}/public`) and **automatically copied to the clipboard**. Show "Link copied!" feedback.
+- When the user clicks `[Copy Link]` (after link is already enabled), copy the URL to clipboard and show "Copied!" feedback.
+- When the user clicks `[Disable Public Link]`, the public link is revoked and the popover returns to the "before enabling" state.
+
+**Styling**:
+- Popover width: `320px`.
+- It should pop up from below the `Share` text tab.
+- The `[Enable Public Link]` button should use primary styling.
+- The `[Disable Public Link]` button should use destructive/red styling.
+- "Copied!" / "Link copied!" feedback should appear inline, with a brief animation (e.g., fade in/out over 2 seconds).
+
+**Mock Data**:
+```javascript
+const MOCK_PUBLIC_LINK = `https://flowacts.app/canvas/abc123/public`;
+```
+
+---
+
+## Implementation Checklist for Replit
+
+### Phase 1: Avatar Stack & Toolbar Layout
+1.  [ ] Remove the old "Participating Team" panel.
+2.  [ ] Implement the Avatar Stack component in the top-right toolbar area.
+3.  [ ] Apply styling for avatar size, overlap, and `+N` count.
+4.  [ ] Implement green status dot for online users.
+5.  [ ] Implement tooltip on hover showing name, role, and online status.
+6.  [ ] Implement Member Quick Preview dropdown on click, listing all members.
+7.  [ ] Add `[Manage Members]` button to the dropdown (opens Collaboration Modal).
+8.  [ ] Place the [👥] Collaboration icon button to the right of the Avatar Stack.
+9.  [ ] Place the [Share] text tab to the right of the [👥] icon.
+10. [ ] Use `DEMO_MEMBERS` mock data for testing.
+
+### Phase 2: Collaboration Modal (invite + manage members + permissions)
+1.  [ ] Implement the Collaboration Modal that opens on [👥] icon click.
+2.  [ ] Populate the modal title dynamically: `Collaborate on "Canvas Name"`.
+3.  [ ] Implement "Invite people" section with input field, permission dropdown (default "Can comment"), and `[Send Invite]` button.
+4.  [ ] Implement "People with access" section, listing members from `DEMO_MEMBERS` with avatar, name, role, and online/offline status dot.
+5.  [ ] For each non-owner member, implement a permission dropdown with "Can edit", "Can comment", "Can view", and "Remove" options.
+6.  [ ] Owner row displays a static "Owner" label (no dropdown).
+7.  [ ] Each permission option includes a short descriptive text.
+8.  [ ] "Remove" option styled in destructive/red color.
+9.  [ ] When `[Manage Members]` is clicked in the Avatar Stack's dropdown, it should also open this Collaboration Modal.
+
+### Phase 3: Share Popover (Public Link)
+1.  [ ] Implement the Share Popover that opens on [Share] text tab click.
+2.  [ ] Populate the popover title dynamically: `Share "Canvas Name"`.
+3.  [ ] Implement "before enabling" state with description text and `[Enable Public Link]` button.
+4.  [ ] On `[Enable Public Link]` click: generate mock public URL, auto-copy to clipboard, show "Link copied!" feedback.
+5.  [ ] Implement "after enabling" state showing the URL in a read-only field with `[Copy Link]` button.
+6.  [ ] Add "Copied!" feedback animation for `[Copy Link]` button.
+7.  [ ] Implement `[Disable Public Link]` button (destructive style) to revoke the link and return to "before enabling" state.
+
+---
+
+## Visual Reference: After Optimization
+
+**Top-Right Toolbar**:
+```
+┌──────────────────────────────────────────────────────────┐
+│  ← Back    Competitive Analysis       👤👤👤 +2  [👥]  [Share]  │
+└──────────────────────────────────────────────────────────┘
+                                              │        │
+                                              │        └─→ Share Popover
+                                              └──────────→ Collaboration Modal
+```
+**Collaboration Modal (triggered by [👥])**:
+```
+┌─────────────────────────────────────┐
+│  Collaborate on "Competitive Analysis" │
+├─────────────────────────────────────┤
+│                                     │
+│  Invite people                      │
+│  ┌───────────────────┐             │
+│  │ Enter email or name│ Can comment▾│
+│  └───────────────────┘  [Send Invite]│
+│                                     │
+│  People with access                 │
+│  ┌─────────────────────────────┐   │
+│  │ 🟢 You (Owner)        Owner │   │
+│  │ 🟢 Alice Chen     Can edit ▾│   │
+│  │ 🟢 Bo Zhang      Can comment▾│   │
+│  │ ⚫ Chris Li       Can view ▾│   │
+│  └─────────────────────────────┘   │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Share Popover (triggered by [Share])**:
+```
+┌─────────────────────────────────┐
+│  Share "Competitive Analysis"    │
+├─────────────────────────────────┤
+│                                 │
+│  Generate a public read-only    │
+│  link. Anyone with this link    │
+│  can view the canvas.           │
+│                                 │
+│       [Enable Public Link]      │
+│                                 │
+└─────────────────────────────────┘
+```
+
+---
+
+## Notes
+
+1.  **Dark theme**: All components should adhere to the existing dark theme tokens (`bg-card`, `border-border`, `text-foreground`, `text-muted-foreground`, `bg-muted`, `bg-primary/10`, etc.). Do NOT introduce light-theme colors.
+2.  **Fonts**: Continue using Plus Jakarta Sans for headings and Inter for body text, consistent with the rest of the app.
+3.  **Responsiveness**: Ensure the avatar stack and share button gracefully handle different screen widths within the top navigation area.
+4.  **No Comments implementation**: The commenting system is explicitly excluded from this task.
+5.  **State Management**: Use React's local state for modal visibility, selected permissions, etc. For demonstration purposes, mock member data is sufficient; no need to connect to a backend.
+
+---
+
+*Document created: 2026-02-10*
+*Source: Document 41 (Studio真人协作功能设计与交互优化方案)*
+*Scope: Collaboration (invite & permission management) and Share (public read-only link) as two separate entry points.*
