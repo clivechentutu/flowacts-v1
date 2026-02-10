@@ -102,6 +102,7 @@ import {
 import { PageBottomNav } from "@/components/canvas/PageBottomNav";
 import { PageTab } from "@/components/canvas/PageTabNav";
 import { ProjectHeader, ProjectInfo } from "@/components/canvas/ProjectHeader";
+import { TopRightToolbar } from "@/components/canvas/TopRightToolbar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PromptCard {
@@ -2122,6 +2123,9 @@ export default function Home() {
                             onRename={handleRenameProject}
                             onNewProject={handleNewProject}
                         />
+                     </div>
+                     <div className="absolute top-4 right-4 pointer-events-auto z-50">
+                        <TopRightToolbar />
                      </div>
                 </div>
             )}
