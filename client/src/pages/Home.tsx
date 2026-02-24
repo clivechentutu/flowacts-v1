@@ -57,7 +57,8 @@ import {
   Info,
   AlignLeft,
   Table,
-  ListTodo
+  ListTodo,
+  Trophy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1397,10 +1398,9 @@ export default function Home() {
                             variant="ghost" 
                             size="icon" 
                             className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" 
-                            title="Call Roles"
-                            onClick={handleAtButtonClick}
+                            title="Quick Actions"
                         >
-                          <AtSign className="w-4 h-4" />
+                          <Zap className="w-4 h-4" />
                         </Button>
                         
                         {/* Vertical Divider */}
@@ -1414,14 +1414,11 @@ export default function Home() {
                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Table">
                               <Table className="w-4 h-4" />
                            </Button>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Brainstorm">
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Scorecard">
+                              <Trophy className="w-4 h-4" />
+                           </Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Mind Map">
                               <Brain className="w-4 h-4" />
-                           </Button>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="List">
-                              <ListTodo className="w-4 h-4" />
-                           </Button>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Text">
-                              <AlignLeft className="w-4 h-4" />
                            </Button>
                         </div>
                      </div>
