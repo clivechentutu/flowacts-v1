@@ -23,15 +23,34 @@ export function ProjectHeader({ project, onRename, onToggleProjectList, isProjec
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
+      inputRef.current.select();
     }
   }, [isEditing]);
 
   const handleConfirm = () => {
-    if (editValue.trim()) {
+    if (editValue.trim() && editValue.trim() !== project.name) {
       onRename(editValue.trim().slice(0, 100));
+    } else if (!editValue.trim()) {
+      setEditValue(project.name);
     }
     setIsEditing(false);
   };
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (isEditing && inputRef.current && !inputRef.current.contains(e.target as Node)) {
+        handleConfirm();
+      }
+    };
+
+    if (isEditing) {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [isEditing, editValue, project.name]);
 
   return (
     <div className="flex items-center gap-2 px-2 py-1.5">
@@ -56,7 +75,10 @@ export function ProjectHeader({ project, onRename, onToggleProjectList, isProjec
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") handleConfirm();
-            if (e.key === "Escape") setIsEditing(false);
+            if (e.key === "Escape") {
+              setEditValue(project.name);
+              setIsEditing(false);
+            }
           }}
           onBlur={handleConfirm}
           className="bg-transparent border-b border-primary outline-none text-sm font-semibold text-foreground h-5 w-[calc(50vw-16rem)] min-w-[200px] max-w-[600px] p-0"
