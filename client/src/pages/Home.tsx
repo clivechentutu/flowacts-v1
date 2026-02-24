@@ -1416,9 +1416,7 @@ export default function Home() {
                      </Button>
                   </div>
                   
-                  {/* Output Format Options - Below the main input controls */}
-                  <div className="flex items-center gap-4 px-4 pb-4 bg-transparent border-t border-border/20 pt-3">
-                     <span className="text-sm font-medium text-muted-foreground">What would you like to do with these?</span>
+                  <div className="flex items-center gap-1 px-4 pb-4 bg-transparent border-t border-border/20 pt-3">
                      <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
                            <FileText className="w-4 h-4" />
