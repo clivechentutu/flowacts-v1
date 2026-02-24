@@ -1388,7 +1388,7 @@ export default function Home() {
                   />
 
                   <div className="flex justify-between items-center p-4 pt-0 border-t-0 bg-transparent">
-                     <div className="flex gap-1">
+                     <div className="flex items-center gap-1.5 ml-2">
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Attach">
                           <Paperclip className="w-4 h-4" />
                         </Button>
@@ -1401,6 +1401,28 @@ export default function Home() {
                         >
                           <AtSign className="w-4 h-4" />
                         </Button>
+                        
+                        {/* Vertical Divider */}
+                        <div className="w-px h-5 bg-border/50 mx-1"></div>
+                        
+                        {/* Output Format Options */}
+                        <div className="flex items-center gap-1">
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Document">
+                              <FileText className="w-4 h-4" />
+                           </Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Table">
+                              <Table className="w-4 h-4" />
+                           </Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Brainstorm">
+                              <Brain className="w-4 h-4" />
+                           </Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="List">
+                              <ListTodo className="w-4 h-4" />
+                           </Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" title="Text">
+                              <AlignLeft className="w-4 h-4" />
+                           </Button>
+                        </div>
                      </div>
                      
                      <Button 
@@ -1414,26 +1436,6 @@ export default function Home() {
                      >
                         <ArrowRight className="w-5 h-5" />
                      </Button>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 px-4 pb-4 bg-transparent border-t border-border/20 pt-3">
-                     <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
-                           <FileText className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
-                           <Table className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
-                           <Brain className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
-                           <ListTodo className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
-                           <AlignLeft className="w-4 h-4" />
-                        </Button>
-                     </div>
                   </div>
                 </div>
 
