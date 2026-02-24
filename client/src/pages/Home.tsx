@@ -1673,6 +1673,7 @@ export default function Home() {
             </div>
           </div>
         );
+      case 'projects-list':
           return (
              <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
                  <div className="flex items-center gap-2 mb-8">
