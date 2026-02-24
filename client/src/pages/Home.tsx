@@ -1860,77 +1860,89 @@ export default function Home() {
         return (
             <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
                 <div className="max-w-5xl mx-auto w-full">
-                    {/* Top Bar */}
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => setActiveTab('projects-list')}
-                                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                ← Back to Projects
-                            </button>
-                            <div className="flex items-center gap-2">
-                                {p.hasActiveContainer && (
-                                    <span className="pulse-dot" />
-                                )}
-                                <h1 className="text-lg font-semibold text-foreground">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-8 pb-6 border-b border-border/50 gap-6">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setActiveTab('projects-list')}
+                                    className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                                >
+                                    <ArrowRight className="w-4 h-4 rotate-180" />
+                                </button>
+                                <h1 className="text-2xl font-bold tracking-tight text-foreground truncate flex items-center gap-3">
                                     {p.title}
+                                    {p.hasActiveContainer && (
+                                        <span className="pulse-dot" />
+                                    )}
                                 </h1>
                             </div>
+
+                            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+                                <span className="flex items-center gap-1.5">👤 {p.memberCount || 1} members</span>
+                                <span className="text-muted-foreground/40">·</span>
+                                <span>
+                                    Created {(() => {
+                                        const cd = new Date(p.createdAt || p.date);
+                                        return `${cd.toLocaleString('en-US', { month: 'short' })} ${cd.getDate()}, ${cd.getFullYear()}`;
+                                    })()}
+                                </span>
+                                <span className="text-muted-foreground/40">·</span>
+                                <span>
+                                    Updated {(() => {
+                                        const ud = new Date(p.updatedAt || p.date);
+                                        return `${ud.toLocaleString('en-US', { month: 'short' })} ${ud.getDate()}, ${ud.getFullYear()}`;
+                                    })()}
+                                </span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button
-                                className={`shrink-0 text-lg transition-colors px-2 py-1 hover:bg-muted rounded-md ${
-                                    p.isFavorite
-                                        ? 'text-yellow-400'
-                                        : 'text-muted-foreground/30 hover:text-muted-foreground/60'
-                                }`}
+
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                                variant={p.isFavorite ? "secondary" : "outline"}
+                                size="sm"
+                                className={cn("gap-2", p.isFavorite && "text-amber-500 bg-amber-500/10 hover:bg-amber-500/20")}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     toast({ description: p.isFavorite ? "Removed from favorites" : "Added to favorites" });
                                 }}
                             >
-                                {p.isFavorite ? '★' : '☆'}
-                            </button>
-                            <button className="text-muted-foreground hover:text-foreground p-1.5 hover:bg-muted rounded-md transition-colors">
-                                <MoreVertical className="w-5 h-5" />
-                            </button>
+                                <Star className={cn("w-4 h-4", p.isFavorite && "fill-current")} />
+                                {p.isFavorite ? 'Favorited' : 'Favorite'}
+                            </Button>
+                            <Button variant="outline" size="sm" className="w-9 px-0">
+                                <MoreVertical className="w-4 h-4" />
+                            </Button>
                         </div>
                     </div>
 
-                    {/* Project Info */}
-                    <div className="mb-8">
-                        <p className="text-sm text-muted-foreground mb-2">
+                    {/* Project Description */}
+                    <div className="mb-10">
+                        <h2 className="text-sm font-medium text-foreground mb-3">About this project</h2>
+                        <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
                             {p.description}
                         </p>
-                        <div className="text-xs text-muted-foreground/60">
-                            👤 {p.memberCount || 1} members ·
-                            Created {(() => {
-                                const cd = new Date(p.createdAt || p.date);
-                                const cm = cd.toLocaleString('en-US', { month: 'short' });
-                                return `${cm} ${cd.getDate()}`;
-                            })()} ·
-                            Updated {(() => {
-                                const ud = new Date(p.updatedAt || p.date);
-                                const um = ud.toLocaleString('en-US', { month: 'short' });
-                                return `${um} ${ud.getDate()}`;
-                            })()}
-                        </div>
                     </div>
 
                     {/* Canvas List */}
                     <div>
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-medium text-foreground">Canvases</h2>
-                            <button
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Layers className="w-5 h-5 text-primary" />
+                                </div>
+                                <h2 className="text-lg font-semibold tracking-tight text-foreground">Canvases</h2>
+                            </div>
+                            <Button
                                 onClick={() => setActiveTab('project')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                                size="sm"
+                                className="gap-2"
                             >
-                                <Plus className="w-3.5 h-3.5" /> New
-                            </button>
+                                <Plus className="w-4 h-4" /> New Canvas
+                            </Button>
                         </div>
 
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
                             {/* Mocking Canvases if empty */}
                             {(p.canvases && p.canvases.length > 0 ? p.canvases : [
                                 { id: 'c1', title: 'Brainstorming', summary: 'Initial ideas and concepts for ' + p.title, updatedAt: p.updatedAt || p.date },
@@ -1938,29 +1950,34 @@ export default function Home() {
                             ]).map((canvas: any) => (
                                 <div
                                     key={canvas.id}
-                                    className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all"
+                                    className="group rounded-xl border border-border bg-card p-5 hover:border-primary/40 hover:shadow-md cursor-pointer transition-all flex flex-col h-[160px]"
                                     onClick={() => setActiveTab('project')}
                                 >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm">📋</span>
-                                        <h3 className="text-sm font-medium text-foreground truncate">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                                            <Layers className="w-4 h-4" />
+                                        </div>
+                                        <h3 className="text-base font-medium text-foreground truncate flex-1 group-hover:text-primary transition-colors">
                                             {canvas.title}
                                         </h3>
                                     </div>
-                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
                                         {canvas.summary}
                                     </p>
-                                    <div className="text-xs text-muted-foreground/60">
-                                        Updated {(() => {
-                                            const d = new Date(canvas.updatedAt);
-                                            const now = new Date();
-                                            const month = d.getMonth() + 1;
-                                            const day = d.getDate();
-                                            if (d.getFullYear() === now.getFullYear()) {
-                                                return `${month}/${day}`;
-                                            }
-                                            return `${month}/${day}/${d.getFullYear() % 100}`;
-                                        })()}
+                                    <div className="text-xs text-muted-foreground/60 flex items-center justify-between mt-auto pt-4 border-t border-border/50">
+                                        <span>
+                                            Updated {(() => {
+                                                const d = new Date(canvas.updatedAt);
+                                                const now = new Date();
+                                                const month = d.getMonth() + 1;
+                                                const day = d.getDate();
+                                                if (d.getFullYear() === now.getFullYear()) {
+                                                    return `${month}/${day}`;
+                                                }
+                                                return `${month}/${day}/${d.getFullYear() % 100}`;
+                                            })()}
+                                        </span>
+                                        <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
                                     </div>
                                 </div>
                             ))}
