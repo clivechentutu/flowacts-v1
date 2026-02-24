@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Plus, PanelLeft } from "lucide-react";
-import { useSidebar } from "@/components/ui/sidebar";
+import { PanelLeft } from "lucide-react";
 
 export interface ProjectInfo {
   id: string;
@@ -19,7 +18,6 @@ export function ProjectHeader({ project, onRename, onNewProject }: ProjectHeader
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(project.name);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { toggleSidebar } = useSidebar();
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -36,13 +34,6 @@ export function ProjectHeader({ project, onRename, onNewProject }: ProjectHeader
 
   return (
     <div className="flex items-center gap-2 px-2 py-1.5">
-      <button
-        onClick={toggleSidebar}
-        className="h-8 w-8 flex items-center justify-center rounded-lg border border-transparent hover:bg-muted text-muted-foreground hover:text-foreground transition-colors mr-1"
-        title="Toggle Sidebar"
-      >
-        <PanelLeft className="w-4 h-4" />
-      </button>
 
       {isEditing ? (
         <input
