@@ -101,16 +101,9 @@ import {
 
 import { PageBottomNav } from "@/components/canvas/PageBottomNav";
 import { PageTab } from "@/components/canvas/PageTabNav";
-import { ProjectGroup } from "@/components/canvas/ProjectGroup";
-import { ProjectsTopBar } from "@/components/canvas/ProjectsTopBar";
-import { CreateProjectPanel } from "@/components/canvas/CreateProjectPanel";
-import { EmptyProjectState } from "@/components/canvas/EmptyProjectState";
-import { Project } from "@/types/project";
-import { MOCK_PROJECTS } from "@/lib/mock-projects";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProjectHeader, ProjectInfo } from "@/components/canvas/ProjectHeader";
 import { TopRightToolbar } from "@/components/canvas/TopRightToolbar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface PromptCard {
   id: string;
@@ -833,7 +826,7 @@ const generateProjectName = (text: string): string => {
 
 export default function Home() {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list' | 'library'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list'>('home');
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
@@ -855,84 +848,6 @@ export default function Home() {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [projectListSearch, setProjectListSearch] = useState("");
   const [projectListFilter, setProjectListFilter] = useState<'all' | 'favorites'>('all');
-  
-  // New Project Page State
-  const [allProjects, setAllProjects] = useState<Project[]>(MOCK_PROJECTS);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
-
-  function groupProjects(projects: Project[], searchQuery: string) {
-    let filtered = projects;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = projects.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        (p.contextSummary?.toLowerCase().includes(q))
-      );
-    }
-
-    const pinned = filtered.filter(p => p.isPinned);
-    const active = filtered.filter(p => p.status === "active" && !p.isPinned);
-    const completed = filtered.filter(p => p.status === "completed" && !p.isPinned);
-    const archived = filtered.filter(p => p.status === "archived");
-
-    const sortFn = (a: Project, b: Project) => {
-      const aHasChanges = a.containerStatus?.overall === "new_changes" ? 1 : 0;
-      const bHasChanges = b.containerStatus?.overall === "new_changes" ? 1 : 0;
-      if (aHasChanges !== bHasChanges) return bHasChanges - aHasChanges;
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    };
-
-    return {
-      pinned: pinned.sort(sortFn),
-      active: active.sort(sortFn),
-      completed: completed.sort(sortFn),
-      archived: archived.sort(sortFn),
-    };
-  }
-
-  const handleCreateProject = (name: string, context: string) => {
-    const isUrl = context.startsWith('http') || (context.includes('.') && !context.includes(' '));
-    const newProject: Project = {
-      id: `p-${Date.now()}`,
-      name,
-      updatedAt: new Date().toISOString(),
-      status: "active",
-      isPinned: false,
-      isFavorite: false,
-      contextSummary: isUrl ? new URL(context.startsWith('http') ? context : `https://${context}`).hostname : context,
-      containerStatus: null,
-      canvasCount: 1
-    };
-    setAllProjects([newProject, ...allProjects]);
-    setProjectInfo({
-      id: newProject.id,
-      icon: '🕵️',
-      name: newProject.name
-    });
-    setPages(DEMO_PAGES);
-    setActivePageId(DEMO_PAGES[0].id);
-    setActiveTab('project');
-  };
-
-  const updateProject = (id: string, updates: Partial<Project>) => {
-    setAllProjects(allProjects.map(p => p.id === id ? { ...p, ...updates } : p));
-  };
-
-  const handleDelete = () => {
-    if (projectToDelete) {
-      setAllProjects(allProjects.filter(p => p.id !== projectToDelete.id));
-      setDeleteDialogOpen(false);
-      setProjectToDelete(null);
-      toast({ title: "Project deleted", description: "The project has been removed." });
-    }
-  };
-
-  const confirmDelete = (p: Project) => {
-    setProjectToDelete(p);
-    setDeleteDialogOpen(true);
-  };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
