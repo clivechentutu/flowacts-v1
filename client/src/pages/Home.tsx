@@ -1403,7 +1403,7 @@ export default function Home() {
                         </Button>
                         
                         {/* Vertical Divider */}
-                        <div className="w-px h-5 bg-border/50 mx-1"></div>
+                        <div className="w-px h-5 bg-border mx-1 shadow-[0_0_1px_rgba(0,0,0,0.1)]"></div>
                         
                         {/* Output Format Options */}
                         <div className="flex items-center gap-1">
