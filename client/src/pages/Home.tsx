@@ -1736,7 +1736,7 @@ export default function Home() {
                  </div>
 
                  {/* Toolbar */}
-                 <div className="flex items-center justify-between mb-6 gap-4">
+                 <div className="flex items-center gap-4 mb-6">
                     <div className="relative flex-1 max-w-md">
                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                        <Input 
@@ -1746,7 +1746,7 @@ export default function Home() {
                          className="pl-9 bg-muted/50 border-border/50 focus:bg-background transition-all"
                        />
                     </div>
-                    <div className="flex bg-muted/50 p-0.5 rounded-lg">
+                    <div className="flex bg-muted/50 p-0.5 rounded-lg shrink-0">
                         <button 
                             onClick={() => setProjectListFilter('all')}
                             className={cn(
