@@ -1398,9 +1398,6 @@ export default function Home() {
                         >
                           <AtSign className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" title="Search">
-                          <Globe className="w-4 h-4" />
-                        </Button>
                         
                         <div className="h-4 w-px bg-border mx-1 self-center" />
                         
@@ -1411,17 +1408,17 @@ export default function Home() {
                         >
                            <div className={cn(
                               "w-8 h-4 rounded-full relative transition-colors duration-300",
-                              isThinkingMode ? "bg-indigo-500/20" : "bg-amber-500/20"
+                              "bg-indigo-500/20"
                            )}>
                               <div className={cn(
                                 "absolute top-0.5 w-3 h-3 rounded-full transition-all duration-300 shadow-sm flex items-center justify-center",
-                                isThinkingMode ? "left-[18px] bg-indigo-500" : "left-0.5 bg-amber-500"
+                                "left-[18px] bg-indigo-500"
                               )}>
-                                {isThinkingMode ? <Brain className="w-2 h-2 text-white" /> : <Zap className="w-2 h-2 text-white fill-white" />}
+                                <Brain className="w-2 h-2 text-white" />
                               </div>
                            </div>
                            <span className="text-xs font-medium text-muted-foreground">
-                              {isThinkingMode ? "Deep Think" : "Fast"}
+                              Deep Think
                            </span>
                         </div>
                      </div>
