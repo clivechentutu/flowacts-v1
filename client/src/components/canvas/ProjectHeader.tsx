@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface ProjectInfo {
   id: string;
@@ -10,10 +11,11 @@ export interface ProjectInfo {
 interface ProjectHeaderProps {
   project: ProjectInfo;
   onRename: (newName: string) => void;
-  onNewProject?: () => void;
+  onToggleProjectList?: () => void;
+  isProjectListExpanded?: boolean;
 }
 
-export function ProjectHeader({ project, onRename, onNewProject }: ProjectHeaderProps) {
+export function ProjectHeader({ project, onRename, onToggleProjectList, isProjectListExpanded }: ProjectHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(project.name);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,6 +35,18 @@ export function ProjectHeader({ project, onRename, onNewProject }: ProjectHeader
 
   return (
     <div className="flex items-center gap-2 px-2 py-1.5">
+      <button
+        type="button"
+        onClick={onToggleProjectList}
+        className={cn(
+          "h-8 w-8 flex items-center justify-center rounded-lg border border-border/60 bg-background/40 hover:bg-background/70 text-muted-foreground hover:text-foreground shadow-sm transition-colors",
+          !onToggleProjectList && "opacity-40 pointer-events-none"
+        )}
+        title={isProjectListExpanded ? "Collapse Project List" : "Expand Project List"}
+        data-testid="button-toggle-project-list"
+      >
+        {isProjectListExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
 
       {isEditing ? (
         <input

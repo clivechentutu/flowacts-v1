@@ -829,7 +829,8 @@ const generateProjectName = (text: string): string => {
 
 export default function Home() {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list' | 'library'>('home');
+  const [isProjectListExpanded, setIsProjectListExpanded] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
@@ -2120,7 +2121,8 @@ export default function Home() {
                         <ProjectHeader 
                             project={projectInfo}
                             onRename={handleRenameProject}
-                            onNewProject={handleNewProject}
+                            onToggleProjectList={() => setIsProjectListExpanded((v) => !v)}
+                            isProjectListExpanded={isProjectListExpanded}
                         />
                      </div>
                      <div className="absolute top-4 right-4 pointer-events-auto z-50">
@@ -2339,7 +2341,11 @@ export default function Home() {
       nav={
         <div className="flex h-full">
             <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-            <TaskNavigation activeTab={activeTab} />
+            <TaskNavigation 
+              activeTab={activeTab} 
+              isExpanded={isProjectListExpanded}
+              onExpandedChange={setIsProjectListExpanded}
+            />
         </div>
       }
       rightPanel={

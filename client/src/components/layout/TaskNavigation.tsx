@@ -28,8 +28,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function TaskNavigation({ activeTab }: { activeTab: string }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function TaskNavigation({
+  activeTab,
+  isExpanded,
+  onExpandedChange,
+}: {
+  activeTab: string;
+  isExpanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
+}) {
+  const setIsExpanded = onExpandedChange;
   const [projects, setProjects] = useState([
     { id: 'p1', title: 'Competitor Analysis - Q3 Report', isFavorite: true },
     { id: 'p2', title: 'New Product Launch Marketing Strategy', isFavorite: false },
@@ -210,18 +218,6 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
             </div>
         </div>
 
-        {/* Toggle Button Wrapper - Sits outside the overflow-hidden container */}
-        <div className="h-full w-0 relative z-50">
-             <Button
-                variant="secondary"
-                size="icon"
-                className="absolute top-[8.75rem] -left-3 h-6 w-6 rounded-full shadow-md border border-border"
-                onClick={() => setIsExpanded(!isExpanded)}
-                title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
-            >
-                {isExpanded ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            </Button>
-        </div>
     </div>
   );
 }
