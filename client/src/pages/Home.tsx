@@ -54,8 +54,7 @@ import {
   Lightbulb,
   Map,
   Database,
-  Info,
-  MoreHorizontal
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -586,288 +585,62 @@ function DraggablePromptCard({ card }: { card: PromptCard }) {
   );
 }
 
-interface Project {
-  id: string;
-  name: string;
-  status: "active" | "completed" | "archived";
-  isPinned: boolean;
-  isFavorite: boolean;
-  contextSummary?: string;
-  containerStatus?: {
-    overall: "new_changes" | "failed" | "running" | "paused";
-    count: number;
-    newChangesCount?: number;
-    lastCheckedAt?: Date;
-  } | null;
-  canvasCount: number;
-  updatedAt: string;
-  completedAt?: string;
-}
-
-const HISTORY_TASKS: Project[] = [
+const HISTORY_TASKS = [
     {
         id: 'h1',
-        name: 'Competitor Onboarding Analysis',
-        status: "active",
-        isPinned: true,
+        title: 'Q4 Competitor Analysis Report',
+        description: 'Comprehensive analysis of top 3 competitors in the SaaS market, focusing on pricing strategies and feature sets.',
+        date: '2025-01-15',
         isFavorite: true,
-        contextSummary: "notion.so · linear.app +1",
-        containerStatus: {
-            overall: "new_changes",
-            count: 3,
-            newChangesCount: 2,
-            lastCheckedAt: new Date(Date.now() - 1000 * 60 * 30) // 30 mins ago
-        },
-        canvasCount: 4,
-        updatedAt: '2025-01-21T10:00:00Z'
+        assets: { documents: 2, images: 5, videos: 0 },
+        thumbnail: "/thumbnails/dashboard.jpg"
     },
     {
         id: 'h2',
-        name: 'SaaS Pricing Trends Research',
-        status: "active",
-        isPinned: true,
+        title: 'Mobile App Onboarding Flow',
+        description: 'User journey mapping for the new mobile onboarding experience, identifying drop-off points.',
+        date: '2025-01-18',
         isFavorite: false,
-        contextSummary: "stripe.com · square.com",
-        containerStatus: {
-            overall: "running",
-            count: 1,
-            lastCheckedAt: new Date(Date.now() - 1000 * 60 * 5) // 5 mins ago
-        },
-        canvasCount: 2,
-        updatedAt: '2025-01-21T14:30:00Z'
+        assets: { documents: 1, images: 8, videos: 1 },
+        thumbnail: "/thumbnails/mobile-flow.jpg"
     },
     {
         id: 'h3',
-        name: 'Q3 Financial Report Analysis',
-        status: "active",
-        isPinned: false,
+        title: 'Holiday Marketing Campaign',
+        description: 'Visual assets and copy generation for the upcoming holiday season social media push.',
+        date: '2025-01-19',
         isFavorite: true,
-        contextSummary: "Q3-report.pdf · 3 screenshots",
-        containerStatus: null,
-        canvasCount: 5,
-        updatedAt: '2025-01-20T09:15:00Z'
+        assets: { documents: 3, images: 12, videos: 2 },
+        thumbnail: "/thumbnails/kanban.jpg"
     },
     {
         id: 'h4',
-        name: 'User Interview Notes - Batch 2',
-        status: "completed",
-        isPinned: false,
-        isFavorite: false,
-        contextSummary: "Zoom transcripts · 5 users",
-        containerStatus: null,
-        canvasCount: 1,
-        updatedAt: '2025-01-19T16:45:00Z',
-        completedAt: '2025-01-20T11:00:00Z'
+        title: 'Feature Release Blog Post',
+        description: 'Drafting announcement blog post for the new collaboration features.',
+        date: '2025-01-20',
+        isFavorite: true,
+        assets: { documents: 1, images: 2, videos: 0 },
+        thumbnail: "/thumbnails/doc.jpg"
     },
     {
         id: 'h5',
-        name: 'Website Redesign Feedback Collection',
-        status: "active",
-        isPinned: false,
+        title: 'User Interview Script',
+        description: 'Generating questions for user research interviews regarding the new dashboard.',
+        date: '2025-01-20',
         isFavorite: false,
-        contextSummary: "Figma prototype comments",
-        containerStatus: null,
-        canvasCount: 3,
-        updatedAt: '2025-01-18T13:20:00Z'
+        assets: { documents: 1, images: 0, videos: 0 },
+        thumbnail: "/thumbnails/code.jpg"
     },
     {
         id: 'h6',
-        name: 'Q4 Budget Planning',
-        status: "archived",
-        isPinned: false,
+        title: 'Landing Page Hero Copy',
+        description: 'A/B testing copy variations for the main landing page value prop.',
+        date: '2025-01-21',
         isFavorite: false,
-        contextSummary: "Historical spend · Q4 projections",
-        containerStatus: null,
-        canvasCount: 2,
-        updatedAt: '2024-12-15T10:00:00Z'
+        assets: { documents: 2, images: 0, videos: 0 },
+        thumbnail: "/thumbnails/landing.jpg"
     }
 ];
-
-const timeAgo = (date?: Date | string) => {
-    if (!date) return 'recently';
-    const d = new Date(date);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return `1d ago`;
-    return `${diffDays}d ago`;
-};
-
-const formatDate = (date?: string) => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-};
-
-function DynamicStatus({ project }: { project: Project }) {
-  if (project.containerStatus?.overall === "new_changes") {
-    return (
-      <span className="text-xs font-medium text-blue-400">
-        🔵 {project.containerStatus.newChangesCount} new changes · {timeAgo(project.containerStatus.lastCheckedAt)}
-      </span>
-    );
-  }
-
-  if (project.containerStatus?.overall === "failed") {
-    return (
-      <span className="text-xs text-red-400">
-        🔴 {project.containerStatus.count} failed · {timeAgo(project.containerStatus.lastCheckedAt)}
-      </span>
-    );
-  }
-
-  if (project.containerStatus?.overall === "running") {
-    return (
-      <span className="text-xs text-green-400">
-        🟢 Running · updated {timeAgo(project.containerStatus.lastCheckedAt)}
-      </span>
-    );
-  }
-
-  if (project.containerStatus?.overall === "paused") {
-    return (
-      <span className="text-xs text-yellow-400">
-        🟡 Paused
-      </span>
-    );
-  }
-
-  if (project.status === "completed") {
-    return (
-      <span className="text-xs text-muted-foreground">
-        Completed {formatDate(project.completedAt)}
-      </span>
-    );
-  }
-
-  return (
-    <span className="text-xs text-muted-foreground">
-      Updated {timeAgo(project.updatedAt)}
-    </span>
-  );
-}
-
-function ProjectCard({ project, onClick, toggleFavorite, onMenuClick }: { project: Project, onClick: () => void, toggleFavorite: (e: React.MouseEvent) => void, onMenuClick: (e: React.MouseEvent) => void }) {
-  return (
-    <div
-      className={cn(
-        "group rounded-lg border border-border bg-card p-4 cursor-pointer",
-        "hover:border-primary/50 transition-colors",
-        project.status === "completed" && "opacity-70",
-        project.status === "archived" && "opacity-50"
-      )}
-      onClick={onClick}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <h3 className={cn(
-          "text-sm font-medium line-clamp-2 flex-1",
-          project.status === "active" ? "text-foreground" : "text-muted-foreground"
-        )}>
-          {project.status === "completed" && <span className="mr-1.5">✅</span>}
-          {project.status === "archived" && <span className="mr-1.5">📦</span>}
-          {project.name}
-        </h3>
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button 
-             onClick={(e) => toggleFavorite(e)} 
-             className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted"
-          >
-              <Star className={cn("w-4 h-4", project.isFavorite && "fill-amber-500 text-amber-500")} />
-          </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); onMenuClick(e); }}
-                  className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted"
-                >
-                    <MoreHorizontal className="w-4 h-4" />
-                </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem>Rename</DropdownMenuItem>
-                <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                {project.status !== 'archived' && <DropdownMenuItem>Archive</DropdownMenuItem>}
-                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      {project.contextSummary && (
-        <p className={cn(
-          "text-xs truncate mt-1.5",
-          project.status === "active" ? "text-muted-foreground" : "text-muted-foreground/60"
-        )}>
-          {project.contextSummary}
-        </p>
-      )}
-
-      <div className="flex items-center justify-between mt-2">
-        <DynamicStatus project={project} />
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          <FileText className="w-3 h-3" />
-          {project.canvasCount}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function ProjectGroup({
-  label,
-  icon,
-  projects,
-  defaultCollapsed = false,
-  onProjectClick,
-  onToggleFavorite
-}: {
-  label: string;
-  icon: string;
-  projects: Project[];
-  defaultCollapsed?: boolean;
-  onProjectClick: (id: string) => void;
-  onToggleFavorite: (id: string) => void;
-}) {
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
-
-  if (projects.length === 0) return null;
-
-  return (
-    <div className="mb-6">
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
-      >
-        <span>{icon}</span>
-        <span>{label}</span>
-        <span className="text-muted-foreground/60">{projects.length} projects</span>
-        <ChevronRight className={cn("w-3 h-3 transition-transform", !collapsed && "rotate-90")} />
-      </button>
-
-      {!collapsed && (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
-          {projects.map(project => (
-            <ProjectCard 
-                key={project.id} 
-                project={project} 
-                onClick={() => onProjectClick(project.id)}
-                toggleFavorite={(e) => {
-                    e.stopPropagation();
-                    onToggleFavorite(project.id);
-                }}
-                onMenuClick={() => {}}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 const CATEGORIES = [
   { id: 'all', label: 'All', icon: Sparkles },
@@ -1765,21 +1538,40 @@ export default function Home() {
                                 key={task.id} 
                                 className="snap-start shrink-0 w-[280px] group bg-card border border-border/60 hover:border-primary/30 p-4 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between h-[140px]"
                             >
-                            <div className="space-y-2">
-                                <div className="flex items-start justify-between">
-                                    <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1" title={task.name}>
-                                        {task.name}
-                                    </h4>
-                                    {task.isFavorite && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
+                                <div className="space-y-2">
+                                    <div className="flex items-start justify-between">
+                                        <h4 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1" title={task.title}>
+                                            {task.title}
+                                        </h4>
+                                        {task.isFavorite && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                                        {task.description}
+                                    </p>
                                 </div>
-                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                                    {task.contextSummary || 'No context available'}
-                                </p>
-                            </div>
-                            
-                            <div className="flex items-center justify-between pt-2 mt-auto border-t border-dashed border-border/50">
-                                <DynamicStatus project={task} />
-                            </div>
+                                
+                                <div className="flex items-center justify-between pt-2 mt-auto border-t border-dashed border-border/50">
+                                    <div className="flex items-center gap-3">
+                                        {task.assets.documents > 0 && (
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <FileText className="w-3 h-3" /> {task.assets.documents}
+                                            </div>
+                                        )}
+                                        {task.assets.images > 0 && (
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <ImageIcon className="w-3 h-3" /> {task.assets.images}
+                                            </div>
+                                        )}
+                                        {task.assets.videos > 0 && (
+                                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                                <Video className="w-3 h-3" /> {task.assets.videos}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground/60 font-mono">
+                                        {task.date.slice(5)}
+                                    </span>
+                                </div>
                             </div>
                         ))}
                         
@@ -1883,6 +1675,405 @@ export default function Home() {
             </div>
           </div>
         );
+      case 'library':
+        return (
+          <div className="flex h-full w-full bg-background overflow-hidden">
+             <DndContext 
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+             >
+                {/* Main Scrollable Content */}
+                <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+                    <div className="flex items-center gap-2 mb-8">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                        <Library className="w-6 h-6 text-primary" />
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight">Library</h2>
+                    </div>
+
+                    <div className="flex flex-col gap-10 max-w-7xl mx-auto w-full">
+                        {/* AI Teams Workspace Section */}
+                        <div className="space-y-8">
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-1">
+                                <h3 className="text-xl font-bold flex items-center gap-2 text-foreground">
+                                    <Users className="w-5 h-5 text-indigo-500" />
+                                    Your Elite AI Teams
+                                </h3>
+                                <p className="text-sm text-muted-foreground">Organize specialized agents into collaborative teams</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="gap-2"
+                                onClick={() => setIsAddingPersona(true)}
+                                >
+                                <Plus className="w-4 h-4" /> Create Agent
+                                </Button>
+                                <Button 
+                                variant="default" 
+                                size="sm" 
+                                className="gap-2"
+                                onClick={() => setIsAddingTeam(true)}
+                                >
+                                <Users className="w-4 h-4" /> New Team
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Custom Agent Library / Active Workspace */}
+                        <div className="space-y-4">
+                            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                <Database className="w-3.5 h-3.5" /> Active Workspace
+                            </div>
+                            
+                            {/* Droppable Zone for Active Teams */}
+                            <DroppableWorkspace 
+                                teams={teams.filter(t => t.status === 'active')}
+                                personas={allPersonas}
+                                className="min-h-[200px]"
+                            />
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                                <Layers className="w-3.5 h-3.5" /> Available Team Pool
+                            </div>
+                            {/* Droppable Zone for Team Pool */}
+                            <DroppableTeamPool 
+                                teams={teams.filter(t => t.status === 'pool')}
+                                personas={allPersonas}
+                            />
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Sidebar - Official Recommendations */}
+                <div className="w-80 border-l border-border bg-card/50 flex flex-col overflow-hidden shadow-xl z-20">
+                    <div className="p-4 border-b border-border bg-background/50 backdrop-blur-sm">
+                        <h3 className="font-semibold flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-primary" />
+                            Official Agents
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Drag to your team to recruit
+                        </p>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                        {DEFAULT_PERSONAS.map(persona => (
+                            <MiniPersonaCard 
+                                key={persona.id} 
+                                persona={persona} 
+                                onClick={() => setActivePersona(persona)}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                <DragOverlay>
+                    {activeDragId && activeDragData ? (
+                        (() => {
+                            if (activeDragData.card) {
+                                return <SortablePromptCard card={activeDragData.card} isOverlay />;
+                            }
+                            
+                            if (activeDragData.persona) {
+                                return <div className="w-64 opacity-90 rotate-3 cursor-grabbing"><PersonaCard persona={activeDragData.persona} /></div>;
+                            }
+                            
+                            if (activeDragData.type === 'team-card') {
+                                return (
+                                    <div className="w-[400px] opacity-90 rotate-2 cursor-grabbing bg-background rounded-2xl border-2 border-primary shadow-2xl overflow-hidden pointer-events-none">
+                                        <div className="p-6">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Users className="w-5 h-5 text-primary" />
+                                                <span className="font-bold text-lg">{activeDragData.team.name}</span>
+                                            </div>
+                                            <p className="text-sm text-muted-foreground">{activeDragData.team.description}</p>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            return null;
+                        })()
+                    ) : null}
+                </DragOverlay>
+             </DndContext>
+
+             {/* Modals */}
+             <Dialog open={isAddingTeam} onOpenChange={setIsAddingTeam}>
+                <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create New AI Team</DialogTitle>
+                    <DialogDescription>Create a specialized collaborative workspace.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                    <Label>Team Name</Label>
+                    <Input id="team-name" placeholder="e.g. Marketing Strike Force" />
+                    </div>
+                    <div className="grid gap-2">
+                    <Label>Description</Label>
+                    <Textarea id="team-desc" placeholder="What is this team's focus?" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddingTeam(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                    const name = (document.getElementById('team-name') as HTMLInputElement).value;
+                    const desc = (document.getElementById('team-desc') as HTMLTextAreaElement).value;
+                    if (name) {
+                        setTeams([...teams, { id: `team-${Date.now()}`, name, description: desc, personaIds: [], status: 'pool' }]);
+                        setIsAddingTeam(false);
+                        toast({ title: "Team Created", description: `${name} is ready for deployment.` });
+                    }
+                    }}>Create Team</Button>
+                </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
+                <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Create Custom AI Agent</DialogTitle>
+                    <DialogDescription>Define a new specialized role for your team.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                    <Label>Role Name</Label>
+                    <Input id="p-role" placeholder="e.g. Growth Hacker" />
+                    </div>
+                    <div className="grid gap-2">
+                    <Label>Mission</Label>
+                    <Textarea id="p-mission" placeholder="What is this agent's primary goal?" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddingPersona(false)}>Cancel</Button>
+                    <Button onClick={() => {
+                    const role = (document.getElementById('p-role') as HTMLInputElement).value;
+                    const mission = (document.getElementById('p-mission') as HTMLTextAreaElement).value;
+                    if (role) {
+                        const newPersona = {
+                        id: `p-${Date.now()}`,
+                        role,
+                        mission,
+                        deliverables: ['Custom Report', 'Strategy Brief'],
+                        value: 'Specialized Expertise',
+                        avatar: pmAvatar
+                        };
+                        setAllPersonas([...allPersonas, newPersona]);
+                        setIsAddingPersona(false);
+                        toast({ title: "Agent Created", description: `${role} has been added to your library.` });
+                    }
+                    }}>Create Agent</Button>
+                </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+             <Dialog open={!!editingCard} onOpenChange={(open) => !open && setEditingCard(null)}>
+               <DialogContent>
+                 <DialogHeader>
+                   <DialogTitle>Edit Prompt</DialogTitle>
+                   <DialogDescription>
+                     Make changes to your saved prompt card here.
+                   </DialogDescription>
+                 </DialogHeader>
+                 {editingCard && (
+                   <div className="grid gap-4 py-4">
+                     <div className="grid gap-2">
+                       <Label htmlFor="title">Title</Label>
+                       <Input 
+                         id="title" 
+                         defaultValue={editingCard.title} 
+                         onChange={(e) => setEditingCard({ ...editingCard, title: e.target.value })}
+                       />
+                     </div>
+                     <div className="grid gap-2">
+                       <Label htmlFor="desc">Description</Label>
+                       <Textarea 
+                         id="desc" 
+                         defaultValue={editingCard.description} 
+                         onChange={(e) => setEditingCard({ ...editingCard, description: e.target.value })}
+                       />
+                     </div>
+                   </div>
+                 )}
+                 <DialogFooter>
+                   <Button variant="outline" onClick={() => setEditingCard(null)}>Cancel</Button>
+                   <Button onClick={() => saveEditedCard(editingCard?.title || '', editingCard?.description || '')}>Save Changes</Button>
+                 </DialogFooter>
+               </DialogContent>
+             </Dialog>
+
+             {/* Persona Details Popover/Dialog */}
+             <Dialog open={!!activePersona} onOpenChange={(open) => !open && setActivePersona(null)}>
+                <DialogContent className="max-w-md">
+                   {activePersona && (
+                      <div className="flex flex-col items-center text-center -mt-4">
+                         <div className="w-24 h-24 rounded-full bg-muted overflow-hidden border-4 border-background shadow-xl mb-4 relative z-10">
+                            <img src={activePersona.avatar} alt={activePersona.role} className="w-full h-full object-cover" />
+                         </div>
+                         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-primary/10 to-transparent rounded-t-lg -z-0" />
+                         
+                         <h3 className="text-xl font-bold mb-1">{activePersona.role}</h3>
+                         <div className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary mb-6">
+                            Official Agent
+                         </div>
+
+                         <div className="w-full space-y-4 text-left">
+                            <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                                    <Target className="w-3.5 h-3.5" /> Mission
+                                </h4>
+                                <p className="text-sm leading-relaxed">{activePersona.mission}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                                        <Sparkles className="w-3.5 h-3.5" /> Value
+                                    </h4>
+                                    <p className="text-xs font-medium">{activePersona.value}</p>
+                                </div>
+                                <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-2">
+                                        <FileText className="w-3.5 h-3.5" /> Output
+                                    </h4>
+                                    <div className="flex flex-wrap gap-1">
+                                        {activePersona.deliverables.slice(0, 2).map(d => (
+                                            <span key={d} className="text-[10px] bg-background px-1.5 py-0.5 rounded border border-border/50">{d}</span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                         </div>
+                      </div>
+                   )}
+                </DialogContent>
+             </Dialog>
+          </div>
+        );
+      case 'projects-list':
+          return (
+             <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
+                 <div className="flex items-center gap-2 mb-8">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Layers className="w-6 h-6 text-primary" />
+                    </div>
+                    <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
+                 </div>
+
+                 {/* Toolbar */}
+                 <div className="flex items-center justify-between mb-6 gap-4">
+                    <div className="relative flex-1 max-w-md">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                       <Input 
+                         placeholder="Search projects..." 
+                         value={projectListSearch}
+                         onChange={(e) => setProjectListSearch(e.target.value)}
+                         className="pl-9 bg-muted/50 border-border/50 focus:bg-background transition-all"
+                       />
+                    </div>
+                    <div className="flex bg-muted/50 p-0.5 rounded-lg">
+                        <button 
+                            onClick={() => setProjectListFilter('all')}
+                            className={cn(
+                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                                projectListFilter === 'all' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            All
+                        </button>
+                        <button 
+                            onClick={() => setProjectListFilter('favorites')}
+                            className={cn(
+                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1",
+                                projectListFilter === 'favorites' ? "bg-background shadow-sm text-amber-500" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            <Star className="w-3 h-3 fill-current" />
+                            Favorites
+                        </button>
+                    </div>
+                 </div>
+
+                 {/* Grid */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {HISTORY_TASKS
+                        .filter(task => {
+                            const matchesSearch = task.title.toLowerCase().includes(projectListSearch.toLowerCase()) || 
+                                                  task.description.toLowerCase().includes(projectListSearch.toLowerCase());
+                            const matchesFilter = projectListFilter === 'all' || task.isFavorite;
+                            return matchesSearch && matchesFilter;
+                        })
+                        .map(task => (
+                        <div 
+                            key={task.id} 
+                            className="group bg-card border border-border hover:border-primary/50 rounded-xl transition-all cursor-pointer hover:shadow-md flex flex-col h-[280px] overflow-hidden"
+                        >
+                            <div className="h-[140px] w-full bg-muted/50 overflow-hidden relative">
+                                <img 
+                                    src={task.thumbnail} 
+                                    alt={task.title}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100"
+                                />
+                                <div className="absolute top-2 right-2">
+                                    {task.isFavorite ? (
+                                        <div className="bg-background/80 backdrop-blur-sm p-1.5 rounded-full shadow-sm">
+                                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                                        </div>
+                                    ) : (
+                                        <div className="bg-background/40 backdrop-blur-sm p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Star className="w-3.5 h-3.5 text-muted-foreground/60" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="p-4 flex flex-col gap-2 flex-1">
+                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1" title={task.title}>
+                                    {task.title}
+                                </h3>
+                                
+                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed flex-1">
+                                    {task.description}
+                                </p>
+                                
+                                <div className="pt-3 mt-auto border-t border-dashed border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                        <Calendar className="w-3 h-3 opacity-70" />
+                                        <span>{task.date}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 opacity-60">
+                                       {task.assets.documents > 0 && <FileText className="w-3 h-3" />}
+                                       {task.assets.images > 0 && <ImageIcon className="w-3 h-3" />}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {HISTORY_TASKS.filter(task => {
+                        const matchesSearch = task.title.toLowerCase().includes(projectListSearch.toLowerCase()) || 
+                                              task.description.toLowerCase().includes(projectListSearch.toLowerCase());
+                        const matchesFilter = projectListFilter === 'all' || task.isFavorite;
+                        return matchesSearch && matchesFilter;
+                    }).length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
+                            <Search className="w-10 h-10 mb-4 opacity-20" />
+                            <p className="font-medium">No projects found</p>
+                            <p className="text-sm opacity-60">Try adjusting your filters</p>
+                        </div>
+                    )}
+                 </div>
+              </div>
+          );
+      case 'project':
       default:
         return (
           <>
