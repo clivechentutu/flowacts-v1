@@ -582,7 +582,7 @@ function ExecutionOverflowMenu({ onAction }: { onAction: (item: any) => void }) 
 // REMOVE the old FormatChips component and FORMAT_CHIPS constant from here
 // We will import the new one from ./FormatChips
 
-function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string, onSend: (msg: string) => void, toolbarItems: { icon: string, tooltip: string }[] }) {
+function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string, onSend: (msg: string) => void, toolbarItems: { icon: React.ReactNode, tooltip: string }[] }) {
   const [inputValue, setInputValue] = useState("");
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   // Mock canvas selection state - for demonstration purposes, user can clear it but not add to it here
@@ -782,19 +782,19 @@ function ChatInputArea({ taskState, onSend, toolbarItems }: { taskState: string,
 }
 
 
-function ToolbarButton({ icon, tooltip, onClick }: { icon: string, tooltip: string, onClick?: () => void }) {
+function ToolbarButton({ icon, tooltip, onClick }: { icon: React.ReactNode, tooltip: string, onClick?: () => void }) {
   return (
     <TooltipProvider delayDuration={150}>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             onClick={onClick}
-            className="p-1.5 rounded-md
-              text-muted-foreground/50 hover:text-muted-foreground/80
-              hover:bg-muted/30
+            className="p-1.5 rounded-md flex items-center justify-center
+              text-muted-foreground hover:text-foreground
+              hover:bg-muted/50
               transition-colors duration-150"
           >
-            <span className="text-sm">{icon}</span>
+            {icon}
           </button>
         </TooltipTrigger>
         <TooltipContent
@@ -1134,8 +1134,8 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
   ];
 
   const TOOLBAR_ITEMS = [
-    { icon: "📎", tooltip: "Attach a file or screenshot" },
-    { icon: "@", tooltip: "Mention a specific agent" },
+    { icon: <Paperclip className="w-4 h-4" />, tooltip: "Attach a file or screenshot" },
+    { icon: <Zap className="w-4 h-4" />, tooltip: "Quick Actions" },
   ];
 
   const handleTitleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
