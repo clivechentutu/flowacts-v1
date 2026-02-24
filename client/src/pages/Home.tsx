@@ -1786,7 +1786,7 @@ export default function Home() {
                                 setActiveProjectId(task.id);
                                 setActiveTab('project-detail');
                             }}
-                            className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all"
+                            className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all flex flex-col h-[180px]"
                         >
                             <div className="flex items-center gap-2 mb-2">
                                 {task.hasActiveContainer && (
@@ -1811,13 +1811,12 @@ export default function Home() {
                                 </button>
                             </div>
                             
-                            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                            <p className="text-xs text-muted-foreground line-clamp-4 mb-4 flex-1">
                                 {task.description}
                             </p>
                             
-                            <div className="text-xs text-muted-foreground/60">
-                                👤 {task.memberCount || 1} · {task.canvasCount || 1}{' '}
-                                {(task.canvasCount || 1) === 1 ? 'canvas' : 'canvases'} ·{' '}
+                            <div className="text-xs text-muted-foreground/60 mt-auto flex items-center gap-1.5">
+                                👤 {task.memberCount || 1} · <Layers className="w-3 h-3 inline-block" /> {task.canvasCount || 1} ·{' '}
                                 {(() => {
                                     const d = new Date(task.updatedAt || task.date);
                                     const now = new Date();
