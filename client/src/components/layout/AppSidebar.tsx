@@ -1,11 +1,11 @@
-import { Home, Layers, Settings, Sun, Moon, FolderKanban, Users, HelpCircle, Library } from "lucide-react";
+import { Home, Layers, Settings, Sun, Moon, FolderKanban, Users, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { SettingsModal } from "../settings/SettingsModal";
 
 interface AppSidebarProps {
-  activeTab: 'home' | 'project' | 'projects-list' | 'library';
-  onTabChange: (tab: 'home' | 'project' | 'projects-list' | 'library') => void;
+  activeTab: 'home' | 'project' | 'projects-list';
+  onTabChange: (tab: 'home' | 'project' | 'projects-list') => void;
 }
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
@@ -37,7 +37,6 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'project', icon: FolderKanban, label: 'Studio' },
     { id: 'projects-list', icon: Layers, label: 'Project' },
-    { id: 'library', icon: Library, label: 'Library' },
   ] as const;
 
   return (
