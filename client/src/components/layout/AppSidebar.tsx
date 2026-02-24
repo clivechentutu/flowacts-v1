@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { SettingsModal } from "../settings/SettingsModal";
 
 interface AppSidebarProps {
-  activeTab: 'home' | 'project' | 'projects-list';
-  onTabChange: (tab: 'home' | 'project' | 'projects-list') => void;
+  activeTab: 'home' | 'project' | 'projects-list' | 'library';
+  onTabChange: (tab: 'home' | 'project' | 'projects-list' | 'library') => void;
 }
 
 export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
@@ -37,6 +37,7 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
     { id: 'home', icon: Home, label: 'Home' },
     { id: 'project', icon: FolderKanban, label: 'Studio' },
     { id: 'projects-list', icon: Layers, label: 'Project' },
+    { id: 'library', icon: Users, label: 'Library' },
   ] as const;
 
   return (
