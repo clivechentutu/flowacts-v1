@@ -58,15 +58,14 @@ function FieldRow({
     <div
       className={cn(
         "flex items-start justify-between gap-4 rounded-xl border p-4 shadow-sm",
-        "border-border/80 bg-background/70",
-        "dark:border-border/70 dark:bg-card/60"
+        "border-border bg-card text-card-foreground"
       )}
       data-testid={testId}
     >
       <div className="min-w-0">
-        <div className="text-sm font-semibold text-foreground truncate">{title}</div>
+        <div className="text-sm font-semibold truncate">{title}</div>
         {description ? (
-          <div className="mt-1 text-xs text-muted-foreground/90 leading-relaxed">
+          <div className="mt-1 text-xs text-muted-foreground leading-relaxed">
             {description}
           </div>
         ) : null}
@@ -103,22 +102,20 @@ export function SettingsModal({
       <DialogContent
         className={cn(
           "p-0 overflow-hidden max-w-[980px] w-[calc(100vw-2rem)]",
-          "rounded-3xl border-border/70",
-          "bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(250,249,246,0.86))]",
-          "dark:bg-[linear-gradient(180deg,rgba(18,18,21,0.84),rgba(26,26,30,0.84))]",
-          "backdrop-blur-xl shadow-2xl"
+          "rounded-3xl border border-border bg-background",
+          "shadow-2xl"
         )}
         data-testid="modal-settings"
       >
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/70 bg-background/40 dark:bg-card/50">
-          <DialogTitle className="text-base font-semibold tracking-tight text-foreground">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border bg-background">
+          <DialogTitle className="text-base font-semibold tracking-tight">
             Settings
           </DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-[280px_1fr]">
           {/* Left */}
-          <div className="border-r border-border/70 bg-background/30 dark:bg-card/40">
+          <div className="border-r border-border bg-muted/30">
             <div className="px-2 py-4">
               <div className="flex flex-col gap-1">
                 {coreSections.map((s) => {
@@ -132,7 +129,7 @@ export function SettingsModal({
                         "group w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
                         isActive
                           ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
-                          : "text-muted-foreground/90 hover:text-foreground hover:bg-muted/40 dark:hover:bg-muted/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       )}
                       data-testid={`button-settings-section-${s.id}`}
                     >
@@ -140,8 +137,8 @@ export function SettingsModal({
                         className={cn(
                           "h-9 w-9 rounded-xl flex items-center justify-center border shadow-sm",
                           isActive
-                            ? "bg-primary/10 border-primary/25"
-                            : "bg-background/70 border-border/70 dark:bg-background/10 dark:border-border/70"
+                            ? "bg-primary/10 border-primary/25 text-primary"
+                            : "bg-background border-border text-muted-foreground group-hover:text-foreground"
                         )}
                       >
                         <Icon className="w-4.5 h-4.5" />
@@ -149,8 +146,8 @@ export function SettingsModal({
                       <div className="flex-1 text-left font-medium">{s.label}</div>
                       <ArrowUpRight
                         className={cn(
-                          "w-4 h-4 opacity-0 transition-all",
-                          isActive ? "opacity-70" : "group-hover:opacity-40"
+                          "w-4 h-4 transition-all",
+                          isActive ? "opacity-70" : "opacity-0 group-hover:opacity-40"
                         )}
                       />
                     </button>
@@ -159,7 +156,7 @@ export function SettingsModal({
               </div>
 
               <div
-                className="mx-3 my-3 border-t border-border/70"
+                className="mx-3 my-3 border-t border-border"
                 data-testid="separator-settings-nav"
               />
 
@@ -175,7 +172,7 @@ export function SettingsModal({
                         "group w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all",
                         isActive
                           ? "bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20"
-                          : "text-muted-foreground/90 hover:text-foreground hover:bg-muted/40 dark:hover:bg-muted/20"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       )}
                       data-testid={`button-settings-section-${s.id}`}
                     >
@@ -183,8 +180,8 @@ export function SettingsModal({
                         className={cn(
                           "h-9 w-9 rounded-xl flex items-center justify-center border shadow-sm",
                           isActive
-                            ? "bg-primary/10 border-primary/25"
-                            : "bg-background/70 border-border/70 dark:bg-background/10 dark:border-border/70"
+                            ? "bg-primary/10 border-primary/25 text-primary"
+                            : "bg-background border-border text-muted-foreground group-hover:text-foreground"
                         )}
                       >
                         <Icon className="w-4.5 h-4.5" />
@@ -192,8 +189,8 @@ export function SettingsModal({
                       <div className="flex-1 text-left font-medium">{s.label}</div>
                       <ArrowUpRight
                         className={cn(
-                          "w-4 h-4 opacity-0 transition-all",
-                          isActive ? "opacity-70" : "group-hover:opacity-40"
+                          "w-4 h-4 transition-all",
+                          isActive ? "opacity-70" : "opacity-0 group-hover:opacity-40"
                         )}
                       />
                     </button>
@@ -204,11 +201,11 @@ export function SettingsModal({
           </div>
 
           {/* Right */}
-          <div className="bg-background/40 dark:bg-card/30">
-            <div className="px-6 py-5 border-b border-border/70">
-              <div className="text-sm text-muted-foreground/90">{headerLabel}</div>
+          <div className="bg-background">
+            <div className="px-6 py-5 border-b border-border">
+              <div className="text-sm text-muted-foreground">{headerLabel}</div>
               <div
-                className="mt-1 text-lg font-semibold tracking-tight text-foreground"
+                className="mt-1 text-lg font-semibold tracking-tight"
                 data-testid="text-settings-section-title"
               >
                 {headerLabel}
@@ -225,11 +222,7 @@ export function SettingsModal({
                       right={
                         <Input
                           defaultValue="Felix"
-                          className={cn(
-                            "w-56",
-                            "bg-background/70 border-border/70",
-                            "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                          )}
+                          className="w-56"
                           data-testid="input-account-name"
                         />
                       }
@@ -241,11 +234,7 @@ export function SettingsModal({
                       right={
                         <Input
                           defaultValue="felix@company.com"
-                          className={cn(
-                            "w-56",
-                            "bg-background/70 border-border/70",
-                            "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                          )}
+                          className="w-56"
                           data-testid="input-account-email"
                         />
                       }
@@ -259,11 +248,7 @@ export function SettingsModal({
                     right={
                       <Button
                         variant="secondary"
-                        className={cn(
-                          "gap-2",
-                          "border-border/70",
-                          "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                        )}
+                        className="gap-2"
                         onClick={() => {
                           navigator.clipboard.writeText("WKSP-84F2-11C");
                           setCopied(true);
@@ -282,28 +267,20 @@ export function SettingsModal({
                     testId="row-account-workspace"
                   />
 
-                  <div className="rounded-2xl border border-border/80 bg-muted/20 dark:bg-muted/10 p-4">
-                    <div className="text-sm font-semibold text-foreground">Security</div>
-                    <div className="mt-1 text-xs text-muted-foreground/90">
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="text-sm font-semibold">Security</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
                       Password and sign-in options are mocked for prototype.
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Button
                         variant="secondary"
-                        className={cn(
-                          "border-border/70",
-                          "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                        )}
                         data-testid="button-account-change-password"
                       >
                         Change password
                       </Button>
                       <Button
                         variant="secondary"
-                        className={cn(
-                          "border-border/70",
-                          "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                        )}
                         data-testid="button-account-signout-all"
                       >
                         Sign out all devices
@@ -322,15 +299,11 @@ export function SettingsModal({
                       right={
                         <Button
                           variant="secondary"
-                          className={cn(
-                            "w-56 justify-between",
-                            "border-border/70",
-                            "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                          )}
+                          className="w-56 justify-between"
                           data-testid="button-settings-language"
                         >
                           English
-                          <span className="text-muted-foreground/80">▾</span>
+                          <span className="text-muted-foreground">▾</span>
                         </Button>
                       }
                       testId="row-settings-language"
@@ -349,15 +322,13 @@ export function SettingsModal({
                               key={t.id}
                               className={cn(
                                 "rounded-xl border p-2 text-xs font-medium transition-all",
-                                "border-border/70 bg-background/70",
-                                "hover:bg-muted/30",
-                                "dark:bg-background/10 dark:border-border/70",
-                                t.id === "system" && "ring-1 ring-primary/25"
+                                "border-border bg-card hover:bg-accent",
+                                t.id === "system" && "ring-2 ring-primary border-transparent"
                               )}
                               data-testid={`button-settings-theme-${t.id}`}
                             >
-                              <div className="h-10 rounded-lg bg-muted/30 shadow-inner dark:bg-muted/20" />
-                              <div className="mt-2 text-muted-foreground/90">{t.label}</div>
+                              <div className="h-10 rounded-lg bg-muted shadow-inner" />
+                              <div className="mt-2 text-muted-foreground">{t.label}</div>
                             </button>
                           ))}
                         </div>
@@ -366,8 +337,8 @@ export function SettingsModal({
                     />
                   </div>
 
-                  <div className="rounded-2xl border border-border/70 bg-background/60 dark:bg-card/50 p-4">
-                    <div className="text-sm font-semibold text-foreground">Communication</div>
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="text-sm font-semibold">Communication</div>
                     <div className="mt-4 space-y-3">
                       <FieldRow
                         title="Receive exclusive content"
@@ -397,10 +368,6 @@ export function SettingsModal({
                     right={
                       <Button
                         variant="secondary"
-                        className={cn(
-                          "border-border/70",
-                          "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                        )}
                         data-testid="button-settings-cookies"
                       >
                         Manage
@@ -421,23 +388,23 @@ export function SettingsModal({
                     ].map((m) => (
                       <div
                         key={m.k}
-                        className="rounded-2xl border border-border/70 bg-background/60 dark:bg-card/50 p-4 shadow-sm"
+                        className="rounded-2xl border border-border bg-card p-4 shadow-sm"
                         data-testid={`card-usage-${m.k.toLowerCase()}`}
                       >
-                        <div className="text-xs text-muted-foreground/90">{m.k}</div>
-                        <div className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+                        <div className="text-xs text-muted-foreground">{m.k}</div>
+                        <div className="mt-1 text-2xl font-semibold tracking-tight">
                           {m.v}
                         </div>
-                        <div className="mt-1 text-xs text-muted-foreground/90">
+                        <div className="mt-1 text-xs text-muted-foreground">
                           {m.sub}
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="rounded-2xl border border-border/80 bg-muted/20 dark:bg-muted/10 p-4">
-                    <div className="text-sm font-semibold text-foreground">Usage tips</div>
-                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground/90">
+                  <div className="rounded-2xl border border-border bg-card p-4">
+                    <div className="text-sm font-semibold">Usage tips</div>
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
                       <li className="flex items-start gap-2" data-testid="text-usage-tip-1">
                         <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary/60" />
                         Pin frequent prompts to your Library for faster workflows.
@@ -457,20 +424,16 @@ export function SettingsModal({
 
               {active === "billing" && (
                 <div className="space-y-4" data-testid="panel-settings-billing">
-                  <div className="rounded-2xl border border-border/70 bg-background/60 dark:bg-card/50 p-4 shadow-sm">
+                  <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <div className="text-sm font-semibold text-foreground">Current plan</div>
-                        <div className="mt-1 text-xs text-muted-foreground/90">
+                        <div className="text-sm font-semibold">Current plan</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
                           Prototype plan · Renews monthly
                         </div>
                       </div>
                       <Button
                         variant="secondary"
-                        className={cn(
-                          "border-border/70",
-                          "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                        )}
                         data-testid="button-billing-manage"
                       >
                         Manage plan
@@ -484,13 +447,13 @@ export function SettingsModal({
                       ].map((x) => (
                         <div
                           key={x.k}
-                          className="rounded-xl border border-border/70 bg-muted/20 dark:bg-muted/10 p-3"
+                          className="rounded-xl border border-border bg-muted/50 p-3"
                           data-testid={`card-billing-${x.k.replaceAll(" ", "-").toLowerCase()}`}
                         >
-                          <div className="text-[10px] text-muted-foreground/80 uppercase tracking-wider">
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
                             {x.k}
                           </div>
-                          <div className="mt-1 text-sm font-semibold text-foreground">{x.v}</div>
+                          <div className="mt-1 text-sm font-semibold">{x.v}</div>
                         </div>
                       ))}
                     </div>
@@ -501,8 +464,8 @@ export function SettingsModal({
                     description="Receipts and invoices will be sent here."
                     right={
                       <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground/80" />
-                        <span className="text-sm text-foreground" data-testid="text-billing-email">
+                        <Mail className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm" data-testid="text-billing-email">
                           felix@company.com
                         </span>
                       </div>
@@ -514,30 +477,22 @@ export function SettingsModal({
 
               {active === "feedback" && (
                 <div className="space-y-4" data-testid="panel-settings-feedback">
-                  <div className="rounded-2xl border border-border/70 bg-background/60 dark:bg-card/50 p-4 shadow-sm">
-                    <div className="text-sm font-semibold text-foreground">Send feedback</div>
-                    <div className="mt-1 text-xs text-muted-foreground/90">
-                      Tell us what to improve. We\"ll keep it lightweight for now.
+                  <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+                    <div className="text-sm font-semibold">Send feedback</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      Tell us what to improve. We'll keep it lightweight for now.
                     </div>
                     <div className="mt-4 space-y-3">
                       <Input
                         placeholder="Subject"
-                        className={cn(
-                          "bg-background/70 border-border/70",
-                          "placeholder:text-muted-foreground/70",
-                          "dark:bg-background/10 dark:text-foreground dark:border-border/70",
-                          "dark:placeholder:text-muted-foreground/60"
-                        )}
                         data-testid="input-feedback-subject"
                       />
                       <textarea
                         className={cn(
                           "w-full min-h-[120px] rounded-xl border p-3 text-sm outline-none",
-                          "border-border/70 bg-background/70",
-                          "placeholder:text-muted-foreground/70",
-                          "focus:ring-2 focus:ring-primary/20",
-                          "dark:border-border/70 dark:bg-background/10 dark:text-foreground",
-                          "dark:placeholder:text-muted-foreground/60"
+                          "border-input bg-background text-foreground",
+                          "placeholder:text-muted-foreground",
+                          "focus:ring-2 focus:ring-ring focus:ring-offset-2"
                         )}
                         placeholder="Your message"
                         data-testid="input-feedback-message"
@@ -564,20 +519,16 @@ export function SettingsModal({
                     }].map((c) => (
                       <div
                         key={c.title}
-                        className="rounded-2xl border border-border/70 bg-background/60 dark:bg-card/50 p-4 shadow-sm"
+                        className="rounded-2xl border border-border bg-card p-4 shadow-sm"
                         data-testid={`card-help-${c.title.replaceAll(" ", "-").toLowerCase()}`}
                       >
-                        <div className="text-sm font-semibold text-foreground">{c.title}</div>
-                        <div className="mt-1 text-xs text-muted-foreground/90">
+                        <div className="text-sm font-semibold">{c.title}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
                           {c.desc}
                         </div>
                         <div className="mt-4">
                           <Button
                             variant="secondary"
-                            className={cn(
-                              "border-border/70",
-                              "dark:bg-background/10 dark:text-foreground dark:border-border/70"
-                            )}
                             data-testid={`button-help-${c.action.toLowerCase()}`}
                           >
                             {c.action}
