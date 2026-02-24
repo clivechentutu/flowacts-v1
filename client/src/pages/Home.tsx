@@ -829,11 +829,12 @@ const generateProjectName = (text: string): string => {
 
 export default function Home() {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list' | 'library'>('home');
   const [isProjectListExpanded, setIsProjectListExpanded] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeHistoryFilter, setActiveHistoryFilter] = useState<'all' | 'favorites'>('all');
+  const [activeLibraryFilter, setActiveLibraryFilter] = useState<'all' | 'creative' | 'product' | 'technical'>('all');
   const [events, setEvents] = useState<StoryEvent[]>([]);
   const [viewMode, setViewMode] = useState<'canvas' | 'files'>('canvas');
   const [uploadedFiles, setUploadedFiles] = useState<StoryEvent[]>([]);
@@ -1674,6 +1675,23 @@ export default function Home() {
             </div>
           </div>
         );
+      case 'library':
+        return (
+          <div className="flex h-full w-full bg-background overflow-hidden">
+             <DndContext 
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+             >
+                {/* Main Scrollable Content */}
+                <div className="flex-1 flex flex-col p-6 overflow-y-auto">
+                    <div className="flex items-center gap-2 mb-8">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                        <Library className="w-6 h-6 text-primary" />
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight">Library</h2>
+                    </div>
 
                     <div className="flex flex-col gap-10 max-w-7xl mx-auto w-full">
                         {/* AI Teams Workspace Section */}
