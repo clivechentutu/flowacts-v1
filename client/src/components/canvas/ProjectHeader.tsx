@@ -34,14 +34,6 @@ export function ProjectHeader({ project, onRename, onNewProject }: ProjectHeader
 
   return (
     <div className="flex items-center gap-2 px-2 py-1.5">
-      <button
-        onClick={onNewProject}
-        className="h-8 w-8 flex items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors mr-1"
-        title="New Project"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
-
       {isEditing ? (
         <input
           ref={inputRef}
