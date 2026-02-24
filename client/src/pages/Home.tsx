@@ -54,7 +54,10 @@ import {
   Lightbulb,
   Map,
   Database,
-  Info
+  Info,
+  AlignLeft,
+  Table,
+  ListTodo
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1411,6 +1414,28 @@ export default function Home() {
                      >
                         <ArrowRight className="w-5 h-5" />
                      </Button>
+                  </div>
+                  
+                  {/* Output Format Options - Below the main input controls */}
+                  <div className="flex items-center gap-4 px-4 pb-4 bg-transparent border-t border-border/20 pt-3">
+                     <span className="text-sm font-medium text-muted-foreground">What would you like to do with these?</span>
+                     <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
+                           <FileText className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
+                           <Table className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
+                           <Brain className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
+                           <ListTodo className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg">
+                           <AlignLeft className="w-4 h-4" />
+                        </Button>
+                     </div>
                   </div>
                 </div>
 
