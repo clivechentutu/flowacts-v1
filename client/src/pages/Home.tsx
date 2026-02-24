@@ -1770,7 +1770,7 @@ export default function Home() {
                  </div>
 
                  {/* Grid */}
-                 <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+                 <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
                     {HISTORY_TASKS
                         .sort((a, b) => new Date(b.updatedAt || b.date).getTime() - new Date(a.updatedAt || a.date).getTime())
                         .filter(task => {
@@ -1786,13 +1786,13 @@ export default function Home() {
                                 setActiveProjectId(task.id);
                                 setActiveTab('project-detail');
                             }}
-                            className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all flex flex-col h-[180px]"
+                            className="rounded-lg border border-border bg-card p-5 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all flex flex-col h-[240px]"
                         >
                             <div className="flex items-center gap-2 mb-2">
                                 {task.hasActiveContainer && (
                                     <span className="pulse-dot" />
                                 )}
-                                <h3 className="text-sm font-medium text-foreground truncate flex-1">
+                                <h3 className="text-base font-medium text-foreground truncate flex-1">
                                     {task.title}
                                 </h3>
                                 <button
@@ -1811,22 +1811,28 @@ export default function Home() {
                                 </button>
                             </div>
                             
-                            <p className="text-xs text-muted-foreground line-clamp-4 mb-4 flex-1">
+                            <p className="text-sm text-muted-foreground line-clamp-5 mb-4 flex-1">
                                 {task.description}
                             </p>
                             
-                            <div className="text-xs text-muted-foreground/60 mt-auto flex items-center gap-1.5">
-                                👤 {task.memberCount || 1} · <Layers className="w-3 h-3 inline-block" /> {task.canvasCount || 1} ·{' '}
-                                {(() => {
-                                    const d = new Date(task.updatedAt || task.date);
-                                    const now = new Date();
-                                    const month = d.getMonth() + 1;
-                                    const day = d.getDate();
-                                    if (d.getFullYear() === now.getFullYear()) {
-                                        return `${month}/${day}`;
-                                    }
-                                    return `${month}/${day}/${d.getFullYear() % 100}`;
-                                })()}
+                            <div className="text-xs text-muted-foreground/60 mt-auto flex items-center justify-between w-full">
+                                <div className="flex items-center gap-2">
+                                    <span>👤 {task.memberCount || 1}</span>
+                                    <span>·</span>
+                                    <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" /> {task.canvasCount || 1}</span>
+                                </div>
+                                <span className="text-right">
+                                    {(() => {
+                                        const d = new Date(task.updatedAt || task.date);
+                                        const now = new Date();
+                                        const month = d.getMonth() + 1;
+                                        const day = d.getDate();
+                                        if (d.getFullYear() === now.getFullYear()) {
+                                            return `${month}/${day}`;
+                                        }
+                                        return `${month}/${day}/${d.getFullYear() % 100}`;
+                                    })()}
+                                </span>
                             </div>
                         </div>
                     ))}
