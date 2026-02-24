@@ -8,7 +8,8 @@ import {
   Star,
   MoreHorizontal,
   Trash2,
-  Pencil
+  Pencil,
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -79,22 +80,27 @@ export function TaskNavigation({ activeTab }: { activeTab: string }) {
             <div className="w-64 h-full flex flex-col">
                 {/* Top Actions */}
                 <div className="p-4 space-y-1 flex-shrink-0">
-                    <TooltipProvider>
-                      <Tooltip delayDuration={300}>
-                        <TooltipTrigger asChild>
-                          <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
-                              <Edit className="w-4 h-4 flex-shrink-0" />
-                              <span className="text-sm font-medium truncate">New Project</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" align="center" className="max-w-[250px] p-3 text-sm z-50">
-                          <p className="font-semibold mb-1">Projects contain pages</p>
-                          <p className="text-muted-foreground text-xs leading-relaxed">
-                            A project is a collection of related pages. You can create multiple pages within a single project to organize your work.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <div className="flex items-center w-full">
+                      <Button variant="ghost" className="flex-1 justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
+                          <Edit className="w-4 h-4 flex-shrink-0" />
+                          <span className="text-sm font-medium truncate">New Project</span>
+                      </Button>
+                      <TooltipProvider>
+                        <Tooltip delayDuration={200}>
+                          <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 rounded-md ml-1">
+                              <Info className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" align="center" className="max-w-[250px] p-3 text-sm z-50 bg-popover text-popover-foreground border border-border shadow-md rounded-lg">
+                            <p className="font-semibold mb-1 text-foreground">Projects contain pages</p>
+                            <p className="text-muted-foreground text-xs leading-relaxed">
+                              A project is a collection of related pages. You can create multiple pages within a single project to organize your work.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <Button variant="ghost" className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground h-9 px-2">
                         <Search className="w-4 h-4 flex-shrink-0" />
                         <span className="text-sm font-medium truncate">Search</span>

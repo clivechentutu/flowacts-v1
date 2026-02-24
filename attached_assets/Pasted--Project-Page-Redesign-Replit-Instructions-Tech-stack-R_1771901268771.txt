@@ -1,0 +1,689 @@
+# Project Page Redesign — Replit Instructions
+
+> Tech stack: React + TypeScript + Tailwind CSS + Radix UI + Framer Motion
+> Theme: Dark mode (use existing design tokens: bg-card, bg-background, text-foreground, text-muted-foreground, border-border)
+> This is a redesign of the existing Projects page. Do NOT create a new page — modify the existing one.
+
+---
+
+## Overview
+
+Redesign the Projects page from a CMS-style card layout (large cover images + title + description) to a compact, status-driven card layout. The new cards use a unified 3-line structure that adapts to different project types (URL analysis, AI conversation, document analysis, etc.).
+
+**Key changes:**
+1. Remove cover images from project cards entirely
+2. Replace with a compact 3-line card: Title → Context summary → Dynamic status + Canvas count
+3. Add project status grouping (Pinned / Active / Completed / Archived)
+4. Add [+ New Project] button in the top bar
+5. Add card context menu (right-click / ··· button)
+
+---
+
+## Part 1: Data Model Updates
+
+Add these fields to the Project type if they don't already exist. Do NOT remove existing fields — only add what's missing.
+
+```typescript
+// Add to existing Project interface
+interface Project {
+  // ... existing fields ...
+
+  // NEW: Project lifecycle status
+  status: "active" | "completed" | "archived";
+
+  // NEW: Pin and favorite
+  isPinned: boolean;
+  isFavorite: boolean;
+
+  // NEW: Context summary (auto-generated, used for card display)
+  // This is the second line of the card — adapts based on project type
+  contextSummary?: string;  // e.g. "stripe.com · notion.so +2" or "SaaS pricing research"
+
+  // NEW: Container/monitoring status (null if no containers)
+  containerStatus?: {
+    overall: "new_changes" | "failed" | "running" | "paused";
+    count: number;
+    newChangesCount?: number;
+    lastCheckedAt?: Date;
+  } | null;
+
+  // Canvas count (may already exist)
+  canvasCount: number;
+}
+```
+
+For the MVP, seed mock data with 6-8 projects covering these scenarios:
+- 2 projects with `containerStatus` (one with `new_changes`, one with `running`)
+- 3 projects without `containerStatus` (null) — these are one-off analyses
+- 1 completed project
+- 1 archived project
+- Mark 2 projects as `isPinned: true`
+
+---
+
+## Part 2: ProjectCard Component
+
+Replace the existing project card component. Remove the cover image entirely. The new card has exactly 3 lines.
+
+### Structure
+
+```
+┌─────────────────────────────────────────┐
+│                                         │
+│  Project Title Here              ⭐ ··· │  ← Line 1
+│                                         │
+│  stripe.com · notion.so +2              │  ← Line 2 (optional)
+│                                         │
+│  🔵 3 new changes · 2h ago       📄 4  │  ← Line 3
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+### Line 1: Title Row
+
+```tsx
+<div className="flex items-start justify-between gap-2">
+  <h3 className="text-sm font-medium text-foreground line-clamp-2 flex-1">
+    {/* For completed projects, prepend ✅ icon */}
+    {/* For archived projects, prepend 📦 icon */}
+    {project.status === "completed" && <span className="mr-1">✅</span>}
+    {project.status === "archived" && <span className="mr-1">📦</span>}
+    {project.name}
+  </h3>
+  <div className="flex items-center gap-1 shrink-0">
+    <button onClick={toggleFavorite} className="opacity-0 group-hover:opacity-100">
+      {/* Star icon, filled yellow when isFavorite */}
+    </button>
+    <button onClick={openMenu} className="opacity-0 group-hover:opacity-100">
+      {/* MoreHorizontal icon */}
+    </button>
+  </div>
+</div>
+```
+
+**Status styling on the entire card:**
+- `active`: normal — `text-foreground`
+- `completed`: muted — `text-muted-foreground` on all text
+- `archived`: further muted — `text-muted-foreground/60` on all text
+
+### Line 2: Context Summary (Optional)
+
+This line shows the project's context — what it's about. It adapts based on available data.
+
+```tsx
+{project.contextSummary && (
+  <p className="text-xs text-muted-foreground truncate mt-1">
+    {project.contextSummary}
+  </p>
+)}
+```
+
+If `contextSummary` is null/undefined/empty, do NOT render this line. The card naturally becomes a 2-line card.
+
+**Examples of contextSummary values:**
+- `"stripe.com · notion.so +2"` — URL-based project
+- `"SaaS pricing trends research"` — AI conversation project
+- `"Q3-report.pdf · 3 screenshots"` — document analysis project
+- `"SEMrush · Google Analytics"` — third-party data source project
+- `null` — no context, line not rendered
+
+### Line 3: Dynamic Status + Canvas Count
+
+Left side shows the project's latest activity status. Right side shows canvas count.
+
+```tsx
+<div className="flex items-center justify-between mt-2">
+  {/* Left: Dynamic status */}
+  <DynamicStatus project={project} />
+
+  {/* Right: Canvas count */}
+  <span className="text-xs text-muted-foreground flex items-center gap-1">
+    <FileText className="w-3 h-3" />
+    {project.canvasCount}
+  </span>
+</div>
+```
+
+**DynamicStatus component logic:**
+
+```tsx
+function DynamicStatus({ project }: { project: Project }) {
+  // Priority 1: Container has new changes
+  if (project.containerStatus?.overall === "new_changes") {
+    return (
+      <span className="text-xs font-medium text-blue-400">
+        🔵 {project.containerStatus.newChangesCount} new changes · {timeAgo(project.containerStatus.lastCheckedAt)}
+      </span>
+    );
+  }
+
+  // Priority 2: Container failed
+  if (project.containerStatus?.overall === "failed") {
+    return (
+      <span className="text-xs text-red-400">
+        🔴 {project.containerStatus.count} failed · {timeAgo(project.containerStatus.lastCheckedAt)}
+      </span>
+    );
+  }
+
+  // Priority 3: Container running
+  if (project.containerStatus?.overall === "running") {
+    return (
+      <span className="text-xs text-green-400">
+        🟢 Running · updated {timeAgo(project.containerStatus.lastCheckedAt)}
+      </span>
+    );
+  }
+
+  // Priority 4: Container paused
+  if (project.containerStatus?.overall === "paused") {
+    return (
+      <span className="text-xs text-yellow-400">
+        🟡 Paused
+      </span>
+    );
+  }
+
+  // Priority 5: Completed project
+  if (project.status === "completed") {
+    return (
+      <span className="text-xs text-muted-foreground">
+        Completed {formatDate(project.completedAt)}
+      </span>
+    );
+  }
+
+  // Default: No container, show last updated
+  return (
+    <span className="text-xs text-muted-foreground">
+      Updated {timeAgo(project.updatedAt)}
+    </span>
+  );
+}
+```
+
+### Full Card Component
+
+```tsx
+<div
+  className={cn(
+    "group rounded-lg border border-border bg-card p-4 cursor-pointer",
+    "hover:border-primary/50 transition-colors",
+    project.status === "completed" && "opacity-70",
+    project.status === "archived" && "opacity-50"
+  )}
+  onClick={() => navigateToProject(project.id)}
+  onContextMenu={(e) => openContextMenu(e, project)}
+>
+  {/* Line 1: Title + actions */}
+  <div className="flex items-start justify-between gap-2">
+    <h3 className={cn(
+      "text-sm font-medium line-clamp-2 flex-1",
+      project.status === "active" ? "text-foreground" : "text-muted-foreground"
+    )}>
+      {project.status === "completed" && <span className="mr-1.5">✅</span>}
+      {project.status === "archived" && <span className="mr-1.5">📦</span>}
+      {project.name}
+    </h3>
+    <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <FavoriteButton project={project} />
+      <MoreMenuButton project={project} />
+    </div>
+  </div>
+
+  {/* Line 2: Context summary (optional) */}
+  {project.contextSummary && (
+    <p className={cn(
+      "text-xs truncate mt-1.5",
+      project.status === "active" ? "text-muted-foreground" : "text-muted-foreground/60"
+    )}>
+      {project.contextSummary}
+    </p>
+  )}
+
+  {/* Line 3: Dynamic status + Canvas count */}
+  <div className="flex items-center justify-between mt-2">
+    <DynamicStatus project={project} />
+    <span className="text-xs text-muted-foreground flex items-center gap-1">
+      <FileText className="w-3 h-3" />
+      {project.canvasCount}
+    </span>
+  </div>
+</div>
+```
+
+### Card Dimensions
+
+- Card padding: `p-4` (16px)
+- Card min-height: none (let content determine height)
+- Grid column width: `minmax(280px, 1fr)` — responsive, 2-4 columns depending on viewport
+- Gap between cards: `gap-3` (12px)
+
+---
+
+## Part 3: Projects Page Layout
+
+### Top Bar
+
+Replace the existing top bar. MVP only needs Search + New Project button.
+
+```tsx
+<div className="flex items-center justify-between mb-6">
+  <h1 className="text-xl font-semibold text-foreground">Projects</h1>
+  <div className="flex items-center gap-3">
+    {/* Search input */}
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <input
+        type="text"
+        placeholder="Search projects..."
+        className="pl-9 pr-4 py-2 text-sm bg-muted border border-border rounded-md w-64 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+    </div>
+    {/* New Project button */}
+    <button
+      onClick={openCreateProjectPanel}
+      className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+    >
+      <Plus className="w-4 h-4" />
+      New Project
+    </button>
+  </div>
+</div>
+```
+
+### Project Grouping
+
+Group projects by status. Use this grouping logic:
+
+```typescript
+function groupProjects(projects: Project[], searchQuery: string) {
+  // 1. Filter by search query
+  let filtered = projects;
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    filtered = projects.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      (p.contextSummary?.toLowerCase().includes(q))
+    );
+  }
+
+  // 2. Group
+  const pinned = filtered.filter(p => p.isPinned);
+  const active = filtered.filter(p => p.status === "active" && !p.isPinned);
+  const completed = filtered.filter(p => p.status === "completed" && !p.isPinned);
+  const archived = filtered.filter(p => p.status === "archived");
+
+  // 3. Sort each group: projects with new_changes first, then by updatedAt desc
+  const sortFn = (a: Project, b: Project) => {
+    const aHasChanges = a.containerStatus?.overall === "new_changes" ? 1 : 0;
+    const bHasChanges = b.containerStatus?.overall === "new_changes" ? 1 : 0;
+    if (aHasChanges !== bHasChanges) return bHasChanges - aHasChanges;
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  };
+
+  return {
+    pinned: pinned.sort(sortFn),
+    active: active.sort(sortFn),
+    completed: completed.sort(sortFn),
+    archived: archived.sort(sortFn),
+  };
+}
+```
+
+### Group Section Component
+
+Each group has a header label and a collapsible card grid:
+
+```tsx
+function ProjectGroup({
+  label,
+  icon,
+  projects,
+  defaultCollapsed = false,
+}: {
+  label: string;
+  icon: string;
+  projects: Project[];
+  defaultCollapsed?: boolean;
+}) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  if (projects.length === 0) return null; // Don't render empty groups
+
+  return (
+    <div className="mb-6">
+      {/* Group header */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center gap-2 mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+      >
+        <span>{icon}</span>
+        <span>{label}</span>
+        <span className="text-muted-foreground/60">{projects.length} projects</span>
+        <ChevronDown className={cn("w-3 h-3 transition-transform", collapsed && "-rotate-90")} />
+      </button>
+
+      {/* Card grid */}
+      {!collapsed && (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
+          {projects.map(project => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Full Page Assembly
+
+```tsx
+function ProjectsPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const groups = groupProjects(allProjects, searchQuery);
+
+  // Check if there are any projects at all
+  if (allProjects.length === 0) {
+    return <EmptyState />; // See Part 5
+  }
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Top bar */}
+      <TopBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+
+      {/* Project groups */}
+      <ProjectGroup label="Pinned" icon="📌" projects={groups.pinned} />
+      <ProjectGroup label="Active" icon="🔄" projects={groups.active} />
+      <ProjectGroup label="Completed" icon="✅" projects={groups.completed} defaultCollapsed />
+      <ProjectGroup label="Archived" icon="📦" projects={groups.archived} defaultCollapsed />
+    </div>
+  );
+}
+```
+
+---
+
+## Part 4: Card Context Menu + Create Project Flow
+
+### Context Menu (··· button and right-click)
+
+Use Radix UI `DropdownMenu` for the ··· button. The menu items change based on project status.
+
+```tsx
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <button className="p-1 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity">
+      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+    </button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="end" className="w-48">
+    <DropdownMenuItem onClick={() => togglePin(project)}>
+      <Pin className="w-4 h-4 mr-2" />
+      {project.isPinned ? "Unpin" : "Pin to top"}
+    </DropdownMenuItem>
+    <DropdownMenuItem onClick={() => toggleFavorite(project)}>
+      <Star className="w-4 h-4 mr-2" />
+      {project.isFavorite ? "Remove from favorites" : "Add to favorites"}
+    </DropdownMenuItem>
+
+    <DropdownMenuSeparator />
+
+    <DropdownMenuItem onClick={() => startRename(project)}>
+      <Pencil className="w-4 h-4 mr-2" />
+      Rename
+    </DropdownMenuItem>
+
+    <DropdownMenuSeparator />
+
+    {/* Status transitions — show based on current status */}
+    {project.status === "active" && (
+      <DropdownMenuItem onClick={() => markCompleted(project)}>
+        <Check className="w-4 h-4 mr-2" />
+        Mark as completed
+      </DropdownMenuItem>
+    )}
+    {project.status === "completed" && (
+      <DropdownMenuItem onClick={() => reopenProject(project)}>
+        <RotateCcw className="w-4 h-4 mr-2" />
+        Reopen
+      </DropdownMenuItem>
+    )}
+    {project.status !== "archived" && (
+      <DropdownMenuItem onClick={() => archiveProject(project)}>
+        <Archive className="w-4 h-4 mr-2" />
+        Archive
+      </DropdownMenuItem>
+    )}
+    {project.status === "archived" && (
+      <DropdownMenuItem onClick={() => unarchiveProject(project)}>
+        <RotateCcw className="w-4 h-4 mr-2" />
+        Unarchive
+      </DropdownMenuItem>
+    )}
+
+    <DropdownMenuSeparator />
+
+    <DropdownMenuItem
+      onClick={() => confirmDelete(project)}
+      className="text-red-400 focus:text-red-400"
+    >
+      <Trash2 className="w-4 h-4 mr-2" />
+      Delete
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+```
+
+### Create Project Panel
+
+When user clicks [+ New Project], open a slide-over panel from the right side (NOT a full-screen modal). Use Radix `Sheet` or a custom slide panel.
+
+```tsx
+<Sheet open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+  <SheetContent side="right" className="w-[400px] sm:w-[440px]">
+    <SheetHeader>
+      <SheetTitle>New Project</SheetTitle>
+    </SheetHeader>
+
+    <div className="mt-6 space-y-4">
+      {/* Project name — required */}
+      <div>
+        <label className="text-sm font-medium text-foreground">Project name *</label>
+        <input
+          type="text"
+          placeholder="e.g. Q4 Product Review"
+          className="mt-1.5 w-full px-3 py-2 text-sm bg-muted border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          autoFocus
+        />
+      </div>
+
+      {/* Context — optional, accepts URL or description */}
+      <div>
+        <label className="text-sm font-medium text-foreground">
+          Add a URL or description
+          <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+        </label>
+        <input
+          type="text"
+          placeholder="URL, topic, or brief context"
+          className="mt-1.5 w-full px-3 py-2 text-sm bg-muted border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          value={contextInput}
+          onChange={(e) => setContextInput(e.target.value)}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-3 pt-2">
+        <button
+          onClick={handleCreate}
+          disabled={!projectName.trim()}
+          className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          Create Project
+        </button>
+        <button
+          onClick={() => setIsCreateOpen(false)}
+          className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+
+      {/* Template link */}
+      <div className="pt-4 border-t border-border">
+        <p className="text-xs text-muted-foreground text-center mb-3">or start from a template</p>
+        <button
+          onClick={() => setShowTemplates(true)}
+          className="w-full text-sm text-primary hover:text-primary/80 transition-colors"
+        >
+          Browse Templates →
+        </button>
+      </div>
+    </div>
+  </SheetContent>
+</Sheet>
+```
+
+**Create flow behavior:**
+1. Only `projectName` is required. The Create button is disabled until name is non-empty.
+2. When `contextInput` looks like a URL (starts with http/https or contains a dot with no spaces), store it as the project's first analysis target and set `contextSummary` to the domain.
+3. When `contextInput` is plain text, store it directly as `contextSummary`.
+4. After creation, navigate to the new project's Canvas (Studio page).
+5. Set the new project's status to `"active"`.
+
+---
+
+## Part 5: Empty State + Delete Confirmation
+
+### Empty State
+
+When the user has zero projects, show this instead of the card grid:
+
+```tsx
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="text-4xl mb-4">📊</div>
+      <h2 className="text-lg font-medium text-foreground mb-2">
+        Start your first analysis project
+      </h2>
+      <p className="text-sm text-muted-foreground max-w-md mb-6">
+        Create a project to organize your AI-powered analysis — competitor research,
+        UX audits, landing page reviews, and more.
+      </p>
+      <button
+        onClick={openCreateProjectPanel}
+        className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+      >
+        <Plus className="w-4 h-4" />
+        Create First Project
+      </button>
+
+      {/* Template shortcuts */}
+      <div className="mt-8">
+        <p className="text-xs text-muted-foreground mb-3">or try a template</p>
+        <div className="grid grid-cols-2 gap-2 max-w-sm">
+          {[
+            { icon: "🔍", name: "Competitor Analysis" },
+            { icon: "📱", name: "Onboarding Audit" },
+            { icon: "🌐", name: "Landing Page Diagnosis" },
+            { icon: "📊", name: "Full UX Audit" },
+            { icon: "💰", name: "Pricing Research" },
+            { icon: "🔄", name: "My Product Check" },
+          ].map(t => (
+            <button
+              key={t.name}
+              onClick={() => createFromTemplate(t.name)}
+              className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+            >
+              <span>{t.icon}</span>
+              <span>{t.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Delete Confirmation Dialog
+
+Use Radix `AlertDialog` for delete confirmation:
+
+```tsx
+<AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete project?</AlertDialogTitle>
+      <AlertDialogDescription>
+        This will permanently delete "{projectToDelete?.name}" and all its canvases.
+        This action cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={handleDelete}
+        className="bg-red-500 hover:bg-red-600 text-white"
+      >
+        Delete
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+---
+
+## Implementation Order
+
+Execute these steps in order. Each step should result in a working state.
+
+**Step 1: Data model + mock data**
+- Add new fields to Project type (status, isPinned, isFavorite, contextSummary, containerStatus, canvasCount)
+- Create 6-8 mock projects covering all scenarios (with/without containers, completed, archived, pinned)
+
+**Step 2: ProjectCard component**
+- Create the new 3-line card component
+- Implement DynamicStatus sub-component
+- Remove the old card with cover images
+
+**Step 3: Page layout with grouping**
+- Implement groupProjects function
+- Create ProjectGroup component with collapsible sections
+- Replace the existing flat grid with grouped layout
+- Add top bar with search + New Project button
+
+**Step 4: Context menu**
+- Add ··· button to cards (visible on hover)
+- Implement DropdownMenu with all actions
+- Wire up status transitions (complete, archive, reopen, unarchive)
+- Add delete with confirmation dialog
+
+**Step 5: Create project flow**
+- Implement slide-over panel (Sheet)
+- Handle URL detection in context input
+- Wire up project creation and navigation
+
+**Step 6: Empty state**
+- Add empty state component
+- Show when project count is 0
+- Wire up template shortcuts
+
+---
+
+## Important Notes
+
+- Do NOT change the left sidebar navigation. Only modify the main content area of the Projects page.
+- Use existing design tokens (bg-card, bg-background, text-foreground, text-muted-foreground, border-border, bg-muted, bg-primary, text-primary-foreground). Do NOT hardcode colors.
+- All animations should use Framer Motion or Tailwind transitions. Keep them subtle (150-200ms).
+- The card hover effect should be: border color changes to `border-primary/50`, and the ⭐ and ··· buttons fade in.
+- Ensure the grid is responsive: 1 column on mobile, 2 on tablet, 3-4 on desktop. Use `grid-cols-[repeat(auto-fill,minmax(280px,1fr))]`.
