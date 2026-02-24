@@ -27,7 +27,7 @@ export function ProjectHeader({ project, onRename, onNewProject }: ProjectHeader
 
   const handleConfirm = () => {
     if (editValue.trim()) {
-      onRename(editValue.trim().slice(0, 28));
+      onRename(editValue.trim().slice(0, 60));
     }
     setIsEditing(false);
   };
@@ -45,12 +45,12 @@ export function ProjectHeader({ project, onRename, onNewProject }: ProjectHeader
             if (e.key === "Escape") setIsEditing(false);
           }}
           onBlur={handleConfirm}
-          className="bg-transparent border-b border-primary outline-none text-sm font-semibold text-foreground h-5 w-[180px] p-0"
-          maxLength={28}
+          className="bg-transparent border-b border-primary outline-none text-sm font-semibold text-foreground h-5 w-[320px] p-0"
+          maxLength={60}
         />
       ) : (
         <span
-          className="text-sm font-semibold text-foreground truncate cursor-pointer group relative max-w-[200px] select-none"
+          className="text-sm font-semibold text-foreground truncate cursor-pointer group relative max-w-[340px] select-none"
           onDoubleClick={() => {
             setIsEditing(true);
             setEditValue(project.name);
