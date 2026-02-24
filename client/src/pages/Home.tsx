@@ -1398,9 +1398,10 @@ export default function Home() {
                             variant="ghost" 
                             size="icon" 
                             className="h-9 w-9 text-muted-foreground hover:text-foreground rounded-lg" 
-                            title="Quick Actions"
+                            title="Call Roles"
+                            onClick={handleAtButtonClick}
                         >
-                          <Zap className="w-4 h-4" />
+                          <AtSign className="w-4 h-4" />
                         </Button>
                         
                         {/* Vertical Divider */}

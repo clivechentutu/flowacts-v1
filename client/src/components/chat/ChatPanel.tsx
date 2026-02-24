@@ -1135,7 +1135,7 @@ export function ChatPanel({ events, onSendMessage, persona }: ChatPanelProps) {
 
   const TOOLBAR_ITEMS = [
     { icon: <Paperclip className="w-4 h-4" />, tooltip: "Attach a file or screenshot" },
-    { icon: <Zap className="w-4 h-4" />, tooltip: "Quick Actions" },
+    { icon: <AtSign className="w-4 h-4" />, tooltip: "Mention a specific agent" },
   ];
 
   const handleTitleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
