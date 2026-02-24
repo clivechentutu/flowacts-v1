@@ -591,7 +591,28 @@ function DraggablePromptCard({ card }: { card: PromptCard }) {
 
 const HISTORY_TASKS = [
     {
+        id: 'h0',
+        title: 'Pulse Active Container Test',
+        description: 'Active container project with pulse dot',
+        date: '2025-02-24',
+        isFavorite: true,
+        assets: { documents: 2, images: 5, videos: 0 },
+        thumbnail: "/thumbnails/dashboard.jpg",
+        hasActiveContainer: true,
+        memberCount: 3,
+        canvasCount: 2,
+        updatedAt: '2025-02-24T10:00:00Z',
+        createdAt: '2025-02-20T10:00:00Z',
+        canvases: []
+    },
+    {
         id: 'h1',
+        hasActiveContainer: false,
+        memberCount: 2,
+        canvasCount: 1,
+        updatedAt: '2025-01-15T10:00:00Z',
+        createdAt: '2024-12-15T10:00:00Z',
+        canvases: [],
         title: 'Q4 Competitor Analysis Report',
         description: 'Comprehensive analysis of top 3 competitors in the SaaS market, focusing on pricing strategies and feature sets.',
         date: '2025-01-15',
@@ -601,6 +622,12 @@ const HISTORY_TASKS = [
     },
     {
         id: 'h2',
+        hasActiveContainer: false,
+        memberCount: 5,
+        canvasCount: 4,
+        updatedAt: '2025-01-18T10:00:00Z',
+        createdAt: '2025-01-10T10:00:00Z',
+        canvases: [],
         title: 'Mobile App Onboarding Flow',
         description: 'User journey mapping for the new mobile onboarding experience, identifying drop-off points.',
         date: '2025-01-18',
@@ -610,6 +637,12 @@ const HISTORY_TASKS = [
     },
     {
         id: 'h3',
+        hasActiveContainer: true,
+        memberCount: 1,
+        canvasCount: 2,
+        updatedAt: '2025-01-19T10:00:00Z',
+        createdAt: '2025-01-05T10:00:00Z',
+        canvases: [],
         title: 'Holiday Marketing Campaign',
         description: 'Visual assets and copy generation for the upcoming holiday season social media push.',
         date: '2025-01-19',
@@ -619,6 +652,12 @@ const HISTORY_TASKS = [
     },
     {
         id: 'h4',
+        hasActiveContainer: false,
+        memberCount: 3,
+        canvasCount: 2,
+        updatedAt: '2025-01-20T10:00:00Z',
+        createdAt: '2024-12-20T10:00:00Z',
+        canvases: [],
         title: 'Feature Release Blog Post',
         description: 'Drafting announcement blog post for the new collaboration features.',
         date: '2025-01-20',
@@ -628,6 +667,12 @@ const HISTORY_TASKS = [
     },
     {
         id: 'h5',
+        hasActiveContainer: false,
+        memberCount: 2,
+        canvasCount: 1,
+        updatedAt: '2025-01-20T10:00:00Z',
+        createdAt: '2025-01-18T10:00:00Z',
+        canvases: [],
         title: 'User Interview Script',
         description: 'Generating questions for user research interviews regarding the new dashboard.',
         date: '2025-01-20',
@@ -637,6 +682,12 @@ const HISTORY_TASKS = [
     },
     {
         id: 'h6',
+        hasActiveContainer: false,
+        memberCount: 4,
+        canvasCount: 3,
+        updatedAt: '2025-01-21T10:00:00Z',
+        createdAt: '2025-01-21T10:00:00Z',
+        canvases: [],
         title: 'Landing Page Hero Copy',
         description: 'A/B testing copy variations for the main landing page value prop.',
         date: '2025-01-21',
@@ -830,7 +881,8 @@ const generateProjectName = (text: string): string => {
 
 export default function Home() {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'project' | 'projects-list' | 'project-detail'>('home');
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [isProjectListExpanded, setIsProjectListExpanded] = useState(false);
   const [activeScenarioId, setActiveScenarioId] = useState(SCENARIOS[0].id);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -1718,8 +1770,9 @@ export default function Home() {
                  </div>
 
                  {/* Grid */}
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                 <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
                     {HISTORY_TASKS
+                        .sort((a, b) => new Date(b.updatedAt || b.date).getTime() - new Date(a.updatedAt || a.date).getTime())
                         .filter(task => {
                             const matchesSearch = task.title.toLowerCase().includes(projectListSearch.toLowerCase()) || 
                                                   task.description.toLowerCase().includes(projectListSearch.toLowerCase());
@@ -1729,46 +1782,52 @@ export default function Home() {
                         .map(task => (
                         <div 
                             key={task.id} 
-                            className="group bg-card border border-border hover:border-primary/50 rounded-xl transition-all cursor-pointer hover:shadow-md flex flex-col h-[280px] overflow-hidden"
+                            onClick={() => {
+                                setActiveProjectId(task.id);
+                                setActiveTab('project-detail');
+                            }}
+                            className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all"
                         >
-                            <div className="h-[140px] w-full bg-muted/50 overflow-hidden relative">
-                                <img 
-                                    src={task.thumbnail} 
-                                    alt={task.title}
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100"
-                                />
-                                <div className="absolute top-2 right-2">
-                                    {task.isFavorite ? (
-                                        <div className="bg-background/80 backdrop-blur-sm p-1.5 rounded-full shadow-sm">
-                                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                                        </div>
-                                    ) : (
-                                        <div className="bg-background/40 backdrop-blur-sm p-1.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Star className="w-3.5 h-3.5 text-muted-foreground/60" />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                            
-                            <div className="p-4 flex flex-col gap-2 flex-1">
-                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1" title={task.title}>
+                            <div className="flex items-center gap-2 mb-2">
+                                {task.hasActiveContainer && (
+                                    <span className="pulse-dot" />
+                                )}
+                                <h3 className="text-sm font-medium text-foreground truncate flex-1">
                                     {task.title}
                                 </h3>
-                                
-                                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed flex-1">
-                                    {task.description}
-                                </p>
-                                
-                                <div className="pt-3 mt-auto border-t border-dashed border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                        <Calendar className="w-3 h-3 opacity-70" />
-                                        <span>{task.date}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 opacity-60">
-                                       {task.assets.documents > 0 && <FileText className="w-3 h-3" />}
-                                       {task.assets.images > 0 && <ImageIcon className="w-3 h-3" />}
-                                    </div>
-                                </div>
+                                <button
+                                    className={`shrink-0 text-sm transition-colors ${
+                                        task.isFavorite
+                                            ? 'text-yellow-400'
+                                            : 'text-muted-foreground/30 hover:text-muted-foreground/60'
+                                    }`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // Mock toggling favorite
+                                        toast({ description: task.isFavorite ? "Removed from favorites" : "Added to favorites" });
+                                    }}
+                                >
+                                    {task.isFavorite ? '★' : '☆'}
+                                </button>
+                            </div>
+                            
+                            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                                {task.description}
+                            </p>
+                            
+                            <div className="text-xs text-muted-foreground/60">
+                                👤 {task.memberCount || 1} · {task.canvasCount || 1}{' '}
+                                {(task.canvasCount || 1) === 1 ? 'canvas' : 'canvases'} ·{' '}
+                                {(() => {
+                                    const d = new Date(task.updatedAt || task.date);
+                                    const now = new Date();
+                                    const month = d.getMonth() + 1;
+                                    const day = d.getDate();
+                                    if (d.getFullYear() === now.getFullYear()) {
+                                        return `${month}/${day}`;
+                                    }
+                                    return `${month}/${day}/${d.getFullYear() % 100}`;
+                                })()}
                             </div>
                         </div>
                     ))}
@@ -1787,6 +1846,124 @@ export default function Home() {
                  </div>
               </div>
           );
+      case 'project-detail':
+        const p = HISTORY_TASKS.find(t => t.id === activeProjectId);
+        if (!p) {
+            setActiveTab('projects-list');
+            return null;
+        }
+        return (
+            <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
+                <div className="max-w-5xl mx-auto w-full">
+                    {/* Top Bar */}
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setActiveTab('projects-list')}
+                                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                ← Back to Projects
+                            </button>
+                            <div className="flex items-center gap-2">
+                                {p.hasActiveContainer && (
+                                    <span className="pulse-dot" />
+                                )}
+                                <h1 className="text-lg font-semibold text-foreground">
+                                    {p.title}
+                                </h1>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                className={`shrink-0 text-lg transition-colors px-2 py-1 hover:bg-muted rounded-md ${
+                                    p.isFavorite
+                                        ? 'text-yellow-400'
+                                        : 'text-muted-foreground/30 hover:text-muted-foreground/60'
+                                }`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast({ description: p.isFavorite ? "Removed from favorites" : "Added to favorites" });
+                                }}
+                            >
+                                {p.isFavorite ? '★' : '☆'}
+                            </button>
+                            <button className="text-muted-foreground hover:text-foreground p-1.5 hover:bg-muted rounded-md transition-colors">
+                                <MoreVertical className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Project Info */}
+                    <div className="mb-8">
+                        <p className="text-sm text-muted-foreground mb-2">
+                            {p.description}
+                        </p>
+                        <div className="text-xs text-muted-foreground/60">
+                            👤 {p.memberCount || 1} members ·
+                            Created {(() => {
+                                const cd = new Date(p.createdAt || p.date);
+                                const cm = cd.toLocaleString('en-US', { month: 'short' });
+                                return `${cm} ${cd.getDate()}`;
+                            })()} ·
+                            Updated {(() => {
+                                const ud = new Date(p.updatedAt || p.date);
+                                const um = ud.toLocaleString('en-US', { month: 'short' });
+                                return `${um} ${ud.getDate()}`;
+                            })()}
+                        </div>
+                    </div>
+
+                    {/* Canvas List */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-sm font-medium text-foreground">Canvases</h2>
+                            <button
+                                onClick={() => setActiveTab('project')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                            >
+                                <Plus className="w-3.5 h-3.5" /> New
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+                            {/* Mocking Canvases if empty */}
+                            {(p.canvases && p.canvases.length > 0 ? p.canvases : [
+                                { id: 'c1', title: 'Brainstorming', summary: 'Initial ideas and concepts for ' + p.title, updatedAt: p.updatedAt || p.date },
+                                { id: 'c2', title: 'Implementation Plan', summary: 'Technical details and architecture overview.', updatedAt: p.updatedAt || p.date }
+                            ]).map((canvas: any) => (
+                                <div
+                                    key={canvas.id}
+                                    className="rounded-lg border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all"
+                                    onClick={() => setActiveTab('project')}
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-sm">📋</span>
+                                        <h3 className="text-sm font-medium text-foreground truncate">
+                                            {canvas.title}
+                                        </h3>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                                        {canvas.summary}
+                                    </p>
+                                    <div className="text-xs text-muted-foreground/60">
+                                        Updated {(() => {
+                                            const d = new Date(canvas.updatedAt);
+                                            const now = new Date();
+                                            const month = d.getMonth() + 1;
+                                            const day = d.getDate();
+                                            if (d.getFullYear() === now.getFullYear()) {
+                                                return `${month}/${day}`;
+                                            }
+                                            return `${month}/${day}/${d.getFullYear() % 100}`;
+                                        })()}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
       case 'project':
       default:
         return (

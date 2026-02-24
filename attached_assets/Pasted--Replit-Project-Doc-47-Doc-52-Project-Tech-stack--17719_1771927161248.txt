@@ -1,0 +1,564 @@
+# Replit 指令：Project 版块优化
+
+> 替代 Doc 47 的复杂方案，回归极简路线
+> 关联决策：Doc 52（Project 卡片简化优化方案）
+> Tech stack: React + TypeScript + Tailwind CSS + Radix UI + Framer Motion
+> Theme: Dark mode（使用现有 design tokens）
+
+---
+
+## 变更范围
+
+改造 Projects 页面的卡片样式和布局，新增 Project Detail 页面。
+
+1. **Project 卡片** — 去封面图，改为紧凑文字卡片
+2. **Grid 布局** — 缩小卡片宽度，提升每行数量
+3. **收藏功能** — 卡片右上角星标 + 筛选
+4. **活容器标识** — 绿色脉搏灯（CSS 呼吸动画）
+5. **Project Detail 页面** — 点击卡片后的详情页
+
+不动的东西：左侧导航栏、顶部导航、创建项目入口和流程、任何业务逻辑/API 调用。
+
+---
+
+## 一、Mock 数据更新
+
+在现有 Project 数据中补充以下字段（不删除已有字段）：
+
+```typescript
+interface Project {
+  // ... 已有字段 ...
+
+  // 新增
+  isFavorite: boolean;
+  memberCount: number;
+  canvasCount: number;
+  hasActiveContainer: boolean; // 是否有活跃的监控容器
+}
+```
+
+准备 6-8 个 mock 项目：
+- 2 个 `hasActiveContainer: true`（活容器项目）
+- 4-6 个 `hasActiveContainer: false`（普通项目）
+- 2 个 `isFavorite: true`
+- `memberCount` 在 1-5 之间随机
+- `canvasCount` 在 1-8 之间随机
+
+---
+
+## 二、脉搏灯样式
+
+在全局 CSS 中添加脉搏灯动画（只需添加一次）：
+
+```css
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22c55e; /* green-500 */
+  animation: pulse-glow 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+```
+
+---
+
+## 三、ProjectCard 组件改造
+
+### 改前
+
+当前卡片有封面图（`<img>` 或 `background-image`），占卡片 ~60% 面积。
+
+### 改后
+
+去掉封面图，改为纯文字卡片，三个区域：标题行、描述、底行。
+
+### 具体操作
+
+1. 找到 ProjectCard 组件
+2. 删除封面图相关的整块 DOM（`<img>`、封面容器 `<div>` 等）
+3. 替换卡片内容为以下结构：
+
+```tsx
+function ProjectCard({ project, onToggleFavorite }: {
+  project: Project;
+  onToggleFavorite: (id: string) => void;
+}) {
+  const navigate = useNavigate(); // or your routing method
+
+  return (
+    <div
+      className="rounded-lg border border-border bg-card p-4
+                 hover:border-primary/40 hover:shadow-sm
+                 cursor-pointer transition-all"
+      onClick={() => navigate(`/project/${project.id}`)}
+    >
+      {/* 标题行：脉搏灯(可选) + 标题 + 收藏星标 */}
+      <div className="flex items-center gap-2 mb-2">
+        {project.hasActiveContainer && (
+          <span className="pulse-dot" />
+        )}
+        <h3 className="text-sm font-medium text-foreground truncate flex-1">
+          {project.title}
+        </h3>
+        <button
+          className={`shrink-0 text-sm transition-colors ${
+            project.isFavorite
+              ? 'text-yellow-400'
+              : 'text-muted-foreground/30 hover:text-muted-foreground/60'
+          }`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(project.id);
+          }}
+          aria-label={project.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          {project.isFavorite ? '★' : '☆'}
+        </button>
+      </div>
+
+      {/* 描述：最多 2 行，溢出截断 */}
+      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+        {project.description}
+      </p>
+
+      {/* 底行：协同人数 · Canvas 数量 · 更新日期 */}
+      <div className="text-xs text-muted-foreground/60">
+        👤 {project.memberCount} · {project.canvasCount}{' '}
+        {project.canvasCount === 1 ? 'canvas' : 'canvases'} ·{' '}
+        {formatDate(project.updatedAt)}
+      </div>
+    </div>
+  );
+}
+```
+
+### 日期格式化
+
+```typescript
+function formatDate(date: Date | string): string {
+  const d = new Date(date);
+  const now = new Date();
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+
+  if (d.getFullYear() === now.getFullYear()) {
+    return `${month}/${day}`;          // 当年：2/20
+  }
+  const year = d.getFullYear() % 100;
+  return `${month}/${day}/${year}`;    // 跨年：2/20/25
+}
+```
+
+### 注意
+
+- 活容器项目：标题前显示绿色脉搏灯（`.pulse-dot`）
+- 普通项目：标题前无任何图标，直接显示标题
+- 收藏星标常驻显示（不是 hover 才出现）
+- 点击星标不触发卡片导航（`e.stopPropagation()`）
+
+---
+
+## 四、Grid 布局调整
+
+### 改前
+
+```tsx
+<div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+```
+
+每行 3-4 个宽卡片。
+
+### 改后
+
+```tsx
+<div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+```
+
+每行 4-6 个紧凑卡片。
+
+### 具体操作
+
+找到 Projects 页面中渲染卡片网格的容器，将 `minmax` 值从 `320px`（或类似值）改为 `200px`，`gap` 从 `gap-4` 改为 `gap-3`。
+
+---
+
+## 五、排序与筛选
+
+### 默认排序
+
+全量列表按最后更新时间降序。收藏不影响排序位置。
+
+```typescript
+function sortProjects(projects: Project[]): Project[] {
+  return [...projects].sort((a, b) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+}
+```
+
+### 收藏筛选
+
+在 Projects 页面顶部区域（搜索栏附近），添加一个筛选按钮或 Tab，用于切换「全部 / 已收藏」视图：
+
+```tsx
+<div className="flex items-center gap-2 mb-4">
+  <button
+    className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+      filter === 'all'
+        ? 'bg-primary text-primary-foreground'
+        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+    }`}
+    onClick={() => setFilter('all')}
+  >
+    All
+  </button>
+  <button
+    className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+      filter === 'favorites'
+        ? 'bg-primary text-primary-foreground'
+        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+    }`}
+    onClick={() => setFilter('favorites')}
+  >
+    ★ Favorites
+  </button>
+</div>
+```
+
+筛选逻辑：
+
+```typescript
+const displayedProjects = sortProjects(
+  filter === 'favorites'
+    ? projects.filter(p => p.isFavorite)
+    : projects
+);
+```
+
+---
+
+## 六、Project Detail 页面（新增）
+
+### 路由
+
+添加路由 `/project/:id`，指向新的 ProjectDetail 组件。
+
+### 页面结构
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  ← Back to Projects    ● 竞品分析                            ★ ⋯  │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  项目描述文字（完整显示，不截断）                                      │
+│  👤 3 members · Created Jan 10 · Updated Feb 20                    │
+│                                                                     │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Canvases                                              [+ New]      │
+│                                                                     │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐       │
+│  │ 📋 竞品功能对比  │ │ 📋 定价策略分析  │ │ 📋 用户评价汇总  │       │
+│  │                 │ │                 │ │                 │       │
+│  │ 对比3个竞品的   │ │ 各竞品的定价    │ │ App Store和     │       │
+│  │ 核心功能差异... │ │ 模型和策略...   │ │ G2上的评价...   │       │
+│  │                 │ │                 │ │                 │       │
+│  │ Updated 2/20   │ │ Updated 2/18   │ │ Updated 2/15   │       │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 具体实现
+
+```tsx
+function ProjectDetail({ projectId }: { projectId: string }) {
+  const navigate = useNavigate();
+  const project = getProjectById(projectId); // your data fetching method
+
+  if (!project) return <div>Project not found</div>;
+
+  return (
+    <div className="p-6 max-w-5xl mx-auto">
+      {/* 顶部栏 */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/projects')}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Back to Projects
+          </button>
+          <div className="flex items-center gap-2">
+            {project.hasActiveContainer && (
+              <span className="pulse-dot" />
+            )}
+            <h1 className="text-lg font-semibold text-foreground">
+              {project.title}
+            </h1>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <FavoriteButton project={project} />
+          <MoreMenuButton project={project} />
+        </div>
+      </div>
+
+      {/* 项目信息区 */}
+      <div className="mb-8">
+        <p className="text-sm text-muted-foreground mb-2">
+          {project.description}
+        </p>
+        <div className="text-xs text-muted-foreground/60">
+          👤 {project.memberCount} members ·
+          Created {formatFullDate(project.createdAt)} ·
+          Updated {formatFullDate(project.updatedAt)}
+        </div>
+      </div>
+
+      {/* Canvas 列表区 */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-medium text-foreground">Canvases</h2>
+          <button
+            onClick={handleCreateCanvas}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
+                       bg-primary text-primary-foreground rounded-md
+                       hover:bg-primary/90 transition-colors"
+          >
+            + New
+          </button>
+        </div>
+
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+          {project.canvases.map(canvas => (
+            <CanvasCard key={canvas.id} canvas={canvas} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Canvas 卡片
+
+Canvas 卡片比 Project 卡片更简单，无脉搏灯、无协同人数、无收藏：
+
+```tsx
+function CanvasCard({ canvas }: { canvas: Canvas }) {
+  return (
+    <div
+      className="rounded-lg border border-border bg-card p-4
+                 hover:border-primary/40 hover:shadow-sm
+                 cursor-pointer transition-all"
+      onClick={() => navigate(`/canvas/${canvas.id}`)}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm">📋</span>
+        <h3 className="text-sm font-medium text-foreground truncate">
+          {canvas.title}
+        </h3>
+      </div>
+
+      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+        {canvas.summary}
+      </p>
+
+      <div className="text-xs text-muted-foreground/60">
+        Updated {formatDate(canvas.updatedAt)}
+      </div>
+    </div>
+  );
+}
+```
+
+### `⋯` 更多操作菜单
+
+使用 Radix UI DropdownMenu：
+
+```tsx
+function MoreMenuButton({ project }: { project: Project }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="p-1.5 rounded hover:bg-muted transition-colors">
+          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem onClick={() => startRename(project)}>
+          <Pencil className="w-4 h-4 mr-2" />
+          Rename
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => duplicateProject(project)}>
+          <Copy className="w-4 h-4 mr-2" />
+          Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => exportProject(project)}>
+          <Download className="w-4 h-4 mr-2" />
+          Export
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => confirmDelete(project)}
+          className="text-red-400 focus:text-red-400"
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+```
+
+### 删除确认
+
+```tsx
+<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Delete project?</AlertDialogTitle>
+      <AlertDialogDescription>
+        This will permanently delete "{project.title}" and all its canvases.
+        This action cannot be undone.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancel</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={handleDelete}
+        className="bg-red-500 hover:bg-red-600 text-white"
+      >
+        Delete
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+```
+
+---
+
+## 七、改后效果
+
+### Projects 页面
+
+```
+┌────────────────────────────────────────────────────────────────────────────────┐
+│  Projects                                                    [Search...]       │
+│                                                                                │
+│  [All] [★ Favorites]                                                          │
+│                                                                                │
+│  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐ ┌────────────────┐  │
+│  │ ● 竞品分析  ★  │ │ 市场调研    ☆  │ │ ● 价格监控  ★  │ │ 用户访谈    ☆  │  │
+│  │                │ │                │ │                │ │                │  │
+│  │ 追踪3个竞品  │ │ 东南亚市场  │ │ 监控主要竞品  │ │ 上周用户访谈  │  │
+│  │ 的产品更...  │ │ 的SaaS渗... │ │ 的定价策...  │ │ 的整理和...  │  │
+│  │                │ │                │ │                │ │                │  │
+│  │ 👤3·5 cvs·2/20│ │ 👤2·3 cvs·2/15│ │ 👤1·2 cvs·2/24│ │ 👤4·4 cvs·2/10│  │
+│  └────────────────┘ └────────────────┘ └────────────────┘ └────────────────┘  │
+│                                                                                │
+│  ┌────────────────┐ ┌────────────────┐                                        │
+│  │ Q4 复盘     ☆  │ │ 新品调研    ☆  │                                        │
+│  │                │ │                │                                        │
+│  │ Q4季度业务  │ │ 新产品线的  │                                        │
+│  │ 复盘总结... │ │ 市场可行... │                                        │
+│  │                │ │                │                                        │
+│  │ 👤2·1 cvs·1/30│ │ 👤1·2 cvs·1/25│                                        │
+│  └────────────────┘ └────────────────┘                                        │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+● = 绿色脉搏灯（活容器项目），无前缀 = 普通项目
+```
+
+### Project Detail 页面
+
+```
+┌────────────────────────────────────────────────────────────────────────────────┐
+│  ← Back to Projects    ● 竞品分析                                      ★ ⋯   │
+│                                                                                │
+│  追踪3个竞品的产品更新和市场动态，持续监控功能变化和定价策略调整               │
+│  👤 3 members · Created 1/10 · Updated 2/20                                   │
+│                                                                                │
+│  ─────────────────────────────────────────────────────────────────────────     │
+│                                                                                │
+│  Canvases                                                         [+ New]      │
+│                                                                                │
+│  ┌────────────────┐ ┌────────────────┐ ┌────────────────┐                     │
+│  │ 📋 竞品功能对比│ │ 📋 定价策略分析│ │ 📋 用户评价汇总│                     │
+│  │                │ │                │ │                │                     │
+│  │ 对比3个竞品  │ │ 各竞品的定价  │ │ App Store和   │                     │
+│  │ 的核心功...  │ │ 模型和策...  │ │ G2上的评...  │                     │
+│  │                │ │                │ │                │                     │
+│  │ Updated 2/20  │ │ Updated 2/18  │ │ Updated 2/15  │                     │
+│  └────────────────┘ └────────────────┘ └────────────────┘                     │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 八、不要动的东西
+
+- [ ] 左侧导航栏 — 不动
+- [ ] 顶部导航 — 不动
+- [ ] 创建项目的入口和流程 — 不动
+- [ ] 任何业务逻辑/API 调用 — 不动
+- [ ] 其他页面（Home、Studio 等）— 不动
+
+---
+
+## 九、实现顺序
+
+按以下顺序执行，每步完成后应该是可运行状态：
+
+**Step 1: 数据模型 + Mock 数据**
+- 给 Project 接口添加 `isFavorite`、`memberCount`、`canvasCount`、`hasActiveContainer` 字段
+- 更新 mock 数据，确保覆盖活容器和普通项目两种类型
+
+**Step 2: 脉搏灯样式**
+- 在全局 CSS 中添加 `@keyframes pulse-glow` 和 `.pulse-dot` 样式
+
+**Step 3: ProjectCard 组件改造**
+- 删除封面图
+- 实现新的三区域卡片结构（标题行 + 描述 + 底行）
+- 标题行包含：脉搏灯（条件渲染）+ 标题 + 收藏星标
+
+**Step 4: Grid 布局调整**
+- `minmax(320px)` → `minmax(200px)`
+- `gap-4` → `gap-3`
+
+**Step 5: 排序与筛选**
+- 默认按更新时间降序
+- 添加 All / Favorites 筛选按钮
+
+**Step 6: Project Detail 页面**
+- 添加 `/project/:id` 路由
+- 实现 ProjectDetail 组件（顶部栏 + 项目信息 + Canvas 列表）
+- 实现 CanvasCard 组件
+- 实现 `⋯` 更多操作菜单（Rename / Duplicate / Export / Delete）
+- 实现删除确认对话框
+
+---
+
+## 十、重要提醒
+
+- 使用现有 design tokens（`bg-card`、`bg-background`、`text-foreground`、`text-muted-foreground`、`border-border`、`bg-muted`、`bg-primary`、`text-primary-foreground`），不要硬编码颜色
+- 唯一的硬编码颜色是脉搏灯的 `#22c55e`（green-500），因为它需要在动画中使用
+- 所有过渡动画保持微妙（150-200ms），使用 Tailwind `transition-all` 或 `transition-colors`
+- Grid 响应式：移动端 1-2 列，平板 3 列，桌面 4-6 列，由 `auto-fill` + `minmax(200px)` 自动处理
+- 收藏星标常驻显示，不是 hover 才出现
+- 活容器的脉搏灯是唯一的动画元素，不要给其他元素加动画
+
+---
+
+*文档创建：2026-02-24*
+*替代 Doc 47，回归极简路线*
