@@ -1398,29 +1398,6 @@ export default function Home() {
                         >
                           <AtSign className="w-4 h-4" />
                         </Button>
-                        
-                        <div className="h-4 w-px bg-border mx-1 self-center" />
-                        
-                        <div 
-                           role="button"
-                           onClick={() => setIsThinkingMode(!isThinkingMode)}
-                           className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-                        >
-                           <div className={cn(
-                              "w-8 h-4 rounded-full relative transition-colors duration-300",
-                              "bg-indigo-500/20"
-                           )}>
-                              <div className={cn(
-                                "absolute top-0.5 w-3 h-3 rounded-full transition-all duration-300 shadow-sm flex items-center justify-center",
-                                "left-[18px] bg-indigo-500"
-                              )}>
-                                <Brain className="w-2 h-2 text-white" />
-                              </div>
-                           </div>
-                           <span className="text-xs font-medium text-muted-foreground">
-                              Deep Think
-                           </span>
-                        </div>
                      </div>
                      
                      <Button 
