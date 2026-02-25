@@ -1,0 +1,425 @@
+# Replit 指令：Project Detail Phase 1 修正（第二轮）
+
+> 基于当前实现状态的定向修正，不重写已正确的部分。
+> Tech stack: React + TypeScript + Tailwind CSS + Radix UI
+
+---
+
+## 修正范围
+
+仅修改 Project Detail 页面（`/project/:id`）中以下 8 个问题。不动其他页面、不动已正确的布局和头部。
+
+---
+
+## Fix 1: ContainerStatus 类型重命名
+
+找到 `ContainerStatus` 类型定义，替换为：
+
+```typescript
+type ContainerStatus = 'scheduled' | 'executing' | 'paused' | 'error';
+```
+
+原来的 `'running'` 改为 `'scheduled'`，新增 `'executing'`。
+
+全局搜索所有使用 `'running'` 作为 ContainerStatus 值的地方（包括 mock 数据、条件判断、样式映射），全部替换为 `'scheduled'`。
+
+---
+
+## Fix 2: statusStyles 映射更新
+
+找到 `statusStyles` 对象，替换为：
+
+```typescript
+const statusStyles: Record<ContainerStatus, {
+  barColor: string;
+  dotColor: string;
+  label: string;
+  labelColor: string;
+}> = {
+  scheduled: {
+    barColor: 'bg-green-500',
+    dotColor: 'bg-green-500',
+    label: 'Scheduled',
+    labelColor: 'text-green-400',
+  },
+  executing: {
+    barColor: 'bg-green-500',
+    dotColor: 'bg-green-500',
+    label: 'Executing',
+    labelColor: 'text-green-400',
+  },
+  paused: {
+    barColor: 'bg-muted-foreground/40',
+    dotColor: 'bg-muted-foreground/40',
+    label: 'Paused',
+    labelColor: 'text-muted-foreground',
+  },
+  error: {
+    barColor: 'bg-red-500',
+    dotColor: 'bg-red-500',
+    label: 'Error',
+    labelColor: 'text-red-400',
+  },
+};
+```
+
+区别：`scheduled` 圆点不带 `animate-pulse`，`executing` 圆点带 `animate-pulse`。
+
+---
+
+## Fix 3: 状态条第一行增加 Run #
+
+找到状态条组件 `ActiveContainerStatusBar` 中第一行的状态信息区域。
+
+在 `ActiveContainerInfo` 接口中新增字段：
+
+```typescript
+interface ActiveContainerInfo {
+  status: ContainerStatus;
+  frequency: string;
+  lastRunAt: string;
+  nextRunAt: string;
+  lastSummary: string;
+  errorMessage?: string;
+  totalRuns: number;        // 新增：累计执行次数
+}
+```
+
+状态条第一行改为包含 Run #：
+
+```tsx
+{/* 第一行状态信息 */}
+<div className="flex items-center gap-2 text-sm">
+  <span className={`w-2 h-2 rounded-full ${style.dotColor} ${
+    container.status === 'executing' ? 'animate-pulse' : ''
+  }`} />
+  <span className={`font-medium ${style.labelColor}`}>
+    {style.label}
+  </span>
+  {container.status !== 'error' && (
+    <>
+      <span className="text-muted-foreground/40">·</span>
+      <span className="text-muted-foreground/60">
+        Run #{container.totalRuns}
+      </span>
+      <span className="text-muted-foreground/40">·</span>
+      <span className="text-muted-foreground/60">
+        {container.frequency}
+      </span>
+    </>
+  )}
+  <span className="text-muted-foreground/40">·</span>
+  <span className="text-muted-foreground/60">
+    {container.status === 'error'
+      ? `Last attempt failed: ${formatDate(container.lastRunAt)}`
+      : `Last: ${formatDate(container.lastRunAt)}`}
+  </span>
+</div>
+```
+
+注意：`animate-pulse` 只在 `'executing'` 状态生效，`'scheduled'` 状态圆点静止。
+
+---
+
+## Fix 4: 齿轮按钮绑定修正
+
+当前问题：点击状态条右侧的 ⚙ 齿轮按钮没有打开 Container Settings 弹窗，弹窗的 `DialogTrigger` 可能绑定在了错误的元素上。
+
+修正方法：确保 Radix UI 的 `<Dialog>` 和 `<DialogTrigger>` 包裹的是状态条内的齿轮按钮，而不是其他元素。
+
+```tsx
+<Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+  {/* DialogTrigger 必须包裹状态条内的齿轮按钮 */}
+  <DialogTrigger asChild>
+    <button
+      className="p-1 text-muted-foreground/40
+                 hover:text-muted-foreground
+                 transition-colors rounded"
+      title="Container settings"
+    >
+      <SettingsIcon className="w-3.5 h-3.5" />
+    </button>
+  </DialogTrigger>
+  <ContainerSettingsDialog
+    open={settingsOpen}
+    onOpenChange={setSettingsOpen}
+    settings={containerSettings}
+    onUpdateFrequency={(f) => console.log('update frequency', f)}
+    onStopContainer={() => console.log('stop container')}
+  />
+</Dialog>
+```
+
+如果当前代码中 `<Dialog>` 包裹了整个页面或侧边栏的某个元素，把它移到状态条按钮区域内。
+
+---
+
+## Fix 5: Container Settings 弹窗重新设计
+
+完全替换现有的 `ContainerSettingsDialog` 组件。新设计分为两个视觉区块，不再是散列的表单字段。
+
+### 数据结构更新
+
+```typescript
+interface ContainerSettings {
+  frequency: string;
+  estimatedTokensPerRun: number;
+  taskSources: string[];       // 原 monitoringTargets，改名
+}
+```
+
+全局搜索 `monitoringTargets`，全部替换为 `taskSources`。
+
+### 新组件
+
+```tsx
+function ContainerSettingsDialog({
+  open,
+  onOpenChange,
+  settings,
+  onUpdateFrequency,
+  onStopContainer,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  settings: ContainerSettings;
+  onUpdateFrequency: (frequency: string) => void;
+  onStopContainer: () => void;
+}) {
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+  const runsPerMonth = getRunsPerMonth(settings.frequency);
+  const monthlyTokens = settings.estimatedTokensPerRun * runsPerMonth;
+
+  return (
+    <DialogContent className="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle className="text-base font-semibold">
+          Container Settings
+        </DialogTitle>
+      </DialogHeader>
+
+      <div className="space-y-4 py-2">
+        {/* 区块 1: Schedule */}
+        <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Schedule
+          </label>
+          <div className="flex items-center justify-between gap-4">
+            <select
+              value={settings.frequency}
+              onChange={(e) => onUpdateFrequency(e.target.value)}
+              className="flex-1 rounded-md border border-border bg-card
+                         px-3 py-2 text-sm text-foreground"
+            >
+              {frequencyOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <span className="text-xs text-muted-foreground/60 whitespace-nowrap">
+              ~{settings.estimatedTokensPerRun.toLocaleString()} tokens/run
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground/40">
+            Est. ~{monthlyTokens.toLocaleString()} tokens/month
+          </p>
+        </div>
+
+        {/* 区块 2: Task Scope */}
+        <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+          <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Task Scope
+          </label>
+          <div className="space-y-1">
+            {settings.taskSources.map((url, i) => (
+              <p key={i} className="text-sm text-foreground truncate">
+                {url}
+              </p>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground/50 mt-2">
+            Configured in AIChat →
+          </p>
+        </div>
+
+        {/* 分隔线 + 停止容器 */}
+        <div className="border-t border-border pt-4">
+          {!showStopConfirm ? (
+            <button
+              onClick={() => setShowStopConfirm(true)}
+              className="text-sm text-red-400 hover:text-red-300 transition-colors"
+            >
+              Stop Container
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                This will permanently stop the container.
+                You can create a new one from AIChat.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { onStopContainer(); onOpenChange(false); }}
+                  className="px-3 py-1.5 text-xs bg-red-500/20 text-red-400
+                             hover:bg-red-500/30 rounded-md transition-colors">
+                  Confirm Stop
+                </button>
+                <button
+                  onClick={() => setShowStopConfirm(false)}
+                  className="px-3 py-1.5 text-xs text-muted-foreground
+                             hover:text-foreground border border-border
+                             rounded-md transition-colors">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </DialogContent>
+  );
+}
+```
+
+关键变化：
+- 两个圆角灰底区块（Schedule + Task Scope）替代原来的散列字段
+- 频率下拉和单次 token 成本在同一行
+- 月度预估在频率下方，用更小更淡的字
+- "Stop Monitoring" 改为 "Stop Container"
+- 移除 "Monitoring Targets" 标题，改为 "Task Scope"
+
+---
+
+## Fix 6: Canvases 计数修正
+
+当前问题：页面显示 `Canvases (0)`，但实际有 2 张 Canvas 卡片渲染出来。说明计数取的数据源和 `.map()` 渲染用的数据源不一致。
+
+修正方法：找到渲染 Canvas 卡片的 `.map()` 调用，确认它遍历的数组变量名（可能是 `project.canvases`、`canvases`、或其他变量）。然后确保 Canvases 标题中的计数使用同一个变量：
+
+```tsx
+{/* 找到实际用于 .map() 渲染卡片的数组变量，假设叫 canvasList */}
+<h2 className="text-sm font-medium text-foreground">
+  Canvases
+  <span className="text-muted-foreground/40 ml-1">
+    ({canvasList.length})
+  </span>
+</h2>
+```
+
+不要硬编码数字，不要用 `project.canvases?.length`（如果实际渲染用的是另一个变量）。关键是计数和渲染用同一个数据源。
+
+---
+
+## Fix 7: Canvas 卡片移除 emoji 前缀
+
+当前问题：Canvas 卡片标题前有 🧠 emoji（如 `🧠 Brainstorming`），这不在设计规范中。
+
+找到 CanvasCard 组件中渲染标题的地方，确保直接使用 `canvas.title`，不添加任何 emoji 前缀：
+
+```tsx
+<h3 className="text-sm font-medium text-foreground truncate">
+  {canvas.title}
+</h3>
+```
+
+如果 emoji 来自 mock 数据中的 title 字段，从 mock 数据中移除。
+
+---
+
+## Fix 8: Canvas 卡片增加 Run # 显示
+
+在 Canvas 接口中新增字段：
+
+```typescript
+interface Canvas {
+  id: string;
+  title: string;
+  description: string;
+  updatedAt: string;
+  cardCount: number;
+  shotCount: number;
+  hasNewUpdates: boolean;
+  lastRunNumber?: number;   // 新增：最后更新时的执行轮次
+}
+```
+
+仅活容器项目的 Canvas 卡片，在红点旁显示 Run #：
+
+```tsx
+<span className="flex items-center gap-1">
+  {showRedDot && (
+    <>
+      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+      <span className="text-muted-foreground/60">
+        Run #{canvas.lastRunNumber}
+      </span>
+      <span className="text-muted-foreground/40">·</span>
+    </>
+  )}
+  {formatDate(canvas.updatedAt)}
+</span>
+```
+
+普通项目不显示 Run #，只显示日期。
+
+---
+
+## Mock 数据更新
+
+替换现有的 mock 数据函数：
+
+```typescript
+function getMockContainerInfo(): ActiveContainerInfo {
+  return {
+    status: 'scheduled',           // 原 'running'
+    frequency: 'Every 3 days',
+    lastRunAt: '2025-02-23T10:30:00Z',
+    nextRunAt: '2025-02-26T10:30:00Z',
+    lastSummary: 'Competitor X updated pricing page; 2 new blog posts detected.',
+    errorMessage: undefined,
+    totalRuns: 8,                  // 新增
+  };
+}
+
+function getMockContainerSettings(): ContainerSettings {
+  return {
+    frequency: 'every_3_days',
+    estimatedTokensPerRun: 1500,   // 原 45000，修正
+    taskSources: [                 // 原 monitoringTargets，改名
+      'https://competitor-a.com/pricing',
+      'https://competitor-b.com/blog',
+    ],
+  };
+}
+```
+
+Canvas mock 数据中，移除标题里的 emoji 前缀，并为活容器项目的 Canvas 添加 `lastRunNumber`：
+
+```typescript
+// 活容器项目的 Canvas
+{ id: '1', title: 'Brainstorming', ..., lastRunNumber: 8 }
+// 普通项目的 Canvas
+{ id: '1', title: 'Interview Questions', ..., lastRunNumber: undefined }
+```
+
+---
+
+## 验证清单
+
+- [ ] 状态条显示 "Scheduled" 而非 "Running"
+- [ ] 状态条圆点在 scheduled 状态下静止，不闪烁
+- [ ] 状态条第一行包含 "Run #8"
+- [ ] 点击状态条右侧 ⚙ 齿轮按钮能打开弹窗
+- [ ] 弹窗有两个灰底圆角区块：Schedule 和 Task Scope
+- [ ] 弹窗频率下拉和单次 token 成本在同一行
+- [ ] 弹窗 token 显示 ~1,500 tokens/run（不是 45000）
+- [ ] 弹窗底部显示 "Stop Container"（不是 "Stop Monitoring"）
+- [ ] Canvases 计数显示实际数量（不是 0）
+- [ ] Canvas 卡片标题无 emoji 前缀
+- [ ] 活容器项目的 Canvas 卡片有更新时显示 "Run #8 · Feb 24"
+- [ ] 代码中无任何 `'running'` 作为 ContainerStatus 值
+- [ ] 代码中无任何 `monitoringTargets` 字段名
+- [ ] 代码中无任何 "Monitoring" 文案
+
+---
+
+> 本文档为 Doc 60 的增量修正指令，仅改动上述 8 个问题，不重写已正确的部分。

@@ -109,7 +109,6 @@ import { ProjectHeader, ProjectInfo } from "@/components/canvas/ProjectHeader";
 import { TopRightToolbar } from "@/components/canvas/TopRightToolbar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ActiveContainerStatusBar, ActiveContainerInfo } from '@/components/canvas/ActiveContainerStatusBar';
-import { ContainerSettingsDialog } from '@/components/canvas/ContainerSettingsDialog';
 import { CreateProjectDialog } from '@/components/canvas/CreateProjectDialog';
 import { ActivityHeatmap, formatHeatmapDate } from '@/components/canvas/ActivityHeatmap';
 
@@ -910,7 +909,6 @@ export default function Home() {
   const [projectListSearch, setProjectListSearch] = useState("");
   const [projectListFilter, setProjectListFilter] = useState<'all' | 'favorites' | 'active' | 'regular'>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [heatmapDate, setHeatmapDate] = useState<string | null>(null);
   const [showFullDesc, setShowFullDesc] = useState(false);
 
@@ -1921,25 +1919,6 @@ export default function Home() {
                     )}
                  </div>
                  
-                 <ContainerSettingsDialog
-                    open={showSettingsDialog}
-                    onOpenChange={setShowSettingsDialog}
-                    settings={{
-                        frequency: 'every_3_days',
-                        estimatedTokensPerRun: 45000,
-                        monitoringTargets: [
-                            'https://github.com/replit/replit-web',
-                            'https://twitter.com/search?q=replit'
-                        ]
-                    }}
-                    onUpdateFrequency={(freq) => {
-                        toast({ description: `Frequency updated to: ${freq}` });
-                    }}
-                    onStopContainer={() => {
-                        toast({ description: "Container stopped.", variant: "destructive" });
-                    }}
-                 />
-
                  <CreateProjectDialog 
                     open={showCreateDialog} 
                     onOpenChange={setShowCreateDialog}
@@ -2024,87 +2003,110 @@ export default function Home() {
                         <div className="ml-11">
                             <ActiveContainerStatusBar 
                                 container={{
-                                    status: (p as any).containerStatus || 'running',
+                                    status: (p as any).containerStatus || 'scheduled',
                                     frequency: 'Every 3 days',
                                     lastRunAt: p.updatedAt || p.date,
                                     nextRunAt: new Date(new Date(p.updatedAt || p.date).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-                                    lastSummary: 'Competitor A updated pricing page — new enterprise tier added.',
-                                    errorMessage: (p as any).containerStatus === 'error' ? 'Failed to fetch latest pricing data' : undefined
+                                    lastSummary: 'Competitor X updated pricing page; 2 new blog posts detected.',
+                                    errorMessage: (p as any).containerStatus === 'error' ? 'Failed to fetch latest pricing data' : undefined,
+                                    totalRuns: 8
+                                }}
+                                settings={{
+                                    frequency: 'every_3_days',
+                                    estimatedTokensPerRun: 1500,
+                                    taskSources: [
+                                        'https://competitor-a.com/pricing',
+                                        'https://competitor-b.com/blog'
+                                    ]
                                 }}
                                 onPause={() => toast({ description: "Container paused" })}
                                 onResume={() => toast({ description: "Container resumed" })}
                                 onRunNow={() => toast({ description: "Running container now..." })}
                                 onRetry={() => toast({ description: "Retrying container execution..." })}
-                                onOpenSettings={() => setShowSettingsDialog(true)}
+                                onUpdateFrequency={(freq) => toast({ description: `Frequency updated to: ${freq}` })}
+                                onStopContainer={() => toast({ description: "Container stopped.", variant: "destructive" })}
                             />
                         </div>
                     )}
 
                     {/* Canvas List */}
                     <div className="mt-8">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-sm font-medium text-foreground">
-                                    Canvases{' '}
-                                    <span className="text-muted-foreground/50 font-normal">
-                                        ({p.canvases?.length ?? 0})
-                                    </span>
-                                </h2>
-                            </div>
-                            <Button
-                                onClick={() => setActiveTab('project')}
-                                size="sm"
-                                className="gap-2"
-                            >
-                                <Plus className="w-4 h-4" /> New Canvas
-                            </Button>
-                        </div>
-
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-                            {/* Mocking Canvases if empty */}
-                            {(p.canvases && p.canvases.length > 0 ? p.canvases : [
-                                { id: 'c1', title: 'Brainstorming', summary: 'Initial ideas and concepts for ' + p.title, updatedAt: p.updatedAt || p.date, cardCount: 5, shotCount: 12, hasNewUpdates: true },
-                                { id: 'c2', title: 'Implementation Plan', summary: 'Technical details and architecture overview.', updatedAt: p.updatedAt || p.date, cardCount: 2, shotCount: 0, hasNewUpdates: false }
-                            ]).map((canvas: any) => (
-                                <div
-                                    key={canvas.id}
-                                    className="group rounded-xl border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all flex flex-col h-[150px]"
-                                    onClick={() => setActiveTab('project')}
-                                >
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-sm">🎨</span>
-                                        <h3 className="text-sm font-medium text-foreground truncate flex-1 group-hover:text-primary transition-colors">
-                                            {canvas.title}
-                                        </h3>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">
-                                        {canvas.summary}
-                                    </p>
-                                    
-                                    <div className="text-xs text-muted-foreground/50">
-                                        {canvas.cardCount || 0} {(canvas.cardCount || 0) === 1 ? 'card' : 'cards'} · {canvas.shotCount || 0} {(canvas.shotCount || 0) === 1 ? 'shot' : 'shots'}
+                        {(() => {
+                            const canvasList = p.canvases && p.canvases.length > 0 ? p.canvases : [
+                                { id: 'c1', title: 'Brainstorming', summary: 'Initial ideas and concepts for ' + p.title, updatedAt: p.updatedAt || p.date, cardCount: 5, shotCount: 12, hasNewUpdates: true, lastRunNumber: 8 },
+                                { id: 'c2', title: 'Interview Questions', summary: 'Technical details and architecture overview.', updatedAt: p.updatedAt || p.date, cardCount: 2, shotCount: 0, hasNewUpdates: false }
+                            ];
+                            
+                            return (
+                                <>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <h2 className="text-sm font-medium text-foreground">
+                                                Canvases{' '}
+                                                <span className="text-muted-foreground/50 font-normal">
+                                                    ({canvasList.length})
+                                                </span>
+                                            </h2>
+                                        </div>
+                                        <Button
+                                            onClick={() => setActiveTab('project')}
+                                            size="sm"
+                                            className="gap-2"
+                                        >
+                                            <Plus className="w-4 h-4" /> New Canvas
+                                        </Button>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                        {p.hasActiveContainer && canvas.hasNewUpdates && (
-                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
-                                        )}
-                                        <span className={`text-xs ${
-                                            p.hasActiveContainer && canvas.hasNewUpdates
-                                                ? 'text-red-400'
-                                                : 'text-muted-foreground/40'
-                                        }`}>
-                                            Updated {(() => {
-                                                const d = new Date(canvas.updatedAt);
-                                                const month = d.getMonth() + 1;
-                                                const day = d.getDate();
-                                                return `${month}/${day}`;
-                                            })()}
-                                        </span>
+                                    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+                                        {canvasList.map((canvas: any) => {
+                                            const showRedDot = p.hasActiveContainer && canvas.hasNewUpdates;
+                                            return (
+                                                <div
+                                                    key={canvas.id}
+                                                    className="group rounded-xl border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all flex flex-col h-[150px]"
+                                                    onClick={() => setActiveTab('project')}
+                                                >
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <h3 className="text-sm font-medium text-foreground truncate flex-1 group-hover:text-primary transition-colors">
+                                                            {canvas.title}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">
+                                                        {canvas.summary}
+                                                    </p>
+                                                    
+                                                    <div className="text-[11px] text-muted-foreground/50">
+                                                        {canvas.cardCount || 0} {(canvas.cardCount || 0) === 1 ? 'card' : 'cards'} · {canvas.shotCount || 0} {(canvas.shotCount || 0) === 1 ? 'shot' : 'shots'}
+                                                    </div>
+
+                                                    <div className="flex items-center mt-1">
+                                                        <span className="flex items-center gap-1.5 text-[11px]">
+                                                            {showRedDot && (
+                                                                <>
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                                                                    <span className="text-muted-foreground/80">
+                                                                        Run #{canvas.lastRunNumber}
+                                                                    </span>
+                                                                    <span className="text-muted-foreground/40">·</span>
+                                                                </>
+                                                            )}
+                                                            <span className={showRedDot ? 'text-red-400' : 'text-muted-foreground/50'}>
+                                                                Updated {(() => {
+                                                                    const d = new Date(canvas.updatedAt);
+                                                                    const month = d.getMonth() + 1;
+                                                                    const day = d.getDate();
+                                                                    return `${month}/${day}`;
+                                                                })()}
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 </div>
             </div>
