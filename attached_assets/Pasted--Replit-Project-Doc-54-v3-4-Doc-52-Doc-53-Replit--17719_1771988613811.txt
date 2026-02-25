@@ -1,0 +1,423 @@
+# Replit 指令：Project 版块二次优化
+
+> 基于 Doc 54（v3）的 4 条优化建议
+> 关联：Doc 52（卡片简化方案）、Doc 53（首轮 Replit 指令，已落地）
+> Tech stack: React + TypeScript + Tailwind CSS + Radix UI + Framer Motion
+> Theme: Dark mode（使用现有 design tokens）
+
+---
+
+## 变更范围
+
+仅改造 Projects 页面的操作栏区域，新增热度日历组件。不动卡片本身、不动 Project Detail 页面、不动其他任何版块。
+
+1. **操作栏重构** — 搜索 + 四维筛选 Tab + 新建按钮，两段式布局
+2. **+ New Project 按钮** — 操作栏右侧新增创建入口
+3. **项目总数角标** — 标题旁显示动态计数
+4. **热度日历** — 操作栏与卡片网格之间插入 Activity Heatmap
+
+不动的东西：卡片样式、卡片结构、Project Detail 页面、左侧导航栏、顶部导航、Studio、Home、AIChat、任何业务逻辑/API 调用。
+
+---
+
+## 一、操作栏重构
+
+### 改前
+
+当前搜索框和 All / Favorites Tab 之间有大段空白，缺少项目类型筛选，无新建入口。
+
+### 改后
+
+```
+🔍 Search...  | All  ★ Favorites  ● Active  Regular              [+ New Project]
+```
+
+两段式布局：左侧搜索 + 筛选，右侧新建按钮。
+
+### 具体操作
+
+找到 Projects 页面中搜索框和筛选 Tab 所在的容器，替换为以下结构：
+
+```tsx
+<div className="flex items-center gap-3 mb-4">
+  {/* 搜索框 - 固定宽度 */}
+  <div className="relative w-[240px] shrink-0">
+    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+    <input
+      type="text"
+      placeholder="Search projects..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      className="w-full pl-9 pr-3 py-1.5 text-sm rounded-md
+                 bg-muted/50 border border-border
+                 text-foreground placeholder:text-muted-foreground/50
+                 focus:outline-none focus:ring-1 focus:ring-primary/50"
+    />
+  </div>
+
+  {/* 筛选 Tab 组 - 紧跟搜索框 */}
+  <div className="flex items-center gap-1">
+    {[
+      { key: 'all', label: 'All' },
+      { key: 'favorites', label: '★ Favorites' },
+      { key: 'active', label: '● Active' },
+      { key: 'regular', label: 'Regular' },
+    ].map((tab) => (
+      <button
+        key={tab.key}
+        className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+          filter === tab.key
+            ? 'bg-primary text-primary-foreground'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+        }`}
+        onClick={() => setFilter(tab.key as FilterType)}
+      >
+        {tab.key === 'active' && (
+          <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5 align-middle" />
+        )}
+        {tab.key === 'active' ? 'Active' : tab.label}
+      </button>
+    ))}
+  </div>
+
+  {/* 新建按钮 - 推到最右 */}
+  <button
+    onClick={() => setShowCreateDialog(true)}
+    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium
+               bg-primary text-primary-foreground rounded-md
+               hover:bg-primary/90 transition-colors shrink-0"
+  >
+    + New Project
+  </button>
+</div>
+```
+
+### 筛选逻辑
+
+```typescript
+type FilterType = 'all' | 'favorites' | 'active' | 'regular';
+
+function filterProjects(projects: Project[], filter: FilterType, searchQuery: string): Project[] {
+  let result = projects;
+
+  // Tab 筛选
+  switch (filter) {
+    case 'favorites':
+      result = result.filter(p => p.isFavorite);
+      break;
+    case 'active':
+      result = result.filter(p => p.hasActiveContainer);
+      break;
+    case 'regular':
+      result = result.filter(p => !p.hasActiveContainer);
+      break;
+  }
+
+  // 搜索叠加
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    result = result.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      p.description.toLowerCase().includes(q)
+    );
+  }
+
+  // 默认按更新时间降序
+  return result.sort((a, b) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
+}
+```
+
+### Active Tab 的绿色圆点
+
+`● Active` Tab 前的绿色圆点是静态的（不带呼吸动画），与卡片上的脉搏灯视觉呼应但不重复动画效果。选中态时圆点颜色不变（始终 `bg-green-500`），文字跟随 Tab 选中样式变化。
+
+---
+
+## 二、新建项目弹窗
+
+点击 `+ New Project` 后弹出轻量创建弹窗，不跳转页面。
+
+```tsx
+<Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+  <DialogContent className="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle>New Project</DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4 py-2">
+      <div>
+        <label className="text-sm text-muted-foreground mb-1.5 block">Project name</label>
+        <input
+          type="text"
+          value={newProjectName}
+          onChange={(e) => setNewProjectName(e.target.value)}
+          placeholder="e.g. Competitor Analysis"
+          className="w-full px-3 py-2 text-sm rounded-md
+                     bg-muted/50 border border-border text-foreground
+                     placeholder:text-muted-foreground/50
+                     focus:outline-none focus:ring-1 focus:ring-primary/50"
+          autoFocus
+        />
+      </div>
+    </div>
+    <DialogFooter>
+      <button
+        onClick={() => setShowCreateDialog(false)}
+        className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        onClick={handleCreateProject}
+        disabled={!newProjectName.trim()}
+        className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground
+                   rounded-md hover:bg-primary/90 transition-colors
+                   disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Create
+      </button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+```
+
+弹窗只有一个字段：项目名称。保持极简，不加类型选择、描述等额外字段。创建后跳转到新项目的 Detail 页面。
+
+---
+
+## 三、项目总数角标
+
+在 "Projects" 页面标题后追加动态计数。
+
+### 改前
+
+```
+Projects
+```
+
+### 改后
+
+```tsx
+<h1 className="text-lg font-semibold text-foreground">
+  Projects{' '}
+  <span className="text-sm font-normal text-muted-foreground">
+    ({displayedProjects.length})
+  </span>
+</h1>
+```
+
+- 数字跟随筛选 + 搜索 + 日历筛选实时变化
+- 样式：`text-muted-foreground text-sm font-normal`，不抢标题权重
+
+---
+
+## 四、热度日历（Activity Heatmap）
+
+在操作栏与卡片网格之间插入热度日历组件。
+
+### 位置
+
+```
+Projects (7)
+🔍 Search...  | All  ★ Favorites  ● Active  Regular    [+ New Project]
+┌─── 热度日历 ──────────────────────────────────────────────────────┐
+│ Mon  ░░▓░░░░▓▓░░░░░▓░░░▓▓▓░░░░░▓░░░░░▓▓░░░░░▓░░░▓▓▓░░░░░▓░░  │
+│ Wed  ░░░▓░░░░░▓░░░░░░▓░░░░▓░░░░░░▓░░░░░░▓░░░░░░▓░░░░▓░░░░░░▓  │
+│ Fri  ░▓▓░░░░▓░░░░░▓▓░░░░▓░░░░░▓▓░░░░▓░░░░░▓▓░░░░▓░░░░░▓▓░░░  │
+│       Dec                Jan                 Feb                  │
+└───────────────────────────────────────────────────────────────────┘
+[卡片网格]
+```
+
+### 数据结构
+
+```typescript
+interface DayActivity {
+  date: string;           // "2026-02-20"
+  updateCount: number;    // 当天所有项目的更新总次数
+  projectIds: string[];   // 当天有更新的项目 ID 列表
+}
+
+// Mock 数据：生成最近 84 天（12 周）的随机活动数据
+function generateMockHeatmapData(projects: Project[]): DayActivity[] {
+  const days: DayActivity[] = [];
+  const now = new Date();
+  for (let i = 83; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    const updateCount = Math.random() > 0.6 ? Math.floor(Math.random() * 8) : 0;
+    const activeProjects = updateCount > 0
+      ? projects.slice(0, Math.min(updateCount, projects.length)).map(p => p.id)
+      : [];
+    days.push({ date: dateStr, updateCount, projectIds: activeProjects });
+  }
+  return days;
+}
+```
+
+### 色阶
+
+复用脉搏灯绿色（`#22c55e`），通过透明度区分强度：
+
+```css
+.heatmap-cell { width: 10px; height: 10px; border-radius: 2px; }
+.heatmap-cell-0 { background: hsl(0 0% 100% / 0.05); }
+.heatmap-cell-1 { background: hsl(142 71% 45% / 0.3); }   /* 1-2 次 */
+.heatmap-cell-2 { background: hsl(142 71% 45% / 0.55); }  /* 3-5 次 */
+.heatmap-cell-3 { background: hsl(142 71% 45% / 0.85); }  /* 6+ 次 */
+```
+
+### 组件实现
+
+```tsx
+function ActivityHeatmap({
+  data,
+  selectedDate,
+  onSelectDate,
+}: {
+  data: DayActivity[];
+  selectedDate: string | null;
+  onSelectDate: (date: string | null) => void;
+}) {
+  // 按周分组，每列 = 一周（7 天）
+  const weeks = useMemo(() => {
+    const result: DayActivity[][] = [];
+    for (let i = 0; i < data.length; i += 7) {
+      result.push(data.slice(i, i + 7));
+    }
+    return result;
+  }, [data]);
+
+  function getCellLevel(count: number): number {
+    if (count === 0) return 0;
+    if (count <= 2) return 1;
+    if (count <= 5) return 2;
+    return 3;
+  }
+
+  return (
+    <div className="mb-4">
+      <div className="flex gap-[2px]">
+        {/* 行标签 */}
+        <div className="flex flex-col justify-between text-[10px] text-muted-foreground/50 pr-1 py-[1px]">
+          <span>Mon</span>
+          <span>Wed</span>
+          <span>Fri</span>
+        </div>
+        {/* 色块网格 */}
+        <div className="flex gap-[2px]">
+          {weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-[2px]">
+              {week.map((day) => (
+                <div
+                  key={day.date}
+                  className={`heatmap-cell heatmap-cell-${getCellLevel(day.updateCount)}
+                    ${day.updateCount > 0 ? 'cursor-pointer' : ''}
+                    ${selectedDate === day.date ? 'ring-1 ring-white' : ''}`}
+                  onClick={() => {
+                    if (day.updateCount === 0) return;
+                    onSelectDate(selectedDate === day.date ? null : day.date);
+                  }}
+                  title={`${formatHeatmapDate(day.date)}: ${day.updateCount} updates in ${day.projectIds.length} projects`}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* 月份标签 */}
+      <div className="flex text-[10px] text-muted-foreground/40 mt-1 ml-8">
+        {/* 根据 data 中的月份变化点渲染月份标签 */}
+      </div>
+    </div>
+  );
+}
+```
+
+### 日期筛选交互
+
+日期筛选与 Tab 筛选可叠加。选中日期时：
+
+```tsx
+{selectedDate && (
+  <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+    <span>Showing projects updated on {formatHeatmapDate(selectedDate)}</span>
+    <button
+      onClick={() => setSelectedDate(null)}
+      className="text-muted-foreground/60 hover:text-foreground transition-colors"
+    >
+      ✕
+    </button>
+  </div>
+)}
+```
+
+在筛选逻辑中增加日期维度：
+
+```typescript
+// 在 filterProjects 函数中追加
+if (selectedDate) {
+  const dayData = heatmapData.find(d => d.date === selectedDate);
+  if (dayData) {
+    result = result.filter(p => dayData.projectIds.includes(p.id));
+  }
+}
+```
+
+---
+
+## 五、不要动的东西
+
+- [ ] 卡片样式和结构（Doc 53 已落地，不改）
+- [ ] Project Detail 页面（Doc 53 已落地，不改）
+- [ ] 左侧导航栏 — 不动
+- [ ] 顶部导航 — 不动
+- [ ] Home 页面 — 不动
+- [ ] Studio / AIChat — 不动
+- [ ] 任何业务逻辑/API 调用 — 不动
+
+---
+
+## 六、实现顺序
+
+按以下顺序执行，每步完成后应该是可运行状态：
+
+**Step 1: 操作栏重构**
+- 搜索框固定 240px 宽度
+- 四个筛选 Tab（All / Favorites / Active / Regular）紧跟搜索框
+- `+ New Project` 按钮推到最右侧
+- 实现 `FilterType` 和 `filterProjects` 函数
+
+**Step 2: 新建项目弹窗**
+- 点击 `+ New Project` 弹出 Dialog
+- 只有项目名称一个字段
+- 创建后跳转到新项目 Detail 页面
+
+**Step 3: 项目总数角标**
+- 标题改为 `Projects (N)`
+- N 跟随筛选 + 搜索实时变化
+
+**Step 4: 热度日历**
+- 在全局 CSS 中添加 `.heatmap-cell` 系列样式
+- 生成 mock 热度数据（84 天）
+- 实现 `ActivityHeatmap` 组件
+- 插入到操作栏与卡片网格之间
+- 实现点击色块的日期筛选（与 Tab 筛选叠加）
+- 实现选中日期的提示条（含 ✕ 清除按钮）
+
+---
+
+## 七、重要提醒
+
+- 使用现有 design tokens，不硬编码颜色
+- 热度日历的绿色色阶使用 HSL 值（与脉搏灯同色系），在 CSS 中定义
+- 热度日历整体高度控制在 ~50px，不挤压卡片区域
+- 所有筛选操作（Tab、日历、搜索）均可一键清除，保持交互可逆
+- 不引入排序功能——搜索 + 筛选 + 热度日历已覆盖项目定位需求
+
+---
+
+*文档创建：2026-02-25*
+*基于 Doc 54（v3），仅改造 Projects 页面操作栏和热度日历*

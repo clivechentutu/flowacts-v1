@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Shell } from "@/components/layout/Shell";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { TaskNavigation } from "@/components/layout/TaskNavigation";
@@ -108,6 +108,8 @@ import { PageTab } from "@/components/canvas/PageTabNav";
 import { ProjectHeader, ProjectInfo } from "@/components/canvas/ProjectHeader";
 import { TopRightToolbar } from "@/components/canvas/TopRightToolbar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CreateProjectDialog } from '@/components/canvas/CreateProjectDialog';
+import { ActivityHeatmap } from '@/components/canvas/ActivityHeatmap';
 
 interface PromptCard {
   id: string;
@@ -904,7 +906,9 @@ export default function Home() {
 
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [projectListSearch, setProjectListSearch] = useState("");
-  const [projectListFilter, setProjectListFilter] = useState<'all' | 'favorites'>('all');
+  const [projectListFilter, setProjectListFilter] = useState<'all' | 'favorites' | 'active' | 'regular'>('all');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [heatmapDate, setHeatmapDate] = useState<string | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -1726,60 +1730,128 @@ export default function Home() {
           </div>
         );
       case 'projects-list':
+          // 提前过滤计算热度图数据和展示的列表，以便复用数量
+          const displayedProjects = HISTORY_TASKS
+            .sort((a, b) => new Date(b.updatedAt || b.date).getTime() - new Date(a.updatedAt || a.date).getTime())
+            .filter(task => {
+                const matchesSearch = task.title.toLowerCase().includes(projectListSearch.toLowerCase()) || 
+                                      task.description.toLowerCase().includes(projectListSearch.toLowerCase());
+                
+                let matchesFilter = true;
+                if (projectListFilter === 'favorites') matchesFilter = !!task.isFavorite;
+                if (projectListFilter === 'active') matchesFilter = !!task.hasActiveContainer;
+                if (projectListFilter === 'regular') matchesFilter = !task.hasActiveContainer;
+
+                let matchesDate = true;
+                if (heatmapDate) {
+                    const taskDate = (task.updatedAt || task.date).split('T')[0];
+                    matchesDate = taskDate === heatmapDate;
+                }
+
+                return matchesSearch && matchesFilter && matchesDate;
+            });
+
+          // Mock heatmap data based on HISTORY_TASKS (just a simple generator for visual demo)
+          const heatmapData = useMemo(() => {
+            const days: import('@/components/canvas/ActivityHeatmap').DayActivity[] = [];
+            const now = new Date();
+            for (let i = 83; i >= 0; i--) {
+              const date = new Date(now);
+              date.setDate(date.getDate() - i);
+              const dateStr = date.toISOString().split('T')[0];
+              
+              // 找到当天有更新的项目
+              const activeProjects = HISTORY_TASKS.filter(p => (p.updatedAt || p.date).split('T')[0] === dateStr);
+              const updateCount = activeProjects.length > 0 ? activeProjects.length + Math.floor(Math.random() * 3) : (Math.random() > 0.8 ? 1 : 0);
+              
+              days.push({ 
+                date: dateStr, 
+                updateCount, 
+                projectIds: activeProjects.map(p => p.id) 
+              });
+            }
+            return days;
+          }, []);
+
           return (
              <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
                  <div className="flex items-center gap-2 mb-8">
                     <div className="p-2 bg-primary/10 rounded-lg">
                       <Layers className="w-6 h-6 text-primary" />
                     </div>
-                    <h2 className="text-2xl font-bold tracking-tight">Projects</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">
+                        Projects{' '}
+                        <span className="text-sm font-normal text-muted-foreground">
+                            ({displayedProjects.length})
+                        </span>
+                    </h2>
                  </div>
 
                  {/* Toolbar */}
-                 <div className="flex items-center gap-4 mb-6">
-                    <div className="relative flex-1 max-w-md">
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="relative w-[240px] shrink-0">
                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                        <Input 
                          placeholder="Search projects..." 
                          value={projectListSearch}
                          onChange={(e) => setProjectListSearch(e.target.value)}
-                         className="pl-9 bg-muted/50 border-border/50 focus:bg-background transition-all"
+                         className="w-full pl-9 pr-3 py-1.5 text-sm rounded-md bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
                        />
                     </div>
-                    <div className="flex bg-muted/50 p-0.5 rounded-lg shrink-0">
-                        <button 
-                            onClick={() => setProjectListFilter('all')}
-                            className={cn(
-                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
-                                projectListFilter === 'all' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                    
+                    <div className="flex items-center gap-1">
+                        {[
+                          { key: 'all', label: 'All' },
+                          { key: 'favorites', label: '★ Favorites' },
+                          { key: 'active', label: '● Active' },
+                          { key: 'regular', label: 'Regular' },
+                        ].map((tab) => (
+                          <button
+                            key={tab.key}
+                            className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                              projectListFilter === tab.key
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                            onClick={() => setProjectListFilter(tab.key as any)}
+                          >
+                            {tab.key === 'active' && (
+                              <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1.5 align-middle" />
                             )}
-                        >
-                            All
-                        </button>
-                        <button 
-                            onClick={() => setProjectListFilter('favorites')}
-                            className={cn(
-                                "px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1",
-                                projectListFilter === 'favorites' ? "bg-background shadow-sm text-amber-500" : "text-muted-foreground hover:text-foreground"
-                            )}
-                        >
-                            <Star className="w-3 h-3 fill-current" />
-                            Favorites
-                        </button>
+                            {tab.key === 'active' ? 'Active' : tab.label}
+                          </button>
+                        ))}
                     </div>
+
+                    <button
+                        onClick={() => setShowCreateDialog(true)}
+                        className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shrink-0"
+                    >
+                        + New Project
+                    </button>
                  </div>
+
+                 <ActivityHeatmap 
+                    data={heatmapData} 
+                    selectedDate={heatmapDate} 
+                    onSelectDate={setHeatmapDate} 
+                 />
+
+                 {heatmapDate && (
+                  <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+                    <span>Showing projects updated on {import('@/components/canvas/ActivityHeatmap').then(m => m.formatHeatmapDate(heatmapDate)).catch(() => heatmapDate)}</span>
+                    <button
+                      onClick={() => setHeatmapDate(null)}
+                      className="text-muted-foreground/60 hover:text-foreground transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                 )}
 
                  {/* Grid */}
                  <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
-                    {HISTORY_TASKS
-                        .sort((a, b) => new Date(b.updatedAt || b.date).getTime() - new Date(a.updatedAt || a.date).getTime())
-                        .filter(task => {
-                            const matchesSearch = task.title.toLowerCase().includes(projectListSearch.toLowerCase()) || 
-                                                  task.description.toLowerCase().includes(projectListSearch.toLowerCase());
-                            const matchesFilter = projectListFilter === 'all' || task.isFavorite;
-                            return matchesSearch && matchesFilter;
-                        })
-                        .map(task => (
+                    {displayedProjects.map(task => (
                         <div 
                             key={task.id} 
                             onClick={() => {
@@ -1836,12 +1908,7 @@ export default function Home() {
                             </div>
                         </div>
                     ))}
-                    {HISTORY_TASKS.filter(task => {
-                        const matchesSearch = task.title.toLowerCase().includes(projectListSearch.toLowerCase()) || 
-                                              task.description.toLowerCase().includes(projectListSearch.toLowerCase());
-                        const matchesFilter = projectListFilter === 'all' || task.isFavorite;
-                        return matchesSearch && matchesFilter;
-                    }).length === 0 && (
+                    {displayedProjects.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center py-20 text-muted-foreground">
                             <Search className="w-10 h-10 mb-4 opacity-20" />
                             <p className="font-medium">No projects found</p>
@@ -1849,6 +1916,15 @@ export default function Home() {
                         </div>
                     )}
                  </div>
+                 
+                 <CreateProjectDialog 
+                    open={showCreateDialog} 
+                    onOpenChange={setShowCreateDialog}
+                    onCreate={(name) => {
+                      toast({ title: "Project Created", description: `Successfully created "${name}"` });
+                      // Add navigation to new project if needed
+                    }}
+                 />
               </div>
           );
       case 'project-detail':
