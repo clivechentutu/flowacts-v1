@@ -1,0 +1,530 @@
+# Replit 指令：Project Detail 页面 Phase 1 优化
+
+> 基于 Doc 56（内页分析）+ Doc 57（Phase 1 设计细节）
+> 关联：Doc 52（卡片简化，含现有 Detail 页面定义）、Doc 55（列表页指令，已落地）
+> Tech stack: React + TypeScript + Tailwind CSS + Radix UI + Framer Motion
+> Theme: Dark mode（使用现有 design tokens）
+
+---
+
+## 变更范围
+
+仅改造 Project Detail 页面（`/project/:id`）。三个改动：
+
+1. **页面头部重构** — 移除"About this project"独立区域，描述合并到标题下方
+2. **活容器状态条** — 仅活容器项目显示，含运行状态 + 变化摘要
+3. **Canvas 卡片增强** — 增加内容量指标 + 变化红点
+
+不动的东西：Projects 列表页、Project 卡片、左侧导航栏、顶部导航、Home、Studio、AIChat、`⋯` 更多操作菜单、任何业务逻辑/API 调用。
+
+---
+
+## 一、页面头部重构
+
+### 改前
+
+当前 Detail 页面头部有三个独立区域，层级冗余：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ← Back to Projects    ● 项目标题                          ★ ⋯  │
+├─────────────────────────────────────────────────────────────────┤
+│  项目描述文字（完整显示）                                         │
+│  👤 3 members · Created Jan 10 · Updated Feb 20                │
+├─────────────────────────────────────────────────────────────────┤
+│  Canvases                                          [+ New]      │
+│  ...                                                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 改后
+
+合并为一个紧凑的标题区，去掉分隔线和"About this project"标签：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ← ● 项目标题                              [★ Favorited] [⋯]   │
+│  项目描述文字（最多 3 行，超出 Show more 展开）                    │
+│  👤 3 · Created Feb 20 · Updated Feb 24                        │
+│                                                                 │
+│  （活容器状态条，仅活容器项目显示，见第二节）                       │
+│                                                                 │
+│  Canvases (2)                                  [+ New Canvas]   │
+│  ...                                                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 具体操作
+
+找到 Project Detail 页面组件，将头部区域替换为以下结构：
+
+```tsx
+{/* 标题行 */}
+<div className="flex items-center gap-3 mb-1">
+  <button
+    onClick={() => navigate('/projects')}
+    className="text-muted-foreground hover:text-foreground transition-colors"
+  >
+    ←
+  </button>
+  {project.hasActiveContainer && (
+    <span className={`pulse-dot ${
+      project.containerStatus === 'paused' ? 'pulse-dot-paused' : ''
+    }`} />
+  )}
+  <h1 className="text-lg font-semibold text-foreground truncate flex-1">
+    {project.title}
+  </h1>
+  <button
+    className={`shrink-0 text-base transition-colors ${
+      project.isFavorite
+        ? 'text-yellow-400'
+        : 'text-muted-foreground/30 hover:text-muted-foreground/60'
+    }`}
+    onClick={() => onToggleFavorite(project.id)}
+  >
+    {project.isFavorite ? '★' : '☆'}
+  </button>
+  <DropdownMenu>
+    {/* 保持现有 ⋯ 菜单不变 */}
+  </DropdownMenu>
+</div>
+
+{/* 描述 */}
+<div className="mb-1">
+  <p className={`text-sm text-muted-foreground ${
+    !showFullDesc ? 'line-clamp-3' : ''
+  }`}>
+    {project.description}
+  </p>
+  {project.description.length > 150 && (
+    <button
+      onClick={() => setShowFullDesc(!showFullDesc)}
+      className="text-xs text-primary hover:text-primary/80 mt-0.5"
+    >
+      {showFullDesc ? 'Show less' : 'Show more'}
+    </button>
+  )}
+</div>
+
+{/* 元信息行 */}
+<div className="text-xs text-muted-foreground/60 mb-4">
+  👤 {project.memberCount} · Created {formatDate(project.createdAt)} · Updated {formatDate(project.updatedAt)}
+</div>
+```
+
+### 视觉层级说明
+
+- 标题行：`text-lg font-semibold`，页面最高权重
+- 描述：`text-sm text-muted-foreground`，次级信息，不抢标题
+- 元信息：`text-xs text-muted-foreground/60`，最低权重，扫一眼即可
+- 三者之间用 `mb-1` 紧凑排列，不加分隔线，靠字号和颜色区分层级
+
+---
+
+## 二、活容器状态条
+
+仅当 `project.hasActiveContainer === true` 时渲染。位于元信息行下方、Canvases 标题上方。
+
+### 数据结构
+
+```typescript
+type ContainerStatus = 'running' | 'paused' | 'error';
+
+interface ActiveContainerInfo {
+  status: ContainerStatus;
+  frequency: string;          // "Every 3 days"
+  lastRunAt: string;          // ISO date
+  nextRunAt: string;          // ISO date（用于 tooltip）
+  lastSummary: string;        // Agent 生成的一句话变化摘要
+  errorMessage?: string;      // 仅 error 状态
+}
+```
+
+### 状态条样式映射
+
+```typescript
+const statusStyles: Record<ContainerStatus, {
+  bg: string; border: string; dotColor: string; label: string; labelColor: string;
+}> = {
+  running: {
+    bg: 'bg-green-500/5',
+    border: 'border-green-500/20',
+    dotColor: 'bg-green-500',
+    label: 'Running',
+    labelColor: 'text-green-400',
+  },
+  paused: {
+    bg: 'bg-muted/30',
+    border: 'border-border',
+    dotColor: 'bg-muted-foreground/40',
+    label: 'Paused',
+    labelColor: 'text-muted-foreground',
+  },
+  error: {
+    bg: 'bg-red-500/5',
+    border: 'border-red-500/20',
+    dotColor: 'bg-red-500',
+    label: 'Error',
+    labelColor: 'text-red-400',
+  },
+};
+```
+
+### 组件实现
+
+```tsx
+function ActiveContainerStatusBar({
+  container,
+  onPause,
+  onResume,
+  onRunNow,
+  onRetry,
+}: {
+  container: ActiveContainerInfo;
+  onPause: () => void;
+  onResume: () => void;
+  onRunNow: () => void;
+  onRetry: () => void;
+}) {
+  const style = statusStyles[container.status];
+
+  return (
+    <div
+      className={`${style.bg} border ${style.border} rounded-lg px-4 py-3 mb-4`}
+      title={container.status === 'running'
+        ? `Next run: ${formatDateTime(container.nextRunAt)}`
+        : undefined}
+    >
+      {/* 第一行：状态 + 频率 + 上次执行 + 操作按钮 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm">
+          <span className={`w-2 h-2 rounded-full ${style.dotColor} ${
+            container.status === 'running' ? 'animate-pulse' : ''
+          }`} />
+          <span className={`font-medium ${style.labelColor}`}>
+            {style.label}
+          </span>
+          {container.status !== 'error' && (
+            <>
+              <span className="text-muted-foreground/40">·</span>
+              <span className="text-muted-foreground/60">{container.frequency}</span>
+            </>
+          )}
+          <span className="text-muted-foreground/40">·</span>
+          <span className="text-muted-foreground/60">
+            {container.status === 'error'
+              ? `Last attempt failed: ${formatDate(container.lastRunAt)}`
+              : `Last: ${formatDate(container.lastRunAt)}`}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {container.status === 'running' && (
+            <>
+              <button onClick={onPause}
+                className="px-2.5 py-1 text-xs text-muted-foreground
+                           hover:text-foreground border border-border
+                           rounded-md transition-colors">
+                Pause
+              </button>
+              <button onClick={onRunNow}
+                className="px-2.5 py-1 text-xs bg-green-500/20 text-green-400
+                           hover:bg-green-500/30 rounded-md transition-colors">
+                Run Now
+              </button>
+            </>
+          )}
+          {container.status === 'paused' && (
+            <>
+              <button onClick={onResume}
+                className="px-2.5 py-1 text-xs text-muted-foreground
+                           hover:text-foreground border border-border
+                           rounded-md transition-colors">
+                Resume
+              </button>
+              <button onClick={onRunNow}
+                className="px-2.5 py-1 text-xs bg-primary/20 text-primary
+                           hover:bg-primary/30 rounded-md transition-colors">
+                Run Now
+              </button>
+            </>
+          )}
+          {container.status === 'error' && (
+            <button onClick={onRetry}
+              className="px-2.5 py-1 text-xs bg-red-500/20 text-red-400
+                         hover:bg-red-500/30 rounded-md transition-colors">
+              Retry
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 第二行：变化摘要 */}
+      <p className={`text-sm mt-1.5 ${
+        container.status === 'paused'
+          ? 'text-muted-foreground/40'
+          : 'text-muted-foreground'
+      }`}>
+        {container.status === 'error'
+          ? container.errorMessage
+          : `"${container.lastSummary}"`}
+      </p>
+    </div>
+  );
+}
+```
+
+### Mock 数据
+
+Phase 1 用 mock 数据展示 UI，不接真实 Agent 执行结果：
+
+```typescript
+function getMockContainerInfo(project: Project): ActiveContainerInfo | null {
+  if (!project.hasActiveContainer) return null;
+  return {
+    status: 'running',
+    frequency: 'Every 3 days',
+    lastRunAt: project.updatedAt,
+    nextRunAt: new Date(
+      new Date(project.updatedAt).getTime() + 3 * 24 * 60 * 60 * 1000
+    ).toISOString(),
+    lastSummary: 'Competitor A updated pricing page — new enterprise tier added.',
+  };
+}
+```
+
+### 脉搏灯 Paused 状态样式
+
+在全局 CSS 中追加（不改动现有 `.pulse-dot`）：
+
+```css
+.pulse-dot-paused {
+  animation: none;
+  background-color: hsl(0 0% 60% / 0.4);
+}
+```
+
+活容器项目标题前的脉搏灯：Running 时正常呼吸动画，Paused 时灰色静止，Error 时红色静止（`bg-red-500`，无动画）。
+
+### 状态条的视觉层级定位
+
+状态条在页面中的视觉权重介于标题区和 Canvas 列表之间：
+
+- 标题区：最高权重（`text-lg font-semibold`）
+- 状态条：中等权重（`text-sm`，低透明度背景色框）
+- Canvas 列表：操作区域（卡片交互）
+
+状态条用极淡背景色 + 细边框圈定，不用粗边框或阴影，避免抢夺视觉焦点。用户扫一眼获取状态信息后，注意力自然下移到 Canvas 卡片。
+
+---
+
+## 三、Canvas 卡片增强
+
+在现有 Canvas 卡片（Doc 52 定义）基础上，增加两个信息：内容量指标 + 变化红点。
+
+### 改前
+
+```
+┌─────────────────────┐
+│ 🎨 Canvas 标题       │
+│ 内容摘要最多两行     │
+│ 截断显示...         │
+│                     │
+│ Updated 2/20        │
+└─────────────────────┘
+```
+
+### 改后
+
+```
+┌─────────────────────┐
+│ 🎨 Canvas 标题       │
+│ 内容摘要最多两行     │
+│ 截断显示...         │
+│                     │
+│ 5 cards · 12 shots  │  ← 新增
+│ 🔴 Updated          │  ← 新增（仅活容器项目的 Canvas）
+│ Updated 2/20        │
+└─────────────────────┘
+```
+
+### 数据结构扩展
+
+```typescript
+interface Canvas {
+  id: string;
+  title: string;
+  description: string;
+  updatedAt: string;
+  // 新增
+  cardCount: number;
+  shotCount: number;
+  hasNewUpdates: boolean;  // 布尔值，不做具体数字
+}
+```
+
+### 组件实现
+
+找到现有 Canvas 卡片组件，在底部信息区域增加两行：
+
+```tsx
+function CanvasCard({
+  canvas,
+  isActiveProject,
+}: {
+  canvas: Canvas;
+  isActiveProject: boolean;
+}) {
+  return (
+    <div
+      className="rounded-lg border border-border bg-card p-4
+                 hover:border-primary/40 hover:shadow-sm
+                 cursor-pointer transition-all"
+      onClick={() => navigate(`/canvas/${canvas.id}`)}
+    >
+      {/* 标题 */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm">🎨</span>
+        <h3 className="text-sm font-medium text-foreground truncate">
+          {canvas.title}
+        </h3>
+      </div>
+
+      {/* 描述 */}
+      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+        {canvas.description}
+      </p>
+
+      {/* 内容量指标 — 所有项目都显示 */}
+      <div className="text-xs text-muted-foreground/50 mb-1">
+        {canvas.cardCount} {canvas.cardCount === 1 ? 'card' : 'cards'} · {canvas.shotCount} {canvas.shotCount === 1 ? 'shot' : 'shots'}
+      </div>
+
+      {/* 变化红点 — 仅活容器项目且有更新时显示 */}
+      {isActiveProject && canvas.hasNewUpdates && (
+        <div className="flex items-center gap-1.5 mb-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          <span className="text-xs text-red-400">Updated</span>
+        </div>
+      )}
+
+      {/* 更新日期 */}
+      <div className="text-xs text-muted-foreground/40">
+        Updated {formatDate(canvas.updatedAt)}
+      </div>
+    </div>
+  );
+}
+```
+
+### Canvas 列表标题增加计数
+
+```tsx
+<div className="flex items-center justify-between mb-3">
+  <h2 className="text-sm font-medium text-foreground">
+    Canvases{' '}
+    <span className="text-muted-foreground/50 font-normal">
+      ({project.canvases.length})
+    </span>
+  </h2>
+  <button
+    onClick={() => setShowCreateCanvasDialog(true)}
+    className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium
+               bg-primary text-primary-foreground rounded-md
+               hover:bg-primary/90 transition-colors"
+  >
+    + New Canvas
+  </button>
+</div>
+```
+
+### 信息层级说明
+
+Canvas 卡片内部的信息从上到下权重递减：
+
+| 层级 | 内容 | 样式 | 用户行为 |
+|------|------|------|---------|
+| 1 | 标题 | `text-sm font-medium text-foreground` | 识别目标 Canvas |
+| 2 | 描述 | `text-xs text-muted-foreground` | 判断内容相关性 |
+| 3 | 内容量 | `text-xs text-muted-foreground/50` | 感知丰富度 |
+| 4 | 变化红点 | `text-xs text-red-400` + 红色圆点 | 决定是否点入 |
+| 5 | 更新日期 | `text-xs text-muted-foreground/40` | 时效性参考 |
+
+变化红点用红色打破灰色调，是唯一的"行动召唤"信号——告诉用户"这里有新东西值得看"。
+
+---
+
+## 四、不要动的东西
+
+- [ ] Projects 列表页（Doc 55 已落地，不改）
+- [ ] Project 卡片样式和结构（Doc 52/53 已落地，不改）
+- [ ] `⋯` 更多操作菜单（Rename / Duplicate / Export / Delete）— 不动
+- [ ] 左侧导航栏 — 不动
+- [ ] 顶部导航 — 不动
+- [ ] Home 页面 — 不动
+- [ ] Studio / AIChat — 不动
+- [ ] 任何业务逻辑 / API 调用 — 不动
+- [ ] Canvas 卡片的网格布局（保持现有 grid 定义）— 不动
+
+---
+
+## 五、实现顺序
+
+按以下顺序执行，每步完成后应该是可运行状态：
+
+**Step 1: 页面头部重构**
+- 移除"About this project"独立区域及其上下分隔线
+- 描述合并到标题下方，`line-clamp-3` + Show more/less 切换
+- 元信息行精简为 `👤 N · Created M/DD · Updated M/DD`
+- 确认活容器项目和普通项目的标题行都正常显示（脉搏灯有/无）
+
+**Step 2: 活容器状态条**
+- 在全局 CSS 中追加 `.pulse-dot-paused` 样式
+- 实现 `ActiveContainerStatusBar` 组件（三种状态）
+- 实现 `statusStyles` 映射和 `getMockContainerInfo` mock 数据
+- 插入到元信息行下方、Canvases 标题上方
+- 确认普通项目不显示状态条
+
+**Step 3: Canvas 卡片增强**
+- Canvas 数据结构扩展（`cardCount` / `shotCount` / `hasNewUpdates`）
+- 卡片底部增加内容量指标行
+- 活容器项目的 Canvas 卡片增加变化红点
+- Canvases 标题增加计数 `(N)`
+- 确认普通项目的 Canvas 卡片无红点
+
+---
+
+## 六、视觉层级总览
+
+整个 Detail 页面的信息层级从上到下：
+
+```
+权重 ████████  标题行（项目名 + 脉搏灯 + 收藏 + 菜单）
+权重 ██████    描述（text-sm，次级灰色）
+权重 ████      元信息（text-xs，最淡灰色）
+权重 ██████    状态条（极淡背景框，中等权重，仅活容器）
+权重 ████████  Canvas 卡片（交互区域，用户最终目标）
+```
+
+设计原则：
+- 不用分隔线区分区域，靠字号 + 颜色透明度 + 间距建立层级
+- 状态条用背景色框圈定，是页面中唯一有背景色的区域，自然形成视觉分区
+- Canvas 卡片是用户的最终目标，保持最大的可点击面积和清晰的交互反馈
+- 普通项目少了状态条，页面更短更紧凑，这是正确的——不填充空白
+
+---
+
+## 七、重要提醒
+
+- 使用现有 design tokens，不硬编码颜色值
+- 状态条的绿色色阶复用脉搏灯同色系（`green-500` 系列）
+- 状态条操作按钮（Pause / Run Now / Resume / Retry）目前只做 UI，点击后用 `console.log` 占位，不接真实逻辑
+- 变化摘要和 Canvas 的 `cardCount` / `shotCount` / `hasNewUpdates` 均用 mock 数据
+- Show more / Show less 用 `line-clamp-3` 实现，不用 JS 计算高度
+- 描述长度判断用 `project.description.length > 150` 作为近似阈值，不需要精确到行数
+
+---
+
+*文档创建：2026-02-25*
+*基于 Doc 56（内页分析）+ Doc 57（Phase 1 设计细节），仅改造 Project Detail 页面*

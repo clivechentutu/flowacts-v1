@@ -108,6 +108,7 @@ import { PageTab } from "@/components/canvas/PageTabNav";
 import { ProjectHeader, ProjectInfo } from "@/components/canvas/ProjectHeader";
 import { TopRightToolbar } from "@/components/canvas/TopRightToolbar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ActiveContainerStatusBar, ActiveContainerInfo } from '@/components/canvas/ActiveContainerStatusBar';
 import { CreateProjectDialog } from '@/components/canvas/CreateProjectDialog';
 import { ActivityHeatmap, formatHeatmapDate } from '@/components/canvas/ActivityHeatmap';
 
@@ -909,6 +910,7 @@ export default function Home() {
   const [projectListFilter, setProjectListFilter] = useState<'all' | 'favorites' | 'active' | 'regular'>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [heatmapDate, setHeatmapDate] = useState<string | null>(null);
+  const [showFullDesc, setShowFullDesc] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -1927,7 +1929,7 @@ export default function Home() {
                  />
               </div>
           );
-      case 'project-detail':
+      case 'project-detail': {
         const p = HISTORY_TASKS.find(t => t.id === activeProjectId);
         if (!p) {
             setActiveTab('projects-list');
@@ -1937,77 +1939,90 @@ export default function Home() {
             <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
                 <div className="max-w-5xl mx-auto w-full">
                     {/* Header */}
-                    <div className="flex items-start justify-between mb-8 pb-6 border-b border-border/50 gap-6">
+                    <div className="flex items-start justify-between mb-4 gap-6">
                         <div className="min-w-0">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-3 mb-1">
                                 <button
                                     onClick={() => setActiveTab('projects-list')}
                                     className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-muted text-muted-foreground transition-colors"
                                 >
                                     <ArrowRight className="w-4 h-4 rotate-180" />
                                 </button>
-                                <h1 className="text-2xl font-bold tracking-tight text-foreground truncate flex items-center gap-3">
+                                {p.hasActiveContainer && (
+                                    <span className={`pulse-dot ${(p as any).containerStatus === 'paused' ? 'pulse-dot-paused' : ''}`} />
+                                )}
+                                <h1 className="text-lg font-semibold text-foreground truncate flex-1">
                                     {p.title}
-                                    {p.hasActiveContainer && (
-                                        <span className="pulse-dot" />
-                                    )}
                                 </h1>
+                                <button
+                                    className={`shrink-0 text-base transition-colors ${
+                                        p.isFavorite
+                                            ? 'text-yellow-400'
+                                            : 'text-muted-foreground/30 hover:text-muted-foreground/60'
+                                    }`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        toast({ description: p.isFavorite ? "Removed from favorites" : "Added to favorites" });
+                                    }}
+                                >
+                                    {p.isFavorite ? '★' : '☆'}
+                                </button>
+                                <Button variant="outline" size="sm" className="w-9 px-0 border-0 shadow-none hover:bg-muted bg-transparent">
+                                    <MoreVertical className="w-4 h-4" />
+                                </Button>
                             </div>
 
-                            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1.5">👤 {p.memberCount || 1} members</span>
-                                <span className="text-muted-foreground/40">·</span>
-                                <span>
-                                    Created {(() => {
-                                        const cd = new Date(p.createdAt || p.date);
-                                        return `${cd.toLocaleString('en-US', { month: 'short' })} ${cd.getDate()}, ${cd.getFullYear()}`;
-                                    })()}
-                                </span>
-                                <span className="text-muted-foreground/40">·</span>
-                                <span>
-                                    Updated {(() => {
-                                        const ud = new Date(p.updatedAt || p.date);
-                                        return `${ud.toLocaleString('en-US', { month: 'short' })} ${ud.getDate()}, ${ud.getFullYear()}`;
-                                    })()}
-                                </span>
+                            <div className="mb-1 ml-11">
+                                <p className={`text-sm text-muted-foreground ${!showFullDesc ? 'line-clamp-3' : ''}`}>
+                                    {p.description}
+                                </p>
+                                {p.description && p.description.length > 150 && (
+                                    <button
+                                        onClick={() => setShowFullDesc(!showFullDesc)}
+                                        className="text-xs text-primary hover:text-primary/80 mt-0.5"
+                                    >
+                                        {showFullDesc ? 'Show less' : 'Show more'}
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="text-xs text-muted-foreground/60 mb-4 ml-11">
+                                👤 {p.memberCount || 1} · Created {(() => {
+                                    const cd = new Date(p.createdAt || p.date);
+                                    return `${cd.toLocaleString('en-US', { month: 'short' })} ${cd.getDate()}`;
+                                })()} · Updated {(() => {
+                                    const ud = new Date(p.updatedAt || p.date);
+                                    return `${ud.toLocaleString('en-US', { month: 'short' })} ${ud.getDate()}`;
+                                })()}
                             </div>
                         </div>
+                    </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                            <Button
-                                variant={p.isFavorite ? "secondary" : "outline"}
-                                size="sm"
-                                className={cn("gap-2", p.isFavorite && "text-amber-500 bg-amber-500/10 hover:bg-amber-500/20")}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    toast({ description: p.isFavorite ? "Removed from favorites" : "Added to favorites" });
+                    {/* Active Container Status */}
+                    {p.hasActiveContainer && (
+                        <div className="ml-11">
+                            <ActiveContainerStatusBar 
+                                container={{
+                                    status: (p as any).containerStatus || 'running',
+                                    frequency: 'Every 3 days',
+                                    lastRunAt: p.updatedAt || p.date,
+                                    nextRunAt: new Date(new Date(p.updatedAt || p.date).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                                    lastSummary: 'Competitor A updated pricing page — new enterprise tier added.',
+                                    errorMessage: (p as any).containerStatus === 'error' ? 'Failed to fetch latest pricing data' : undefined
                                 }}
-                            >
-                                <Star className={cn("w-4 h-4", p.isFavorite && "fill-current")} />
-                                {p.isFavorite ? 'Favorited' : 'Favorite'}
-                            </Button>
-                            <Button variant="outline" size="sm" className="w-9 px-0">
-                                <MoreVertical className="w-4 h-4" />
-                            </Button>
+                                onPause={() => toast({ description: "Container paused" })}
+                                onResume={() => toast({ description: "Container resumed" })}
+                                onRunNow={() => toast({ description: "Running container now..." })}
+                                onRetry={() => toast({ description: "Retrying container execution..." })}
+                            />
                         </div>
-                    </div>
-
-                    {/* Project Description */}
-                    <div className="mb-10">
-                        <h2 className="text-sm font-medium text-foreground mb-3">About this project</h2>
-                        <p className="text-sm text-muted-foreground leading-relaxed max-w-3xl">
-                            {p.description}
-                        </p>
-                    </div>
+                    )}
 
                     {/* Canvas List */}
-                    <div>
+                    <div className="mt-8">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Layers className="w-5 h-5 text-primary" />
-                                </div>
-                                <h2 className="text-lg font-semibold tracking-tight text-foreground">Canvases</h2>
+                                <h2 className="text-lg font-semibold tracking-tight text-foreground">Canvases ({p.canvases ? p.canvases.length : 2})</h2>
                             </div>
                             <Button
                                 onClick={() => setActiveTab('project')}
@@ -2021,8 +2036,8 @@ export default function Home() {
                         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
                             {/* Mocking Canvases if empty */}
                             {(p.canvases && p.canvases.length > 0 ? p.canvases : [
-                                { id: 'c1', title: 'Brainstorming', summary: 'Initial ideas and concepts for ' + p.title, updatedAt: p.updatedAt || p.date },
-                                { id: 'c2', title: 'Implementation Plan', summary: 'Technical details and architecture overview.', updatedAt: p.updatedAt || p.date }
+                                { id: 'c1', title: 'Brainstorming', summary: 'Initial ideas and concepts for ' + p.title, updatedAt: p.updatedAt || p.date, cardCount: 5, shotCount: 12, hasUpdates: true },
+                                { id: 'c2', title: 'Implementation Plan', summary: 'Technical details and architecture overview.', updatedAt: p.updatedAt || p.date, cardCount: 2, shotCount: 0, hasUpdates: false }
                             ]).map((canvas: any) => (
                                 <div
                                     key={canvas.id}
@@ -2040,20 +2055,28 @@ export default function Home() {
                                     <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
                                         {canvas.summary}
                                     </p>
-                                    <div className="text-xs text-muted-foreground/60 flex items-center justify-between mt-auto pt-4 border-t border-border/50">
-                                        <span>
-                                            Updated {(() => {
-                                                const d = new Date(canvas.updatedAt);
-                                                const now = new Date();
-                                                const month = d.getMonth() + 1;
-                                                const day = d.getDate();
-                                                if (d.getFullYear() === now.getFullYear()) {
-                                                    return `${month}/${day}`;
-                                                }
-                                                return `${month}/${day}/${d.getFullYear() % 100}`;
-                                            })()}
-                                        </span>
-                                        <ArrowRight className="w-4 h-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
+                                    <div className="text-xs text-muted-foreground/60 flex items-center justify-between mt-auto">
+                                        <div className="flex items-center gap-2">
+                                            <span>{canvas.cardCount || 0} cards · {canvas.shotCount || 0} shots</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-right">
+                                            {canvas.hasUpdates && p.hasActiveContainer && (
+                                                <span className="flex items-center gap-1 text-red-400 font-medium">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                                    Updated
+                                                </span>
+                                            )}
+                                            {!canvas.hasUpdates && (
+                                                <span>
+                                                    Updated {(() => {
+                                                        const d = new Date(canvas.updatedAt);
+                                                        const month = d.getMonth() + 1;
+                                                        const day = d.getDate();
+                                                        return `${month}/${day}`;
+                                                    })()}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -2062,6 +2085,7 @@ export default function Home() {
                 </div>
             </div>
         );
+      }
       case 'project':
       default:
         return (
