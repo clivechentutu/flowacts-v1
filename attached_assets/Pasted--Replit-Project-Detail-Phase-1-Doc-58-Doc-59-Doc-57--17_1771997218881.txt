@@ -1,0 +1,713 @@
+# Replit 指令：Project Detail Phase 1 综合修正
+
+> 替代 Doc 58 + Doc 59，整合所有修正为一份完整指令
+> 基于 Doc 57（设计细节）+ 截图反馈 + 视觉统一性讨论 + 活容器管理能力补充
+> Tech stack: React + TypeScript + Tailwind CSS + Radix UI + Framer Motion
+> Theme: Dark mode（使用现有 design tokens）
+
+---
+
+## 变更范围
+
+仅改造 Project Detail 页面（`/project/:id`）。五个改动：
+
+1. **页面布局修正** — 内容区撑满可用宽度，移除窄居中约束
+2. **页面头部重构** — 移除"About this project"独立区域，描述合并到标题下方
+3. **活容器状态条重设计** — 统一视觉语言（左侧色条），增加管理入口
+4. **活容器管理弹窗** — 频率编辑 + 成本预估 + 停止容器
+5. **Canvas 卡片修正** — 修复计数 bug + 日期显示 bug
+
+不动的东西：Projects 列表页、Project 卡片、左侧导航栏、顶部导航、Home、Studio、AIChat、`⋯` 更多操作菜单、任何业务逻辑/API 调用。
+
+---
+
+## 视觉统一原则
+
+本次修正的核心设计约束：页面内所有容器元素使用同一套视觉语言。
+
+**统一容器样式**：`rounded-lg border border-border bg-card`
+
+| 元素 | 容器样式 | 状态区分方式 |
+|------|---------|-------------|
+| 状态条 | `border-border bg-card` + 左侧 3px 色条 | 色条颜色：绿/灰/红 |
+| Canvas 卡片 | `border-border bg-card` | hover 时 `border-primary/40` |
+
+不再使用彩色背景（`bg-green-500/5`）区分状态条，改用左侧色条。这样状态条和 Canvas 卡片视觉上属于同一家族。
+
+---
+
+## 一、页面布局修正（新增）
+
+### 问题
+
+当前 Detail 页面内容区域被限制在一个窄居中列（类似 `max-w-2xl mx-auto`），两侧各有约 25-30% 的空白。对于"项目指挥中心"页面，这不合理：
+
+- 内容区像博客文章而不是工作台，信息密度低
+- 返回按钮悬浮在页面中央，而非内容区左边缘
+- Canvas 卡片网格被挤压，无法充分利用可用宽度
+- 状态条也被压缩在窄列里，操作按钮区域局促
+
+### 参考
+
+Linear、Notion、GitHub 的项目详情页：内容填满 sidebar 右侧的可用宽度，只留合理 padding（24-32px）。不使用窄居中列。
+
+### 修正
+
+找到 Project Detail 页面的最外层容器，移除窄居中约束，改为填满可用宽度：
+
+```tsx
+{/* 改前（大致） */}
+<div className="max-w-2xl mx-auto px-4 py-6">
+  {/* 页面内容 */}
+</div>
+
+{/* 改后 */}
+<div className="w-full px-6 lg:px-8 py-6">
+  {/* 页面内容 */}
+</div>
+```
+
+### 关键要点
+
+- 移除 `max-w-2xl mx-auto`（或 `max-w-3xl mx-auto`，取决于现有代码）
+- 改为 `w-full px-6 lg:px-8`，内容自然填满 sidebar 右侧空间
+- Canvas 卡片网格随宽度自适应：窄屏 2 列，宽屏可展示 3 列
+- 不需要改 Canvas 卡片本身的样式，只改外层容器宽度约束
+
+### Canvas 网格自适应（可选优化）
+
+如果当前 Canvas 网格是固定 2 列，可改为响应式：
+
+```tsx
+<div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+  {project.canvases?.map((canvas) => (
+    <CanvasCard key={canvas.id} canvas={canvas} isActiveProject={isActiveProject} />
+  ))}
+</div>
+```
+
+宽屏 3 列让用户一眼看到更多 Canvas，减少滚动。
+
+---
+
+## 二、页面头部重构（与 Doc 58 一致，无变化）
+
+头部区域已在 Doc 58 中正确实现，本次不改动。保持现有结构：
+
+```
+← ● 项目标题                              [★ Favorited] [⋯]
+项目描述文字（最多 3 行，超出 Show more 展开）
+👤 3 · Created Feb 20 · Updated Feb 24
+```
+
+视觉层级：`text-lg font-semibold` → `text-sm text-muted-foreground` → `text-xs text-muted-foreground/60`，靠字号和颜色区分，不加分隔线。
+
+---
+
+## 三、活容器状态条重设计
+
+仅当 `project.hasActiveContainer === true` 时渲染。位于元信息行下方、Canvases 标题上方。
+
+### 改前（Doc 58 实现）
+
+状态条使用彩色背景（`bg-green-500/5`），和 Canvas 卡片的无背景边框风格不统一。
+
+### 改后
+
+状态条改为和 Canvas 卡片同样的 `border-border bg-card`，通过左侧 3px 色条区分状态。新增 `[⚙]` 管理入口。
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│▎● Running · Every 3d · Last: Feb 24    [Pause] [Run Now] [⚙]│
+│▎"Competitor A updated pricing — new enterprise tier added"   │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 数据结构（不变）
+
+```typescript
+type ContainerStatus = 'running' | 'paused' | 'error';
+
+interface ActiveContainerInfo {
+  status: ContainerStatus;
+  frequency: string;
+  lastRunAt: string;
+  nextRunAt: string;
+  lastSummary: string;
+  errorMessage?: string;
+}
+```
+
+### 状态条样式映射（修改）
+
+```typescript
+const statusStyles: Record<ContainerStatus, {
+  barColor: string;    // 左侧色条颜色
+  dotColor: string;
+  label: string;
+  labelColor: string;
+}> = {
+  running: {
+    barColor: 'bg-green-500',
+    dotColor: 'bg-green-500',
+    label: 'Running',
+    labelColor: 'text-green-400',
+  },
+  paused: {
+    barColor: 'bg-muted-foreground/40',
+    dotColor: 'bg-muted-foreground/40',
+    label: 'Paused',
+    labelColor: 'text-muted-foreground',
+  },
+  error: {
+    barColor: 'bg-red-500',
+    dotColor: 'bg-red-500',
+    label: 'Error',
+    labelColor: 'text-red-400',
+  },
+};
+```
+
+关键变化：移除 `bg` 和 `border` 字段，新增 `barColor`。所有状态共用 `border-border bg-card`。
+
+### 组件实现（修改）
+
+```tsx
+function ActiveContainerStatusBar({
+  container,
+  onPause,
+  onResume,
+  onRunNow,
+  onRetry,
+  onOpenSettings,
+}: {
+  container: ActiveContainerInfo;
+  onPause: () => void;
+  onResume: () => void;
+  onRunNow: () => void;
+  onRetry: () => void;
+  onOpenSettings: () => void;
+}) {
+  const style = statusStyles[container.status];
+
+  return (
+    <div
+      className="relative rounded-lg border border-border bg-card
+                 overflow-hidden mb-4"
+      title={container.status === 'running'
+        ? `Next run: ${formatDateTime(container.nextRunAt)}`
+        : undefined}
+    >
+      {/* 左侧色条 */}
+      <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${style.barColor}`} />
+
+      <div className="px-4 py-3 pl-5">
+        {/* 第一行：状态 + 频率 + 上次执行 + 操作按钮 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`w-2 h-2 rounded-full ${style.dotColor} ${
+              container.status === 'running' ? 'animate-pulse' : ''
+            }`} />
+            <span className={`font-medium ${style.labelColor}`}>
+              {style.label}
+            </span>
+            {container.status !== 'error' && (
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="text-muted-foreground/60">
+                  {container.frequency}
+                </span>
+              </>
+            )}
+            <span className="text-muted-foreground/40">·</span>
+            <span className="text-muted-foreground/60">
+              {container.status === 'error'
+                ? `Last attempt failed: ${formatDate(container.lastRunAt)}`
+                : `Last: ${formatDate(container.lastRunAt)}`}
+            </span>
+          </div>
+
+          {/* 操作按钮区 */}
+          <div className="flex items-center gap-2">
+            {/* 状态相关按钮（与 Doc 58 一致） */}
+            {container.status === 'running' && (
+              <>
+                <button onClick={onPause}
+                  className="px-2.5 py-1 text-xs text-muted-foreground
+                             hover:text-foreground border border-border
+                             rounded-md transition-colors">
+                  Pause
+                </button>
+                <button onClick={onRunNow}
+                  className="px-2.5 py-1 text-xs bg-green-500/20
+                             text-green-400 hover:bg-green-500/30
+                             rounded-md transition-colors">
+                  Run Now
+                </button>
+              </>
+            )}
+            {container.status === 'paused' && (
+              <>
+                <button onClick={onResume}
+                  className="px-2.5 py-1 text-xs text-muted-foreground
+                             hover:text-foreground border border-border
+                             rounded-md transition-colors">
+                  Resume
+                </button>
+                <button onClick={onRunNow}
+                  className="px-2.5 py-1 text-xs bg-primary/20 text-primary
+                             hover:bg-primary/30 rounded-md transition-colors">
+                  Run Now
+                </button>
+              </>
+            )}
+            {container.status === 'error' && (
+              <button onClick={onRetry}
+                className="px-2.5 py-1 text-xs bg-red-500/20 text-red-400
+                           hover:bg-red-500/30 rounded-md transition-colors">
+                Retry
+              </button>
+            )}
+
+            {/* 管理入口 — 新增 */}
+            <button
+              onClick={onOpenSettings}
+              className="p-1 text-muted-foreground/40
+                         hover:text-muted-foreground
+                         transition-colors rounded"
+              title="Container settings"
+            >
+              <SettingsIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* 第二行：变化摘要 */}
+        <p className={`text-sm mt-1.5 ${
+          container.status === 'paused'
+            ? 'text-muted-foreground/40'
+            : 'text-muted-foreground'
+        }`}>
+          {container.status === 'error'
+            ? container.errorMessage
+            : `"${container.lastSummary}"`}
+        </p>
+      </div>
+    </div>
+  );
+}
+```
+
+### 关键变化说明
+
+与 Doc 58 的差异：
+
+| 项目 | Doc 58 | 本次 |
+|------|--------|------|
+| 外层容器 | `${style.bg} border ${style.border}` | `border-border bg-card` 统一样式 |
+| 状态区分 | 整个背景色变化 | 左侧 3px 色条（`absolute left-0`） |
+| 内边距 | `px-4 py-3` | `px-4 py-3 pl-5`（左侧留出色条空间） |
+| 管理入口 | 无 | 新增 `[⚙]` 齿轮按钮 |
+| 操作按钮 | Pause/Resume/Run Now/Retry | 不变，仅新增齿轮 |
+
+---
+
+## 四、活容器管理弹窗（新增）
+
+点击状态条右侧 `[⚙]` 齿轮按钮打开。使用 Radix UI Dialog 实现。
+
+### 弹窗结构
+
+```
+┌─ Container Settings ──────────────────────────────┐
+│                                                    │
+│  Frequency                                         │
+│  ┌──────────────────────────────────┐              │
+│  │ Every 3 days                   ▾ │              │
+│  └──────────────────────────────────┘              │
+│                                                    │
+│  Estimated Cost                                    │
+│  ~50 tokens per run · ~500 tokens/month            │
+│                                                    │
+│  Monitoring Target                                 │
+│  competitor-a.com/pricing                          │
+│  competitor-b.com/features                         │
+│  (Configured in AIChat)                            │
+│                                                    │
+│  ─────────────────────────────────────             │
+│  [Stop Monitoring]                                 │
+│                                                    │
+└────────────────────────────────────────────────────┘
+```
+
+### 数据结构
+
+```typescript
+interface ContainerSettings {
+  frequency: string;
+  estimatedTokensPerRun: number;
+  monitoringTargets: string[];  // URL 列表
+}
+```
+
+### 频率选项
+
+```typescript
+const frequencyOptions = [
+  { value: 'daily', label: 'Every day' },
+  { value: 'every_3_days', label: 'Every 3 days' },
+  { value: 'weekly', label: 'Every week' },
+  { value: 'biweekly', label: 'Every 2 weeks' },
+];
+```
+
+### 组件实现
+
+```tsx
+function ContainerSettingsDialog({
+  open,
+  onOpenChange,
+  settings,
+  onUpdateFrequency,
+  onStopContainer,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  settings: ContainerSettings;
+  onUpdateFrequency: (frequency: string) => void;
+  onStopContainer: () => void;
+}) {
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
+
+  const monthlyEstimate = Math.round(
+    settings.estimatedTokensPerRun * getRunsPerMonth(settings.frequency)
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-base font-semibold">
+            Container Settings
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          {/* 频率设置 */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground
+                              uppercase tracking-wide mb-1.5 block">
+              Frequency
+            </label>
+            <select
+              value={settings.frequency}
+              onChange={(e) => onUpdateFrequency(e.target.value)}
+              className="w-full rounded-md border border-border bg-card
+                         px-3 py-2 text-sm text-foreground"
+            >
+              {frequencyOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 成本预估 */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground
+                              uppercase tracking-wide mb-1.5 block">
+              Estimated Cost
+            </label>
+            <p className="text-sm text-foreground">
+              ~{settings.estimatedTokensPerRun} tokens per run
+              <span className="text-muted-foreground/60">
+                {' '}· ~{monthlyEstimate} tokens/month
+              </span>
+            </p>
+          </div>
+
+          {/* 监控目标 */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground
+                              uppercase tracking-wide mb-1.5 block">
+              Monitoring Targets
+            </label>
+            <div className="space-y-1">
+              {settings.monitoringTargets.map((url, i) => (
+                <p key={i} className="text-sm text-foreground truncate">
+                  {url}
+                </p>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground/50 mt-1">
+              Configured in AIChat
+            </p>
+          </div>
+
+          {/* 分隔线 + 停止按钮 */}
+          <div className="border-t border-border pt-4">
+            {!showStopConfirm ? (
+              <button
+                onClick={() => setShowStopConfirm(true)}
+                className="text-sm text-red-400 hover:text-red-300
+                           transition-colors"
+              >
+                Stop Monitoring
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  This will permanently stop the container.
+                  You can create a new one from AIChat.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      onStopContainer();
+                      onOpenChange(false);
+                    }}
+                    className="px-3 py-1.5 text-xs bg-red-500/20
+                               text-red-400 hover:bg-red-500/30
+                               rounded-md transition-colors"
+                  >
+                    Confirm Stop
+                  </button>
+                  <button
+                    onClick={() => setShowStopConfirm(false)}
+                    className="px-3 py-1.5 text-xs text-muted-foreground
+                               hover:text-foreground border border-border
+                               rounded-md transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+### Mock 数据
+
+```typescript
+function getMockContainerSettings(): ContainerSettings {
+  return {
+    frequency: 'every_3_days',
+    estimatedTokensPerRun: 50,
+    monitoringTargets: [
+      'competitor-a.com/pricing',
+      'competitor-b.com/features',
+    ],
+  };
+}
+
+function getRunsPerMonth(frequency: string): number {
+  const map: Record<string, number> = {
+    daily: 30,
+    every_3_days: 10,
+    weekly: 4,
+    biweekly: 2,
+  };
+  return map[frequency] ?? 10;
+}
+```
+
+### 弹窗设计说明
+
+- 弹窗宽度 `sm:max-w-md`，不需要太宽
+- 频率修改和停止容器目前只做 UI，点击后 `console.log` 占位
+- "Stop Monitoring" 用两步确认（点击后展开确认区域），防止误操作
+- "Configured in AIChat" 提示用户监控配置的修改入口在 AIChat，不在这里
+- 成本预估根据频率动态计算月度消耗
+
+---
+
+## 五、Canvas 卡片修正
+
+修复 Doc 58 执行后的 3 个 bug。
+
+### Bug 1: Canvases 计数显示 (0)
+
+找到 Canvases 标题，确保计数读取实际数组长度：
+
+```tsx
+<h2 className="text-sm font-medium text-foreground">
+  Canvases{' '}
+  <span className="text-muted-foreground/50 font-normal">
+    ({project.canvases?.length ?? 0})
+  </span>
+</h2>
+```
+
+### Bug 2 + 3: 卡片底部日期丢失
+
+红点和日期被实现为互斥分支。修正为：日期始终渲染，红点作为可选前缀。
+
+### 修正后的完整 CanvasCard 组件
+
+```tsx
+function CanvasCard({
+  canvas,
+  isActiveProject,
+}: {
+  canvas: Canvas;
+  isActiveProject: boolean;
+}) {
+  return (
+    <div
+      className="rounded-lg border border-border bg-card p-4
+                 hover:border-primary/40 hover:shadow-sm
+                 cursor-pointer transition-all"
+      onClick={() => navigate(`/canvas/${canvas.id}`)}
+    >
+      {/* 标题 */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm">🎨</span>
+        <h3 className="text-sm font-medium text-foreground truncate">
+          {canvas.title}
+        </h3>
+      </div>
+
+      {/* 描述 */}
+      <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+        {canvas.description}
+      </p>
+
+      {/* 内容量指标 — 所有项目都显示 */}
+      <div className="text-xs text-muted-foreground/50">
+        {canvas.cardCount} {canvas.cardCount === 1 ? 'card' : 'cards'} · {canvas.shotCount} {canvas.shotCount === 1 ? 'shot' : 'shots'}
+      </div>
+
+      {/* 更新日期 — 始终显示，红点为可选前缀 */}
+      <div className="flex items-center gap-1.5 mt-1">
+        {isActiveProject && canvas.hasNewUpdates && (
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+        )}
+        <span className={`text-xs ${
+          isActiveProject && canvas.hasNewUpdates
+            ? 'text-red-400'
+            : 'text-muted-foreground/40'
+        }`}>
+          Updated {formatDate(canvas.updatedAt)}
+        </span>
+      </div>
+    </div>
+  );
+}
+```
+
+### 关键修正逻辑
+
+- `Updated {date}` 始终渲染，不受任何条件控制
+- 红点仅在 `isActiveProject && canvas.hasNewUpdates` 时渲染
+- 有红点时日期文字变红（`text-red-400`），无红点时灰色（`text-muted-foreground/40`）
+- 普通项目即使 mock 数据中 `hasNewUpdates=true`，因为 `isActiveProject=false`，红点不会显示
+
+---
+
+## 六、不要动的东西
+
+- Projects 列表页（Doc 55 已落地，不改）
+- Project 卡片样式和结构（Doc 52/53 已落地，不改）
+- `⋯` 更多操作菜单（Rename / Duplicate / Export / Delete）— 不动
+- 左侧导航栏 — 不动
+- 顶部导航 — 不动
+- Home 页面 — 不动
+- Studio / AIChat — 不动
+- 任何业务逻辑 / API 调用 — 不动
+- Canvas 卡片的网格布局 — 列数可能随宽度调整（见第一节）
+
+---
+
+## 七、实现顺序
+
+按以下顺序执行，每步完成后应该是可运行状态：
+
+**Step 1: 页面布局修正**
+- 找到 Detail 页面最外层容器的宽度约束（`max-w-2xl mx-auto` 或类似）
+- 移除窄居中约束，改为 `w-full px-6 lg:px-8`
+- 可选：Canvas 网格改为响应式 `grid-cols-2 lg:grid-cols-3`
+- 确认内容填满 sidebar 右侧可用宽度
+
+**Step 2: 活容器状态条重设计**
+- 移除状态条的彩色背景样式（`bg-green-500/5` 等）
+- 改为统一的 `border-border bg-card` + 左侧 3px 色条
+- 更新 `statusStyles` 映射：移除 `bg` / `border`，新增 `barColor`
+- 新增 `onOpenSettings` prop 和 `[⚙]` 齿轮按钮
+- 确认三种状态（Running / Paused / Error）的色条颜色正确
+
+**Step 3: 活容器管理弹窗**
+- 新建 `ContainerSettingsDialog` 组件
+- 实现频率下拉选择（4 个选项）
+- 实现成本预估动态计算（根据频率变化）
+- 实现监控目标只读展示
+- 实现 "Stop Monitoring" 两步确认
+- 在状态条 `[⚙]` 按钮点击时打开弹窗
+- 所有操作用 `console.log` 占位
+
+**Step 4: Canvas 卡片修正**
+- 修复 Canvases 标题计数：`project.canvases?.length ?? 0`
+- 修正卡片底部布局：日期始终渲染，红点作为可选前缀
+- 有红点时日期文字变红，无红点时灰色
+- 确认普通项目的 Canvas 卡片无红点、日期正常显示
+
+**Step 5: 整体验证**
+- 页面内容填满 sidebar 右侧可用宽度，无大面积空白
+- 活容器项目：状态条左侧色条为绿色，齿轮按钮可点击打开弹窗
+- 普通项目：无状态条，页面紧凑
+- 两种项目的 Canvas 卡片视觉风格统一（同样的 `border-border bg-card`）
+- 状态条和 Canvas 卡片属于同一视觉家族
+- Canvas 网格在宽屏下可展示 3 列
+
+---
+
+## 八、验证清单
+
+修正完成后，逐项确认：
+
+**页面布局**
+- [ ] 内容区填满 sidebar 右侧可用宽度，无大面积空白
+- [ ] 返回按钮在内容区左边缘，不在页面中央悬浮
+- [ ] Canvas 网格在宽屏下可展示 3 列
+
+**视觉统一性**
+- [ ] 状态条外层容器为 `border-border bg-card`，不再有彩色背景
+- [ ] 状态条左侧有 3px 色条（Running 绿 / Paused 灰 / Error 红）
+- [ ] 状态条和 Canvas 卡片视觉上属于同一家族
+
+**管理弹窗**
+- [ ] 点击 `[⚙]` 齿轮按钮打开 Container Settings 弹窗
+- [ ] 频率下拉可切换，成本预估随频率动态变化
+- [ ] 监控目标只读展示，底部有 "Configured in AIChat" 提示
+- [ ] "Stop Monitoring" 点击后展开确认区域，非直接执行
+
+**Canvas 卡片修正**
+- [ ] `Canvases (2)` — 标题显示正确的 Canvas 数量
+- [ ] 活容器项目 + hasNewUpdates=true 的卡片：红点 + 红色 "Updated 2/24"
+- [ ] 活容器项目 + hasNewUpdates=false 的卡片：灰色 "Updated 2/24"，无红点
+- [ ] 普通项目的所有卡片：灰色日期，无红点（即使 mock 数据 hasNewUpdates=true）
+- [ ] 所有卡片都显示内容量指标（"N cards · N shots"）
+
+**页面头部**
+- [ ] 头部区域不受本次修正影响，保持 Doc 58 实现
+
+---
+
+## 九、重要提醒
+
+- 使用现有 design tokens，不硬编码颜色值
+- 状态条操作按钮（Pause / Run Now / Resume / Retry）和管理弹窗操作目前只做 UI，点击后 `console.log` 占位
+- 变化摘要、Canvas 的 `cardCount` / `shotCount` / `hasNewUpdates`、容器设置均用 mock 数据
+- 管理弹窗使用 Radix UI Dialog，与项目现有弹窗风格一致
+- Show more / Show less 用 `line-clamp-3` 实现，不用 JS 计算高度
+- 本文档替代 Doc 58 + Doc 59，是 Project Detail Phase 1 的完整指令
+
+---
+
+*文档创建：2026-02-25*
+*替代 Doc 58（初版指令）+ Doc 59（Canvas 修正指令），整合视觉统一 + 管理弹窗 + Canvas 修正为一份完整指令*
