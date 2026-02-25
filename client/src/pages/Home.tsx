@@ -2022,7 +2022,12 @@ export default function Home() {
                     <div className="mt-8">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
-                                <h2 className="text-lg font-semibold tracking-tight text-foreground">Canvases ({p.canvases ? p.canvases.length : 2})</h2>
+                                <h2 className="text-sm font-medium text-foreground">
+                                    Canvases{' '}
+                                    <span className="text-muted-foreground/50 font-normal">
+                                        ({p.canvases?.length ?? 0})
+                                    </span>
+                                </h2>
                             </div>
                             <Button
                                 onClick={() => setActiveTab('project')}
@@ -2036,47 +2041,44 @@ export default function Home() {
                         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
                             {/* Mocking Canvases if empty */}
                             {(p.canvases && p.canvases.length > 0 ? p.canvases : [
-                                { id: 'c1', title: 'Brainstorming', summary: 'Initial ideas and concepts for ' + p.title, updatedAt: p.updatedAt || p.date, cardCount: 5, shotCount: 12, hasUpdates: true },
-                                { id: 'c2', title: 'Implementation Plan', summary: 'Technical details and architecture overview.', updatedAt: p.updatedAt || p.date, cardCount: 2, shotCount: 0, hasUpdates: false }
+                                { id: 'c1', title: 'Brainstorming', summary: 'Initial ideas and concepts for ' + p.title, updatedAt: p.updatedAt || p.date, cardCount: 5, shotCount: 12, hasNewUpdates: true },
+                                { id: 'c2', title: 'Implementation Plan', summary: 'Technical details and architecture overview.', updatedAt: p.updatedAt || p.date, cardCount: 2, shotCount: 0, hasNewUpdates: false }
                             ]).map((canvas: any) => (
                                 <div
                                     key={canvas.id}
-                                    className="group rounded-xl border border-border bg-card p-5 hover:border-primary/40 hover:shadow-md cursor-pointer transition-all flex flex-col h-[160px]"
+                                    className="group rounded-xl border border-border bg-card p-4 hover:border-primary/40 hover:shadow-sm cursor-pointer transition-all flex flex-col h-[150px]"
                                     onClick={() => setActiveTab('project')}
                                 >
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">
-                                            <Layers className="w-4 h-4" />
-                                        </div>
-                                        <h3 className="text-base font-medium text-foreground truncate flex-1 group-hover:text-primary transition-colors">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="text-sm">🎨</span>
+                                        <h3 className="text-sm font-medium text-foreground truncate flex-1 group-hover:text-primary transition-colors">
                                             {canvas.title}
                                         </h3>
                                     </div>
-                                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1">
+                                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">
                                         {canvas.summary}
                                     </p>
-                                    <div className="text-xs text-muted-foreground/60 flex items-center justify-between mt-auto">
-                                        <div className="flex items-center gap-2">
-                                            <span>{canvas.cardCount || 0} cards · {canvas.shotCount || 0} shots</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-right">
-                                            {canvas.hasUpdates && p.hasActiveContainer && (
-                                                <span className="flex items-center gap-1 text-red-400 font-medium">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                                    Updated
-                                                </span>
-                                            )}
-                                            {!canvas.hasUpdates && (
-                                                <span>
-                                                    Updated {(() => {
-                                                        const d = new Date(canvas.updatedAt);
-                                                        const month = d.getMonth() + 1;
-                                                        const day = d.getDate();
-                                                        return `${month}/${day}`;
-                                                    })()}
-                                                </span>
-                                            )}
-                                        </div>
+                                    
+                                    <div className="text-xs text-muted-foreground/50">
+                                        {canvas.cardCount || 0} {(canvas.cardCount || 0) === 1 ? 'card' : 'cards'} · {canvas.shotCount || 0} {(canvas.shotCount || 0) === 1 ? 'shot' : 'shots'}
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                        {p.hasActiveContainer && canvas.hasNewUpdates && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                                        )}
+                                        <span className={`text-xs ${
+                                            p.hasActiveContainer && canvas.hasNewUpdates
+                                                ? 'text-red-400'
+                                                : 'text-muted-foreground/40'
+                                        }`}>
+                                            Updated {(() => {
+                                                const d = new Date(canvas.updatedAt);
+                                                const month = d.getMonth() + 1;
+                                                const day = d.getDate();
+                                                return `${month}/${day}`;
+                                            })()}
+                                        </span>
                                     </div>
                                 </div>
                             ))}
