@@ -109,7 +109,6 @@ import { ProjectHeader, ProjectInfo } from "@/components/canvas/ProjectHeader";
 import { TopRightToolbar } from "@/components/canvas/TopRightToolbar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ActiveContainerStatusBar, ActiveContainerInfo } from '@/components/canvas/ActiveContainerStatusBar';
-import { ContainerSettingsDialog } from '@/components/canvas/ContainerSettingsDialog';
 import { CreateProjectDialog } from '@/components/canvas/CreateProjectDialog';
 import { ActivityHeatmap, formatHeatmapDate } from '@/components/canvas/ActivityHeatmap';
 
@@ -910,7 +909,6 @@ export default function Home() {
   const [projectListSearch, setProjectListSearch] = useState("");
   const [projectListFilter, setProjectListFilter] = useState<'all' | 'favorites' | 'active' | 'regular'>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showContainerSettings, setShowContainerSettings] = useState(false);
   const [heatmapDate, setHeatmapDate] = useState<string | null>(null);
   const [showFullDesc, setShowFullDesc] = useState(false);
 
@@ -1929,16 +1927,6 @@ export default function Home() {
                       // Add navigation to new project if needed
                     }}
                  />
-
-                 {/* Container Settings Dialog */}
-                 <ContainerSettingsDialog
-                    open={showContainerSettings}
-                    onOpenChange={setShowContainerSettings}
-                    frequency="Every 3 days"
-                    onStopMonitoring={() => {
-                        toast({ description: "Monitoring stopped" });
-                    }}
-                 />
               </div>
           );
       case 'project-detail': {
@@ -1949,7 +1937,7 @@ export default function Home() {
         }
         return (
             <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
-                <div className="w-full px-6 lg:px-8">
+                <div className="max-w-5xl mx-auto w-full">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4 gap-6">
                         <div className="min-w-0">
@@ -2026,7 +2014,6 @@ export default function Home() {
                                 onResume={() => toast({ description: "Container resumed" })}
                                 onRunNow={() => toast({ description: "Running container now..." })}
                                 onRetry={() => toast({ description: "Retrying container execution..." })}
-                                onOpenSettings={() => setShowContainerSettings(true)}
                             />
                         </div>
                     )}
