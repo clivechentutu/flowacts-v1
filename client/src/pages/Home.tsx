@@ -109,7 +109,7 @@ import { ProjectHeader, ProjectInfo } from "@/components/canvas/ProjectHeader";
 import { TopRightToolbar } from "@/components/canvas/TopRightToolbar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CreateProjectDialog } from '@/components/canvas/CreateProjectDialog';
-import { ActivityHeatmap } from '@/components/canvas/ActivityHeatmap';
+import { ActivityHeatmap, formatHeatmapDate } from '@/components/canvas/ActivityHeatmap';
 
 interface PromptCard {
   id: string;
@@ -1839,7 +1839,7 @@ export default function Home() {
 
                  {heatmapDate && (
                   <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
-                    <span>Showing projects updated on {import('@/components/canvas/ActivityHeatmap').then(m => m.formatHeatmapDate(heatmapDate)).catch(() => heatmapDate)}</span>
+                    <span>Showing projects updated on {formatHeatmapDate(heatmapDate)}</span>
                     <button
                       onClick={() => setHeatmapDate(null)}
                       className="text-muted-foreground/60 hover:text-foreground transition-colors"
