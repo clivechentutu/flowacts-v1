@@ -1752,7 +1752,7 @@ export default function Home() {
             });
 
           // Mock heatmap data based on HISTORY_TASKS (just a simple generator for visual demo)
-          const heatmapData = useMemo(() => {
+          const heatmapData = (() => {
             const days: import('@/components/canvas/ActivityHeatmap').DayActivity[] = [];
             const now = new Date();
             for (let i = 83; i >= 0; i--) {
@@ -1771,7 +1771,7 @@ export default function Home() {
               });
             }
             return days;
-          }, []);
+          })();
 
           return (
              <div className="flex flex-col h-full w-full bg-background p-6 overflow-y-auto">
