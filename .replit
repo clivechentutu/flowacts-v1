@@ -37,3 +37,11 @@ waitForPort = 5000
 
 [agent]
 mockupState = "MOCKUP"
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
+localPort = 5001
+externalPort = 80
